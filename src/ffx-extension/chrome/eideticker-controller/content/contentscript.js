@@ -33,3 +33,10 @@ EControllerManager.prototype = {
 };
 
 var eidetickerControllerManager = new EControllerManager();
+
+// Register for any messages our API needs us to handle
+addMessageListener("Eideticker.StartAnimation", function(obj) {
+  if (content.wrappedJSObject.startAnimationCb) {
+    content.wrappedJSObject.startAnimationCb();
+  }
+});
