@@ -49,6 +49,9 @@ git submodule update
 virtualenv .
 ./bin/easy_install $PYPI_DEPS
 
+# Build up videocapture utility (FIXME: should be part of the egg building process)
+make -C src/videocapture/videocapture/decklink
+
 # Install videocapture and jsbridge python eggs (and their deps)
 ./bin/easy_install src/videocapture
 ./bin/easy_install src/mozmill/mozrunner
@@ -60,6 +63,10 @@ hg clone http://hg.mozilla.org/build/pageloader \
     $TALOS_EXTENSION_DIR/pageloader@mozilla.org
 hg clone http://hg.mozilla.org/users/tglek_mozilla.com/fennecmark \
     $TALOS_EXTENSION_DIR/bench@taras.glek
+
+# Link to local extensions required by talos videocapture
+ln  -sf src/ffx-extension $TALOS_EXTENSION_DIR/eideticker-controller@mozilla.com/
+ln  -sf src/mozmill/jsbridge/jsbridge/extension $TALOS_EXTENSION_DIR/jsbridge@mozilla.com/
 
 # Install mobile tp4 pageset
 wget http://people.mozilla.org/~jmaher/mobile_tp4.zip -O downloads/mobile_tp4.zip

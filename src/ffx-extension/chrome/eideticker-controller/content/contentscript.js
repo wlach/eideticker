@@ -1,13 +1,13 @@
-function EController() {
+function Eideticker() {
 }
 
-EController.prototype = {
-  toString: function() { return "[EController]"; },
+Eideticker.prototype = {
+  toString: function() { return "[Eideticker]"; },
   pageLoaded: function() {
-    sendAsyncMessage('EController.PageLoaded', { });
+    sendAsyncMessage('Eideticker.PageLoaded', { });
   },
   animationFinished: function() {
-    sendAsyncMessage('EController.AnimationFinished', { });
+    sendAsyncMessage('Eideticker.AnimationFinished', { });
   },
   __exposedProps__: {
     'toString': 'r',
@@ -21,22 +21,22 @@ EController.prototype = {
 // the DOMWindowCreated event to be notified about content windows
 // being created in this context.
 
-function EControllerManager() {
+function EidetickerManager() {
   addEventListener("DOMWindowCreated", this, false);
 }
 
-EControllerManager.prototype = {
+EidetickerManager.prototype = {
   handleEvent: function handleEvent(aEvent) {
     var window = aEvent.target.defaultView;
-    window.wrappedJSObject.EController = new EController(window);
+    window.wrappedJSObject.Eideticker = new Eideticker(window);
   }
 };
 
-var eidetickerControllerManager = new EControllerManager();
+var eidetickerControllerManager = new EidetickerManager();
 
 // Register for any messages our API needs us to handle
 addMessageListener("Eideticker.StartAnimation", function(obj) {
-  if (content.wrappedJSObject.startAnimationCb) {
-    content.wrappedJSObject.startAnimationCb();
+  if (content.wrappedJSObject.startAnimation) {
+    content.wrappedJSObject.startAnimation();
   }
 });

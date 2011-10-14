@@ -8,21 +8,21 @@ Cu.import("resource://gre/modules/Services.jsm");
 var jsbridge = {}; Cu.import('resource://jsbridge/modules/events.js', jsbridge);
 
 /* XPCOM gunk */
-function EControllerObserver() {}
+function EidetickerObserver() {}
 
 function myDump(aMessage) {
   var consoleService = Cc["@mozilla.org/consoleservice;1"].getService(Ci.nsIConsoleService);
-  consoleService.logStringMessage("EController: " + aMessage);
+  consoleService.logStringMessage("Eideticker: " + aMessage);
 }
 
-EControllerObserver.prototype = {
+EidetickerObserver.prototype = {
   classDescription: "Eideticker Controller Observer for use in testing.",
   classID: Components.ID("{67a4936d-ce4c-4090-86f5-8a52ea173c5f}"),
   contractID: "@mozilla.org/eideticker-controller-observer;1",
   QueryInterface: XPCOMUtils.generateQI([Ci.nsIObserver]),
   _xpcom_categories: [{category: "profile-after-change", service: true }],
   isFrameScriptLoaded: false,
-  
+
   observe: function(aSubject, aTopic, aData)
   {
     if (aTopic == "profile-after-change") {
@@ -31,8 +31,8 @@ EControllerObserver.prototype = {
                aTopic == "chrome-document-global-created") {
       var messageManager = Cc["@mozilla.org/globalmessagemanager;1"].getService(Ci.nsIChromeFrameMessageManager);
        // Register for any messages our API needs us to handle
-      messageManager.addMessageListener("EController.PageLoaded", this);
-      messageManager.addMessageListener("EController.AnimationFinished", this);
+      messageManager.addMessageListener("Eideticker.PageLoaded", this);
+      messageManager.addMessageListener("Eideticker.AnimationFinished", this);
 
       messageManager.loadFrameScript("chrome://eideticker-controller/content/contentscript.js", true);
       this.isFrameScriptLoaded = true;
@@ -53,8 +53,9 @@ EControllerObserver.prototype = {
   },
 
   receiveMessage: function(aMessage) {
+    myDump("Proxing message");
     jsbridge.fireEvent(aMessage.name, {});
   }
 };
 
-const NSGetFactory = XPCOMUtils.generateNSGetFactory([EControllerObserver]);
+const NSGetFactory = XPCOMUtils.generateNSGetFactory([EidetickerObserver]);

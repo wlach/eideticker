@@ -39,9 +39,10 @@
 
 set -e
 
-export PATH=$(dirname $0):$PATH
-
+BINDIR=$(dirname $0)
 TALOS_DIR=$(dirname $0)/../src/talos
+
+source $BINDIR/activate
 
 if [ $# -ne 3 ]
 then
@@ -54,7 +55,7 @@ WEBSERVER_ADDRESS=$2
 FENNEC_APP=$3
 
 cd $TALOS_DIR && python remotePerfConfigurator.py -v -e $FENNEC_APP \
-    --activeTests ts --sampleConfig remote-videocapture.config --noChrome \
+    --activeTests tcolorcycle --sampleConfig remote.config --noChrome \
     --resultsServer ' ' --resultsLink ' ' \
     --videoCapture \
     --remoteDevice=$DEVICE_IP \
