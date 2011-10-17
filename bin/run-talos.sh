@@ -39,8 +39,22 @@
 
 set -e
 
-export PATH=$(dirname $0):$PATH
+kill_bcontrollers () {
+    BCONTROLLER_PIDS=`ps ax | grep bcontroller.py | grep -v grep | cut -d ' ' -f 1`
+    for PID in $BCONTROLLER_PIDS; do
+        echo "Killing zombie bcontroller process: $PID"
+        kill -9 $PID
+    done
+}
 
+BINDIR=$(dirname $0)
 TALOS_DIR=$(dirname $0)/../src/talos
 
-cd $TALOS_DIR && python run_tests.py eideticker.config
+source $BINDIR/activate
+
+# Kill any current bcontroller processes and set up a trap on exit to do the
+# same. Stop zombies!
+kill_bcontrollers
+trap kill_bcontrollers INT TERM EXIT
+
+cd $TALOS_DIR && python run_tests.py -d -n eideticker.config
