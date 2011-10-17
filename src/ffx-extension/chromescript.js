@@ -53,7 +53,7 @@ EidetickerObserver.prototype = {
   },
 
   receiveMessage: function(aMessage) {
-    myDump("Proxing message");
+    myDump("Proxying message: " + aMessage.name);
     jsbridge.fireEvent(aMessage.name, {});
   }
 };

@@ -41,6 +41,8 @@ PYPI_DEPS=" \
 pyyaml \
 "
 
+BASEDIR=$PWD
+
 # Check out git submodules
 git submodule init
 git submodule update
@@ -65,9 +67,12 @@ hg clone http://hg.mozilla.org/users/tglek_mozilla.com/fennecmark \
     $TALOS_EXTENSION_DIR/bench@taras.glek
 
 # Link to local extensions required by talos videocapture
-ln  -sf src/ffx-extension $TALOS_EXTENSION_DIR/eideticker-controller@mozilla.com/
-ln  -sf src/mozmill/jsbridge/jsbridge/extension $TALOS_EXTENSION_DIR/jsbridge@mozilla.com/
+rm $TALOS_EXTENSION_DIR/eideticker@mozilla.com $TALOS_EXTENSION_DIR/jsbridge@mozilla.com
+ln -sf $BASEDIR/src/ffx-extension $TALOS_EXTENSION_DIR/eideticker@mozilla.com
+ln -sf $BASEDIR/src/mozmill/jsbridge/jsbridge/extension $TALOS_EXTENSION_DIR/jsbridge@mozilla.com
 
 # Install mobile tp4 pageset
-wget http://people.mozilla.org/~jmaher/mobile_tp4.zip -O downloads/mobile_tp4.zip
-unzip -o downloads/mobile_tp4.zip -d src/talos/page_load_test
+if [ ! -e src/talos/page_load_test/mobile_tp4.manifest ]; then
+    wget http://people.mozilla.org/~jmaher/mobile_tp4.zip -O downloads/mobile_tp4.zip
+    unzip -o downloads/mobile_tp4.zip -d src/talos/page_load_test
+fi

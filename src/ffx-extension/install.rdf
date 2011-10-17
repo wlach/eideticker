@@ -4,9 +4,10 @@
      xmlns:em="http://www.mozilla.org/2004/em-rdf#">
 
   <Description about="urn:mozilla:install-manifest">
-    <em:id>eideticker-controller@mozilla.org</em:id>
+    <em:id>eideticker@mozilla.com</em:id>
     <em:version>1.0</em:version>
     <em:type>2</em:type>
+    <em:unpack>true</em:unpack>
    
     <!-- Target Application this extension can install into, 
          with minimum and maximum supported versions. --> 
