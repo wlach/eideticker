@@ -35,7 +35,7 @@
 //
 // ***** END LICENSE BLOCK *****
 
-var EXPORTED_SYMBOLS = [ "startAnimation" ];
+var EXPORTED_SYMBOLS = [ "startedRecording", "ready", "finished", "setStartRecordingCallback" ];
 
 const Cu = Components.utils;
 const Cc = Components.classes;
@@ -44,7 +44,29 @@ const Ci = Components.interfaces;
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
 
-function startAnimation () {
+var jsbridge = {}; Cu.import('resource://jsbridge/modules/events.js', jsbridge);
+
+var startRecordingCb = null;
+
+function startedRecording () {
+  // sometimes we want to trigger a start recording callback in content (where
+  // we use the message manager), other times we want to do that in chrome
   var messageManager = Cc["@mozilla.org/globalmessagemanager;1"].getService(Ci.nsIChromeFrameMessageManager);
-  messageManager.sendAsyncMessage('Eideticker.StartAnimation', {});
+  messageManager.sendAsyncMessage('Eideticker.StartedRecording', {});
+
+  if (startRecordingCb) {
+    startRecordingCb();
+  }
+}
+
+function ready () {
+  jsbridge.fireEvent("Eideticker.Ready", {});
+}
+
+function finished () {
+  jsbridge.fireEvent("Eideticker.Finished", {});
+}
+
+function setStartRecordingCallback (f) {
+  startRecordingCb = f;
 }

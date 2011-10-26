@@ -31,8 +31,9 @@ EidetickerObserver.prototype = {
                aTopic == "chrome-document-global-created") {
       var messageManager = Cc["@mozilla.org/globalmessagemanager;1"].getService(Ci.nsIChromeFrameMessageManager);
        // Register for any messages our API needs us to handle
-      messageManager.addMessageListener("Eideticker.PageLoaded", this);
-      messageManager.addMessageListener("Eideticker.AnimationFinished", this);
+      messageManager.addMessageListener("Eideticker.Ready", this);
+      messageManager.addMessageListener("Eideticker.Finished", this);
+      myDump("Loaded message listeners!!");
 
       messageManager.loadFrameScript("chrome://eideticker-controller/content/contentscript.js", true);
       this.isFrameScriptLoaded = true;

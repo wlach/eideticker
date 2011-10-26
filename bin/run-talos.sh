@@ -47,8 +47,14 @@ kill_bcontrollers () {
     done
 }
 
+TEST=$1
 BINDIR=$(dirname $0)
 TALOS_DIR=$(dirname $0)/../src/talos
+
+if [ ! $TEST ]; then
+    echo "Must specify a valid test name!"
+    exit 1
+fi
 
 source $BINDIR/activate
 
@@ -57,4 +63,4 @@ source $BINDIR/activate
 kill_bcontrollers
 trap kill_bcontrollers INT TERM EXIT
 
-cd $TALOS_DIR && python run_tests.py -d -n eideticker.config
+cd $TALOS_DIR && python run_tests.py -d -n eideticker-$TEST.config

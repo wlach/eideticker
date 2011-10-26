@@ -44,20 +44,25 @@ TALOS_DIR=$(dirname $0)/../src/talos
 
 source $BINDIR/activate
 
-if [ $# -ne 3 ]
+if [ $# -ne 4 ]
 then
-  echo "Usage: `basename $0` <device ip> <webserver path> <fennec appname>"
+  echo "Usage: `basename $0` <testname> <device ip> <webserver path> <fennec appname>"
+  echo
+  echo "Where testname is one of 'tnytimes' or 'tcolorcycle'"
+  echo
   exit 1
 fi
 
-DEVICE_IP=$1
-WEBSERVER_ADDRESS=$2
-FENNEC_APP=$3
+TEST=$1
+DEVICE_IP=$2
+WEBSERVER_ADDRESS=$3
+FENNEC_APP=$4
 
-cd $TALOS_DIR && python remotePerfConfigurator.py -v -e $FENNEC_APP \
-    --activeTests tcolorcycle --sampleConfig remote.config --noChrome \
+cd $TALOS_DIR
+python remotePerfConfigurator.py -v -e $FENNEC_APP \
+    --activeTests $TEST --sampleConfig remote.config --noChrome \
     --resultsServer ' ' --resultsLink ' ' \
     --videoCapture \
     --remoteDevice=$DEVICE_IP \
     --webServer $WEBSERVER_ADDRESS \
-    --output eideticker.config
+    --output eideticker-$TEST.config

@@ -4,15 +4,15 @@ function Eideticker() {
 Eideticker.prototype = {
   toString: function() { return "[Eideticker]"; },
   pageLoaded: function() {
-    sendAsyncMessage('Eideticker.PageLoaded', { });
+    sendAsyncMessage('Eideticker.Ready', { });
   },
-  animationFinished: function() {
-    sendAsyncMessage('Eideticker.AnimationFinished', { });
+  finished: function() {
+    sendAsyncMessage('Eideticker.Finished', { });
   },
   __exposedProps__: {
     'toString': 'r',
     'pageLoaded': 'r',
-    'animationFinished': 'r'
+    'finished': 'r'
   }
 };
 
@@ -35,8 +35,8 @@ EidetickerManager.prototype = {
 var eidetickerControllerManager = new EidetickerManager();
 
 // Register for any messages our API needs us to handle
-addMessageListener("Eideticker.StartAnimation", function(obj) {
-  if (content.wrappedJSObject.startAnimation) {
-    content.wrappedJSObject.startAnimation();
+addMessageListener("Eideticker.StartedRecording", function(obj) {
+  if (content.wrappedJSObject.startedRecording) {
+    content.wrappedJSObject.startedRecording();
   }
 });
