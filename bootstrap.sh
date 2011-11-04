@@ -42,6 +42,8 @@ pyyaml \
 "
 
 BASEDIR=$PWD
+TALOS_DIR=src/talos/talos
+TALOS_EXTENSION_DIR=$TALOS_DIR/mobile_profile/extensions
 
 # Check out git submodules
 git submodule init
@@ -59,10 +61,7 @@ make -C src/videocapture/videocapture/decklink
 ./bin/easy_install src/mozmill/mozrunner
 ./bin/easy_install src/mozmill/jsbridge
 
-# Install extensions required by mobile talos
-TALOS_EXTENSION_DIR=src/talos/mobile_profile/extensions
-hg clone http://hg.mozilla.org/build/pageloader \
-    $TALOS_EXTENSION_DIR/pageloader@mozilla.org
+# Install fennecmark extension required by mobile talos
 hg clone http://hg.mozilla.org/users/tglek_mozilla.com/fennecmark \
     $TALOS_EXTENSION_DIR/bench@taras.glek
 
@@ -70,9 +69,11 @@ hg clone http://hg.mozilla.org/users/tglek_mozilla.com/fennecmark \
 rm $TALOS_EXTENSION_DIR/eideticker@mozilla.com $TALOS_EXTENSION_DIR/jsbridge@mozilla.com
 ln -sf $BASEDIR/src/ffx-extension $TALOS_EXTENSION_DIR/eideticker@mozilla.com
 ln -sf $BASEDIR/src/mozmill/jsbridge/jsbridge/extension $TALOS_EXTENSION_DIR/jsbridge@mozilla.com
+ln -sf $BASEDIR/src/pageloader $TALOS_EXTENSION_DIR/pageloader@mozilla.org
+
 
 # Install mobile tp4 pageset
-if [ ! -e src/talos/page_load_test/mobile_tp4.manifest ]; then
+if [ ! -e $TALOS_DIR/page_load_test/mobile_tp4.manifest ]; then
     wget http://people.mozilla.org/~jmaher/mobile_tp4.zip -O downloads/mobile_tp4.zip
-    unzip -o downloads/mobile_tp4.zip -d src/talos/page_load_test
+    unzip -o downloads/mobile_tp4.zip -d $TALOS_DIR/page_load_test
 fi

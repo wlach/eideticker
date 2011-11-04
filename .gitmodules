@@ -4,3 +4,6 @@
 [submodule "src/mozmill"]
 	path = src/mozmill
 	url = git://github.com/ctalbert/mozmill.git
+[submodule "src/pageloader"]
+	path = src/pageloader
+	url = git://github.com/wlach/pageloader.git
