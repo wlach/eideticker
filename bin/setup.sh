@@ -41,15 +41,14 @@ set -e
 
 CONF_FILE=$(dirname $0)/../conf/talos.config
 
-if [ $# -ne 3 ]
+if [ $# -ne 2 ]
 then
-  echo "Usage: `basename $0` <device ip> <webserver path> <fennec appname>"
+  echo "Usage: `basename $0` <device ip> <fennec appname>"
   echo
   exit 1
 fi
 
 cat > $CONF_FILE << EOF
 DEVICE_IP=$1
-WEBSERVER_ADDRESS=$2
-FENNEC_APP=$3
+FENNEC_APP=$2
 EOF

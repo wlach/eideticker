@@ -99,9 +99,8 @@ trap kill_bcontrollers INT TERM EXIT
 cd $TALOS_DIR
 python remotePerfConfigurator.py -v -e $FENNEC_APP \
     --activeTests $TEST --sampleConfig eideticker-base.config --noChrome \
-    --resultsServer ' ' --resultsLink ' ' \
     --videoCapture \
     --remoteDevice=$DEVICE_IP \
-    --webServer $WEBSERVER_ADDRESS \
+    --develop \
     --output eideticker-$TEST.config
 python run_tests.py -d -n eideticker-$TEST.config
