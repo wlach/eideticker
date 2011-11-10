@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env python
 
 # ***** BEGIN LICENSE BLOCK *****
 # Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -37,19 +37,22 @@
 #
 # ***** END LICENSE BLOCK *****
 
-set -e
+import optparse
+import os
+import sys
+import json
 
-CONF_FILE=$(dirname $0)/../conf/talos.config
+CONFIG_FILE = os.path.join(os.path.dirname(__file__), "../conf/talos.config")
 
-if [ $# -ne 3 ]
-then
-  echo "Usage: `basename $0` <device ip> <webserver path> <fennec appname>"
-  echo
-  exit 1
-fi
+usage = "usage: %prog [options] <device ip> <fennec appname>"
+parser = optparse.OptionParser(usage)
 
-cat > $CONF_FILE << EOF
-DEVICE_IP=$1
-WEBSERVER_ADDRESS=$2
-FENNEC_APP=$3
-EOF
+options, args = parser.parse_args()
+if len(args) != 2:
+    parser.error("incorrect number of arguments")
+
+try:
+    open(CONFIG_FILE, "w").write(json.dumps({"device_ip": args[0],
+                                             "appname": args[1]}))
+except:
+    fatal_error("Could not write configuration file %s" % CONFIG_FILE)
