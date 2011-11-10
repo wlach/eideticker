@@ -42,13 +42,15 @@ import optparse
 import os
 import sys
 import json
+import signal
 import subprocess
 
 BINDIR = os.path.dirname(__file__)
 TALOS_DIR = os.path.join(BINDIR, "../src/talos/talos")
 CONFIG_FILE = os.path.join(BINDIR, "../conf/talos.config")
 MANIFEST_FILES = {
-    "tp4m": "page_load_test/tp4m.manifest"
+    "tp4m": "page_load_test/tp4m.manifest",
+    "tsvg": "page_load_test/svg/svg.manifest"
     }
 
 class FatalError(Exception):
@@ -78,13 +80,13 @@ class TalosRunner:
     def _write_manifest_file(self):
         manifest_file = MANIFEST_FILES.get(self.manifest)
         if not manifest_file:
-            raise FatalError("No file associated with manifest %s" % manifest)
+            raise FatalError("No file associated with manifest %s" % self.manifest)
 
         manifest_file = os.path.join(TALOS_DIR, manifest_file)
         page = None
         try:
             for line in open(manifest_file).readlines():
-                if line.find(self.pagename):
+                if self.pagename in line:
                     page = line.rstrip()
                     break
         except:
@@ -93,7 +95,6 @@ class TalosRunner:
         if not page:
             raise FatalError("Page %s not found in manifest" % pagename)
 
-        print "WRITING: %s" % page
         abridged_manifest_file = os.path.join(TALOS_DIR, "page_load_test/v.manifest")
         try:
             with open(abridged_manifest_file, "w") as f:
@@ -102,7 +103,9 @@ class TalosRunner:
             raise FatalError("Can't write abridged manifest file %s" % abridged_manifest_file)
 
     def run(self):
-        if self.testname is "tpageload":
+        print "TESTNAME: %s" % self.testname
+        if self.testname == "tpageload":
+            print "WRITING manifest"
             self._write_manifest_file()
 
         try:
@@ -137,7 +140,7 @@ def main(args=sys.argv[1:]):
         parser.error("test '%s' not valid. valid tests are: %s" % (
                 testname, " ".join(testnames)))
 
-    if testname is "tpageload":
+    if testname == "tpageload":
         if len(args) < 2:
             parser.error("must specify a subtest with a manifest and page "
                          "name (e.g. tp5m:m.news.google.com) for tpageload")
