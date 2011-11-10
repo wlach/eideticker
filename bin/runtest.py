@@ -93,6 +93,7 @@ class TalosRunner:
         if not page:
             raise FatalError("Page %s not found in manifest" % pagename)
 
+        print "WRITING: %s" % page
         abridged_manifest_file = os.path.join(TALOS_DIR, "page_load_test/v.manifest")
         try:
             with open(abridged_manifest_file, "w") as f:
@@ -104,23 +105,23 @@ class TalosRunner:
         if self.testname is "tpageload":
             self._write_manifest_file()
 
-        atexit.register(self._kill_bcontrollers)
+        try:
+            os.chdir(TALOS_DIR)
+            subprocess.call("python remotePerfConfigurator.py -v -e %s "
+                            "--activeTests %s --sampleConfig eideticker-base.config "
+                            "--noChrome --videoCapture --develop "
+                            "--remoteDevice=%s "
+                            "--output eideticker-%s.config" % (self.config['appname'],
+                                                               self.testname,
+                                                               self.config['device_ip'],
+                                                               self.testname),
+                            shell=True)
 
-        self._kill_bcontrollers()
-        os.chdir(TALOS_DIR)
-        subprocess.call("python remotePerfConfigurator.py -v -e %s "
-                        "--activeTests %s --sampleConfig eideticker-base.config "
-                        "--noChrome --videoCapture --develop "
-                        "--remoteDevice=%s "
-                        "--output eideticker-%s.config" % (self.config['appname'],
-                                                           self.testname,
-                                                           self.config['device_ip'],
-                                                           self.testname),
+            subprocess.call("python run_tests.py -d -n eideticker-%s.config" % self.testname,
                         shell=True)
-
-        subprocess.call("python run_tests.py -d -n eideticker-%s.config" % self.testname,
-                        shell=True)
-        self._kill_bcontrollers()
+        finally:
+            self._kill_bcontrollers()
+            os.killpg(0, signal.SIGKILL) # kill all processes in my group
 
 def main(args=sys.argv[1:]):
     usage = "usage: %prog [options] <test name> [subtest]"
@@ -143,6 +144,7 @@ def main(args=sys.argv[1:]):
         else:
             (manifest, pagename) = args[1].split(":")
 
+    os.setpgrp() # create new process group, become its leader
     try:
         runner = TalosRunner(testname, manifest, pagename)
         runner.run()
