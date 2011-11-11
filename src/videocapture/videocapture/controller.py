@@ -39,6 +39,7 @@
 # ***** END LICENSE BLOCK *****
 
 import subprocess
+import tempfile
 import time
 
 class CaptureController(object):
@@ -47,7 +48,8 @@ class CaptureController(object):
         self.capture_proc = None
         self.null_read = file('/dev/null', 'r')
         self.null_write = file('/dev/null', 'w')
-        self.output_filename = ''
+        self.output_filename = None
+        self.output_raw_filename = None
 
     def launch(self, output_filename):
         print 'launch requested'
@@ -55,6 +57,7 @@ class CaptureController(object):
             print 'capture already running'
             return
         print 'launching'
+        self.output_raw_file = tempfile.NamedTemporaryFile(delete=False)
         self.output_filename = output_filename
         args = ('decklink-capture',
                 '-m',
@@ -62,7 +65,7 @@ class CaptureController(object):
                 '-p',
                 '0',
                 '-f',
-                self.output_filename + '.raw')
+                self.output_raw_file.name)
         self.capture_proc = subprocess.Popen(args, close_fds=True)
 
     def running(self):
@@ -104,5 +107,8 @@ class CaptureController(object):
         # convert raw file
         # if this is too slow, we'll have to make this asynchronous and
         # have multiple states
-        args = ('decklink-convert.sh', self.output_filename)
+        args = ('decklink-convert.sh', self.output_raw_file.name, self.output_filename)
         subprocess.Popen(args, close_fds=True).wait()
+
+        self.output_filename = None
+        self.output_raw_file = None
