@@ -38,18 +38,22 @@
 #
 # ***** END LICENSE BLOCK *****
 
+import json
 import subprocess
 import tempfile
 import time
+import datetime
 
 class CaptureController(object):
 
-    def __init__(self):
+    def __init__(self, device_name):
         self.capture_proc = None
         self.null_read = file('/dev/null', 'r')
         self.null_write = file('/dev/null', 'w')
         self.output_filename = None
         self.output_raw_filename = None
+        self.capture_time = None
+        self.device_name = device_name
 
     def launch(self, output_filename):
         print 'launch requested'
@@ -59,6 +63,7 @@ class CaptureController(object):
         print 'launching'
         self.output_raw_file = tempfile.NamedTemporaryFile(delete=False)
         self.output_filename = output_filename
+        self.capture_time = datetime.datetime.now()
         args = ('decklink-capture',
                 '-m',
                 '13',
@@ -107,7 +112,11 @@ class CaptureController(object):
         # convert raw file
         # if this is too slow, we'll have to make this asynchronous and
         # have multiple states
-        args = ('decklink-convert.sh', self.output_raw_file.name, self.output_filename)
+        metadata = json.dumps({'device': self.device_name,
+                               'date': self.capture_time.isoformat(),
+                               'version': 1 })
+        args = ('decklink-convert.sh', self.output_raw_file.name,
+                metadata, self.output_filename)
         subprocess.Popen(args, close_fds=True).wait()
 
         self.output_filename = None
