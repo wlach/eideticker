@@ -125,13 +125,8 @@ class TalosRunner:
                                                                 self.config['device_ip'],
                                                                 self.testname))
             check_shell_call("python run_tests.py -d -n eideticker-%s.config" % self.testname)
-        except FatalError, err:
+        finally:
             self._kill_bcontrollers()
-            os.killpg(0, signal.SIGKILL) # kill all processes in my group
-            raise err # re-raise error
-        except:
-            self._kill_bcontrollers()
-            os.killpg(0, signal.SIGKILL) # kill all processes in my group
 
 def main(args=sys.argv[1:]):
     usage = "usage: %prog [options] <test name> [subtest]"
@@ -154,7 +149,6 @@ def main(args=sys.argv[1:]):
         else:
             (manifest, pagename) = args[1].split(":")
 
-    os.setpgrp() # create new process group, become its leader
     try:
         runner = TalosRunner(testname, manifest, pagename)
         runner.run()
