@@ -57,4 +57,4 @@ You can run some basic analysis on the capture utility as follows:
 
 For example:
 
-    ./bin/analyze.py  ./src/talos/talos/captures/capture-2011-11-11T11:23:51.627183.zip
+    ./bin/analyze.py  captures/capture-2011-11-11T11:23:51.627183.zip

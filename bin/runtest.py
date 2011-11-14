@@ -46,8 +46,9 @@ import signal
 import subprocess
 
 BINDIR = os.path.dirname(__file__)
-TALOS_DIR = os.path.join(BINDIR, "../src/talos/talos")
-CONFIG_FILE = os.path.join(BINDIR, "../conf/talos.config")
+TALOS_DIR = os.path.abspath(os.path.join(BINDIR, "../src/talos/talos"))
+CAPTURE_DIR = os.path.abspath(os.path.join(BINDIR, "../captures"))
+CONFIG_FILE = os.path.abspath(os.path.join(BINDIR, "../conf/talos.config"))
 MANIFEST_FILES = {
     "tp4m": "page_load_test/tp4m.manifest",
     "tsvg": "page_load_test/svg/svg.manifest"
@@ -116,10 +117,11 @@ class TalosRunner:
 
             check_shell_call("python remotePerfConfigurator.py -v -e %s "
                              "--activeTests %s --sampleConfig eideticker-base.config "
-                             "--noChrome --videoCapture --develop "
+                             "--noChrome --videoCapture --captureDir %s --develop "
                              "--remoteDevice=%s "
                              "--output eideticker-%s.config" % (self.config['appname'],
                                                                 self.testname,
+                                                                CAPTURE_DIR,
                                                                 self.config['device_ip'],
                                                                 self.testname))
             check_shell_call("python run_tests.py -d -n eideticker-%s.config" % self.testname)

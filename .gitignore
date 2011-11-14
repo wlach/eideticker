@@ -13,6 +13,7 @@ bin/mozprofile
 bin/mozrunner
 bin/pip
 bin/python
+captures/*zip
 conf/talos.config
 downloads/mobile_tp4.zip
 include/
