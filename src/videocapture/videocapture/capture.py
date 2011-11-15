@@ -79,6 +79,9 @@ class Capture(object):
             #print "Setting dimensions to LG portrait"
             self.dimensions = CaptureDimensionsLgPortrait()
 
+    def write_video(self, outputfile):
+        outputfile.write(self.archive.open('movie.avi').read())
+
     @property
     def frames(self):
         imagefiles = filter(lambda s: s[0:7] == "images/" and len(s) > 8, sorted(self.archive.namelist()))
