@@ -75,28 +75,41 @@ class Capture(object):
             raise CaptureException("Capture file '%s' does not appear to be an "
                                    "Eideticker capture file" % filename)
 
+        self.dimensions = None
         if self.metadata['device'] == 'LG-P999':
             #print "Setting dimensions to LG portrait"
             self.dimensions = CaptureDimensionsLgPortrait()
+        else:
+            
 
     def write_video(self, outputfile):
         outputfile.write(self.archive.open('movie.avi').read())
 
     @property
     def frames(self):
-        imagefiles = filter(lambda s: s[0:7] == "images/" and len(s) > 8, sorted(self.archive.namelist()))
+        import re
+        def natural_sorted(l):
+            """ Sort the given list in the way that humans expect.
+            Based on: http://www.codinghorror.com/blog/2007/12/sorting-for-humans-natural-sort-order.html
+            """
+            convert = lambda text: int(text) if text.isdigit() else text
+            alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', key) ]
+            return sorted(l, key=alphanum_key)
+
+        imagefiles = filter(lambda s: s[0:7] == "images/" and len(s) > 8,
+                            natural_sorted(self.archive.namelist()))
         frames = []
         for infile in imagefiles:
-            #print "Loading %s" % infile
             f = tempfile.TemporaryFile(suffix=".png")
             f.write(self.archive.read(infile))
             f.seek(0)
             im = Image.open(f)
             if self.dimensions:
                 im2 = im.transform(self.dimensions.size, Image.EXTENT, self.dimensions.bbox)
+                frames.append(im2)
             else:
                 im2 = im
-            frames.append(im2.load())
+                frames.append(im2)
 
         return frames
 
@@ -122,7 +135,7 @@ def get_unique_frames(capture, thresehold=0):
     for frame in capture.frames[:-1]:
         #print "Processing frame %s" % processed
         if prev:
-            diff = _diffCountRGB(prev, frame, capture.dimensions)
+            diff = _diffCountRGB(prev.load(), frame.load(), capture.dimensions)
             if diff > thresehold:
                 uniques += 1
         else:
