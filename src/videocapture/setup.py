@@ -3,9 +3,6 @@ setup(
     name = "videocapture",
     version = "0.1.0",
     packages = find_packages(),
-    entry_points = {
-      "console_scripts": ["eideticker-server = eideticker.server:main"]
-    }
 )
 
 # FIXME: Compile decklink-capture script automatically
