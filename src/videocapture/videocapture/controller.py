@@ -43,6 +43,9 @@ import subprocess
 import tempfile
 import time
 import datetime
+import os
+
+DECKLINK_DIR = os.path.join(os.path.dirname(__file__), 'decklink')
 
 class CaptureController(object):
 
@@ -64,7 +67,7 @@ class CaptureController(object):
         self.output_raw_file = tempfile.NamedTemporaryFile(delete=False)
         self.output_filename = output_filename
         self.capture_time = datetime.datetime.now()
-        args = ('decklink-capture',
+        args = (os.path.join(DECKLINK_DIR, 'decklink-capture'),
                 '-m',
                 '13',
                 '-p',
@@ -115,7 +118,8 @@ class CaptureController(object):
         metadata = json.dumps({'device': self.device_name,
                                'date': self.capture_time.isoformat(),
                                'version': 1 })
-        args = ('decklink-convert.sh', self.output_raw_file.name,
+        args = (os.path.join(DECKLINK_DIR, 'decklink-convert.sh'),
+                self.output_raw_file.name,
                 metadata, self.output_filename)
         subprocess.Popen(args, close_fds=True).wait()
 
