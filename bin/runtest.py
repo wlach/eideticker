@@ -112,19 +112,21 @@ class TalosRunner:
         try:
             os.chdir(TALOS_DIR)
             def check_shell_call(str):
-                if subprocess.call(str, shell=True) != 0:
+                if os.system(str) != 0:
                     raise FatalError("Subprocess call '%s' failed" % str)
 
-            check_shell_call("python remotePerfConfigurator.py -v -e %s "
+            check_shell_call("%s remotePerfConfigurator.py -v -e %s "
                              "--activeTests %s --sampleConfig eideticker-base.config "
                              "--noChrome --videoCapture --captureDir %s --develop "
                              "--remoteDevice=%s "
-                             "--output eideticker-%s.config" % (self.config['appname'],
+                             "--output eideticker-%s.config" % (sys.executable,
+                                                                self.config['appname'],
                                                                 self.testname,
                                                                 CAPTURE_DIR,
                                                                 self.config['device_ip'],
                                                                 self.testname))
-            check_shell_call("python run_tests.py -d -n eideticker-%s.config" % self.testname)
+            check_shell_call("%s run_tests.py -d -n eideticker-%s.config" %
+                             (sys.executable, self.testname))
         finally:
             self._kill_bcontrollers()
 
