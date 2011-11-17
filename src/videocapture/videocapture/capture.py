@@ -41,22 +41,14 @@ from zipfile import ZipFile
 import json
 import tempfile
 
-class CaptureDimensionsLgPortrait(object):
+class CaptureDimensions(object):
+    def __init__(self, bbox):
+        self.bbox = bbox
+        self.size = (self.bbox[2] - self.bbox[0], self.bbox[3] - self.bbox[1])
+
+class CaptureDimensionsLgPortrait(CaptureDimensions):
     def __init__(self):
-        self.x1 = 613
-        self.x2 = 1307
-        self.y1 = 158
-        self.y2 = 1080
-        self.w = self.x2 - self.x1
-        self.h = self.y2 - self.y1
-
-    @property
-    def bbox(self):
-        return (self.x1, self.y1, self.x2, self.y2)
-
-    @property
-    def size(self):
-        return (self.w, self.h)
+        CaptureDimensions.__init__(self, (613, 158, 1307, 1080))
 
 class CaptureException(Exception):
     def __init__(self, msg):
@@ -77,16 +69,18 @@ class Capture(object):
 
         self.dimensions = None
         if self.metadata['device'] == 'LG-P999':
-            #print "Setting dimensions to LG portrait"
             self.dimensions = CaptureDimensionsLgPortrait()
-        else:
-            
+        self.frames = self._get_frames()
+
+        # If we don't have any preset dimensions, infer them from the size of frames
+        if not self.dimensions:
+            self.dimensions = CaptureDimensions((0, 0, self.frames[0].size[0],
+                                                 self.frames[0].size[1]))
 
     def write_video(self, outputfile):
         outputfile.write(self.archive.open('movie.avi').read())
 
-    @property
-    def frames(self):
+    def _get_frames(self):
         import re
         def natural_sorted(l):
             """ Sort the given list in the way that humans expect.
@@ -114,16 +108,16 @@ class Capture(object):
         return frames
 
 def _diffRGB(i1, i2, dimensions):
-    for x in xrange(dimensions.w):
-        for y in xrange(dimensions.h):
+    for x in xrange(dimensions[0]):
+        for y in xrange(dimensions[1]):
             if i1[(x,y)] != i2[(x,y)]:
                 return True
     return False
 
 def _diffCountRGB(i1, i2, dimensions):
     count = 0
-    for x in xrange(dimensions.w):
-        for y in xrange(dimensions.h):
+    for x in xrange(dimensions[0]):
+        for y in xrange(dimensions[1]):
             if i1[(x,y)] != i2[(x,y)]:
                 count += 1
     return count
