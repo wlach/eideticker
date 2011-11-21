@@ -1,0 +1,120 @@
+<!doctype html>
+<html class="no-js" lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+
+  <title>Eideticker</title>
+
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+
+  <link href="css/bootstrap.min.css" rel="stylesheet">
+  <style type="text/css">
+    body {
+    padding-top: 60px;
+    background-color: #EEEEEE;
+    }
+    .container {
+    width: 900px;
+    }
+    .content {
+    background-color: #FFFFFF;
+    border-radius: 0 0 6px 6px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+    margin: 0 -20px;
+    padding: 20px;
+    }
+    .page-header {
+    background-color: #F5F5F5;
+    margin: -20px -20px 20px;
+    padding: 20px 20px 10px;
+    }
+    .content .span10, .content .span4 {
+    min-height: 500px;
+    padding-right: 8px;
+    }
+    .content .span4 {
+    border-left: 1px solid #EEEEEE;
+    margin-left: 0;
+    padding-left: 19px;
+    }
+    .capture-row {
+    cursor: pointer;
+    }
+    .topbar .btn {
+    border: 0 none;
+    }
+  </style>
+
+</head>
+
+<body>
+    <div class="topbar">
+      <div class="topbar-inner">
+        <div class="container">
+          <a class="brand" href="#">Eideticker</a>
+          <!--
+          <form class="pull-right" action="">
+            <button class="btn">New Capture</button>
+          </form>
+          -->
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
+      <div class="content">
+        <div class="page-header">
+          <h1>Captures</h1>
+        </div>
+        <div class="row">
+          <div class="span10" id="capture-list">
+          </div>
+          <div class="span4" id="capture-detail">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="/templeton/scripts/jquery-1.6.1.min.js"></script>
+    <script src="/templeton/scripts/SS.min.js"></script>
+    <script src="js/ICanHaz.min.js"></script>
+    <script src="js/eideticker.js"></script>
+
+  <script id="capture_list" type="text/html">
+    <table class="bordered-table zebra-striped">
+      <tr>
+        <thead>
+          <tr>
+            <td>Name</td><td>Device</td><td>Date</td>
+          </tr>
+        </thead>
+        <tbody>
+          {{#captures}}
+          <tr id="{{id}}" class="capture-row">
+            <td>{{name}}</td><td>{{device}}</td><td>{{date}}</td>
+          </tr>
+          {{/captures}}
+        </tbody>
+    </table>
+  </script>
+
+  <script id="capture_detail" type="text/html">
+    <ul class="media-grid">
+      <!-- api/captures/capture-2011-11-14T19:14:44.748399.zip/images/99?width=240&height=135 -->
+      <li><a><img class="thumbnail" src="{{image_url}}"/></a></li>
+    </ul>
+    <dl>
+      <dt>Date</dt>
+      <dd>{{date}}</dd>
+      <dt>Device</dt>
+      <dd>{{device}}</dd>
+      <dt>Details</dt>
+      <dd>Frames: {{num_frames}}</dd>
+      <dd>Length: {{length_str}}</dd>
+    </dl>
+    <button type="submit" class="btn">Open</button>
+  </script>
+
+</body>
+</html>

@@ -60,6 +60,7 @@ make -C src/videocapture/videocapture/decklink
 ./bin/pip install -e src/videocapture
 ./bin/pip install -e src/mozmill/mozrunner
 ./bin/pip install -e src/mozmill/jsbridge
+./bin/pip install -e src/templeton
 
 # Install fennecmark extension required by mobile talos
 if [ ! -e $TALOS_EXTENSION_DIR/bench@taras.glek ]; then
