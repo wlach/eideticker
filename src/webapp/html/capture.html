@@ -1,0 +1,187 @@
+<!doctype html>
+<html class="no-js" lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+
+  <title>Eideticker</title>
+
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+
+  <link href="css/bootstrap.min.css" rel="stylesheet">
+  <style type="text/css">
+    body {
+    padding-top: 40px;
+    background-color: #EEEEEE;
+    }
+    .container {
+    width: 900px;
+    }
+    .content {
+    background-color: #FFFFFF;
+    border-radius: 0 0 6px 6px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+    margin: 0 -20px;
+    padding: 20px;
+    }
+    .page-header {
+    background-color: #F5F5F5;
+    margin: -20px -20px 20px;
+    padding: 20px 20px 10px;
+    border-bottom: none;
+    }
+    ul.tabs {
+    margin: -20px -20px 20px;
+    padding-left: 20px;
+    padding-top: 20px;
+    background-color: #F5F5F5;
+    }
+    .framepager {
+    align: center;
+    padding-top:40px;
+    }
+  </style>
+
+</head>
+
+<body>
+    <div class="container">
+      <div class="content">
+        <div id="header">
+        </div>
+        <div id="maincontent">
+        </div>
+      </div>
+    </div>
+
+    <script src="/templeton/scripts/jquery-1.6.1.min.js"></script>
+    <script src="/templeton/scripts/SS.min.js"></script>
+    <script src="js/ICanHaz.min.js"></script>
+    <script src="js/eideticker.js"></script>
+    <script src="js/capture.js"></script>
+
+    <script id="capture_header" type="text/html">
+      <div class="page-header">
+        <h1>{{title}}</h1>
+      </div>
+      <ul class="tabs">
+        <li class="function-tab" id="summary-tab"><a href="#/{{captureId}}/summary">Summary</a></li>
+        <li class="function-tab" id="framediff-tab"><a href="#/{{captureId}}/framediff-0">Frame Difference</a></li>
+      </ul>
+    </script>
+
+    <script id="capture_summary" type="text/html">
+      <div class="span10" id="capture-video">
+      </div>
+      <div class="span4" id="capture-detail">
+      </div>
+    </script>
+
+    <script id="capture_video" type="text/html">
+      <img src="{{video_url}}"></img>
+    </script>
+
+    <script id="capture_detail" type="text/html">
+      <dl>
+        <dt>Date</dt>
+        <dd>{{date}}</dd>
+        <dt>Device</dt>
+        <dd>{{device}}</dd>
+        <dt>Details</dt>
+        <dd>Frames: {{num_frames}}</dd>
+        <dd>Length: {{length_str}}</dd>
+      </dl>
+    </script>
+
+    <script id="framediff_summary" type="text/html">
+      <div class="row">
+        <div class="span8" id="framediff-analysis-results">
+        </div>
+        <div class="span6" id="framediff-description">
+          <p>
+            Frame analysis compares each individual frame with its successor and
+            attempts to determine whether they are identical. From this,
+            frame rate is computed.
+          </p>
+          <p>
+            Modify minimum RGB threshold to up the distinction needed for two frames
+            to be considered different. RGB threshold represents the euclidean distance
+            between two frames.
+          </p>
+        </div>
+      </div>
+      <div id="framediff-viz">
+      </div>
+    </script>
+
+    <script id="framediff_analysis_results" type="text/html">
+      <h2>Unique frames: {{unique}} / {{total}}</h2>
+      <p>Minimum FPS: {{minfps}}<p>
+      <form>
+        <fieldset>
+          <div class="clearfix">
+            <label for="normalSelect">Minimum RGB difference</label>
+            <div class="input">
+              <select id="rgb-diff-threshold">
+                <option>0</option>
+                <option>1000</option>
+                <option>5000</option>
+                <option>25000</option>
+                <option>125000</option>
+                <option>250000</option>
+              </select>
+            </div>
+          </div>
+        </fieldset>
+      </form>
+    </script>
+
+    <script id="framediff_viz" type="text/html">
+      {{#frameviews}}
+      <div class="row">
+        <div class="span14">
+          <h3>Frame {{frame1_num}} - {{frame2_num}}</h3>
+          <ul class="media-grid">
+            <li><a><img class="thumbnail" src="{{frame1_url}}"/></a></li>
+            {{#frame2_url}}
+            <li><a><img class="thumbnail" src="{{frame2_url}}"/></a></li>
+            {{/frame2_url}}
+            {{#framediff_url}}
+            <li><a><img class="thumbnail" src="{{framediff_url}}"/></a></li>
+            {{/framediff_url}}
+          </ul>
+        </div>
+      </div>
+      {{/frameviews}}
+      <div class="row">
+        <div class="span14">
+          <div class="pagination framepager">
+            <ul>
+              {{#previous}}
+              <li class="previous"><a id="framediff-pager-prev-a" href="#/{{captureid}}/framediff-{{threshold}}/{{previous}}">&larr; Previous</a></li>
+              {{/previous}}
+
+              {{#somepreviousinvisible}}
+              <li class="disabled"><a>…</a></li>
+              {{/somepreviousinvisible}}
+
+              {{#visiblegroups}}
+              <li id="{{start}}-{{end}}"><a href="#/{{captureid}}/framediff-{{threshold}}/{{start}}-{{end}}">{{start}}-{{end}}</a></li>
+              {{/visiblegroups}}
+
+              {{#somenextinvisible}}
+              <li class="disabled"><a>…</a></li>
+              {{/somenextinvisible}}
+
+              {{#next}}
+              <li class="next" id="framediff-pager-next-li"><a id="framediff-pager-prev-a" href="#/{{captureid}}/framediff-{{threshold}}/{{next}}"> Next &rarr;</a></li>
+              {{/next}}
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+    </script>
+
+</body>
+</html>

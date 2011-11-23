@@ -80,6 +80,7 @@
     <script src="/templeton/scripts/SS.min.js"></script>
     <script src="js/ICanHaz.min.js"></script>
     <script src="js/eideticker.js"></script>
+    <script src="js/index.js"></script>
 
   <script id="capture_list" type="text/html">
     <table class="bordered-table zebra-striped">
@@ -101,7 +102,6 @@
 
   <script id="capture_detail" type="text/html">
     <ul class="media-grid">
-      <!-- api/captures/capture-2011-11-14T19:14:44.748399.zip/images/99?width=240&height=135 -->
       <li><a><img class="thumbnail" src="{{image_url}}"/></a></li>
     </ul>
     <dl>
@@ -113,7 +113,7 @@
       <dd>Frames: {{num_frames}}</dd>
       <dd>Length: {{length_str}}</dd>
     </dl>
-    <button type="submit" class="btn">Open</button>
+    <button type="submit" class="btn" id="open-capture">Open</button>
   </script>
 
 </body>

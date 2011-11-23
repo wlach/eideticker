@@ -36,10 +36,13 @@
 # ***** END LICENSE BLOCK *****
 
 import Image
+import StringIO
 import os
 from zipfile import ZipFile
 import json
+import numpy
 import tempfile
+import cPickle as pickle
 
 class CaptureDimensions(object):
     def __init__(self, bbox):
@@ -70,72 +73,60 @@ class Capture(object):
         self.dimensions = None
         if self.metadata['device'] == 'LG-P999':
             self.dimensions = CaptureDimensionsLgPortrait()
-        self.frames = self._get_frames()
 
         # If we don't have any preset dimensions, infer them from the size of frames
         if not self.dimensions:
-            self.dimensions = CaptureDimensions((0, 0, self.frames[0].size[0],
-                                                 self.frames[0].size[1]))
+            frame = self.get_frame(0)
+            self.dimensions = CaptureDimensions(0, 0, frame.size[0], frame.size[1])
+
+        # A cache file for storing hard-to-generate data about the capture
+        self.cache_filename = filename + '.cache'
 
     def write_video(self, outputfile):
         outputfile.write(self.archive.open('movie.avi').read())
 
-    def _get_frames(self):
-        import re
-        def natural_sorted(l):
-            """ Sort the given list in the way that humans expect.
-            Based on: http://www.codinghorror.com/blog/2007/12/sorting-for-humans-natural-sort-order.html
-            """
-            convert = lambda text: int(text) if text.isdigit() else text
-            alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', key) ]
-            return sorted(l, key=alphanum_key)
+    def get_frame_image(self, framenum, cropped=False):
+        return self._get_frame_image('images/%s.png' % framenum, cropped)
 
-        imagefiles = filter(lambda s: s[0:7] == "images/" and len(s) > 8,
-                            natural_sorted(self.archive.namelist()))
-        frames = []
-        for infile in imagefiles:
-            f = tempfile.TemporaryFile(suffix=".png")
-            f.write(self.archive.read(infile))
-            f.seek(0)
-            im = Image.open(f)
-            if self.dimensions:
-                im2 = im.transform(self.dimensions.size, Image.EXTENT, self.dimensions.bbox)
-                frames.append(im2)
-            else:
-                im2 = im
-                frames.append(im2)
-
-        return frames
-
-def _diffRGB(i1, i2, dimensions):
-    for x in xrange(dimensions[0]):
-        for y in xrange(dimensions[1]):
-            if i1[(x,y)] != i2[(x,y)]:
-                return True
-    return False
-
-def _diffCountRGB(i1, i2, dimensions):
-    count = 0
-    for x in xrange(dimensions[0]):
-        for y in xrange(dimensions[1]):
-            if i1[(x,y)] != i2[(x,y)]:
-                count += 1
-    return count
-
-def get_unique_frames(capture, thresehold=0):
-    prev = None
-    uniques = 0
-    processed = 0
-    for frame in capture.frames[:-1]:
-        #print "Processing frame %s" % processed
-        if prev:
-            diff = _diffCountRGB(prev.load(), frame.load(), capture.dimensions)
-            if diff > thresehold:
-                uniques += 1
+    def _get_frame_image(self, filename, cropped=False):
+        buf = StringIO.StringIO()
+        buf.write(self.archive.read(filename))
+        buf.seek(0)
+        im = Image.open(buf)
+        if self.dimensions and cropped:
+            return im.crop(self.dimensions.bbox)
         else:
-            uniques+=1
+            return im
 
-        processed+=1
-        prev = frame
+    def get_frame(self, framenum, cropped=False):
+        return numpy.array(self.get_frame_image(framenum, cropped))
 
-    return (uniques, processed)
+    def get_num_frames(self, cropped = False):
+        return len(filter(lambda s: s[0:7] == "images/" and len(s) > 8,
+                          self.archive.namelist()))
+
+    def get_framediff_image(self, framenum1, framenum2, cropped=False):
+        frame1 = self.get_frame(framenum1, cropped)
+        frame2 = self.get_frame(framenum2, cropped)
+        framediff = numpy.abs(frame1.astype('float') - frame2.astype('float'))
+        return Image.fromarray(framediff.astype(numpy.uint8))
+
+    def get_framediff_sums(self):
+        diffsums = None
+        try:
+            cache = pickle.load(open(self.cache_filename, 'r'))
+            # FIXME: throw an exception if the pickled file doesn't have
+            # what we need in it
+            diffsums = cache['diffsums']
+        except:
+            prevframe = None
+            diffsums = []
+            for i in range(1, self.get_num_frames()):
+                frame = self.get_frame(i, True).astype('float')
+                print "Processing frame %s" % i
+                if i > 1:
+                    diffsums.append(numpy.linalg.norm(frame - prevframe) / numpy.abs(frame).sum())
+                prevframe = frame
+            pickle.dump({'diffsums': diffsums}, open(self.cache_filename, 'w'))
+
+        return diffsums

@@ -9,43 +9,31 @@ function getTimeStr(seconds) {
   return timeStr + seconds + " sec";
 }
 
-$(function() {
-  var router = Router({
-    '/captures': {
-      on: function() {
-        $.getJSON('api/captures/', function(data) {
-          if (data.length > 0) {
-            $('#capture-list').html(ich.capture_list({captures: data}));
-            $('.capture-row').click(function() {
-              $('.capture-row').removeClass('blue');
-              $(this).addClass('blue');
+function getScaledCaptureImageDimensions(captureSummary, minWidth) {
+  return {
+    'width': parseInt(minWidth),
+    'height': parseInt((minWidth / captureSummary.width) * captureSummary.height)
+  };
+}
 
-              window.location.hash = '/captures/' + $(this).attr('id');
-            });
-          } else {
-            $('#capture-list').html("<p>No captures found on this machine. Create some?</p>");
-          }
-        });
-      },
-      '/([^\/]*)': {
-        on: function(capture_id) {
-          $.getJSON('api/captures/' + capture_id, function(data) {
-            var num_frames = data['num_frames'];
-            var image_url = "";
-            if (num_frames > 0) {
-              var im_w = parseInt(240);
-              var im_h = parseInt((im_w / data['width']) * data['height']);
-              image_url = "api/captures/" + capture_id + "/images/" + parseInt(num_frames/2) + "?width= " + im_w + "&height=" + im_h;
-            }
-            $('#capture-detail').html(ich.capture_detail({
-              date: data['date'],
-              num_frames: num_frames,
-              length_str: getTimeStr(data['length']),
-              image_url: image_url
-            }));
-          });
-        }
-      }
-    }
-  }).use({ recurse: 'forward' }).init('/captures');
-});
+function getCaptureImageURL(captureId, frameNum, width, height, cropped) {
+  return "api/captures/" + captureId + "/images/" + frameNum +
+    "?width= " + width + "&height=" + height + "&cropped=" + +cropped;
+}
+
+function getCaptureThumbnailImageURL(captureId, captureSummary, frameNum, cropped) {
+  var dimensions = getScaledCaptureImageDimensions(captureSummary, 400);
+  return getCaptureImageURL(captureId, frameNum, dimensions.width,
+                            dimensions.height, cropped);
+}
+
+function getFrameDiffImageURL(captureId, frameNum1, frameNum2, width, height) {
+  return "api/captures/" + captureId + "/framediff/images/" +
+    frameNum1 + '-' + frameNum2 + "?width=" + width + "&height=" + height;
+}
+
+function getFrameDiffThumbnailImageURL(captureId, captureSummary, frameNum1, frameNum2) {
+  var dimensions = getScaledCaptureImageDimensions(captureSummary, 400);
+  return getFrameDiffImageURL(captureId, frameNum1, frameNum2, dimensions.width,
+                              dimensions.height);
+}
