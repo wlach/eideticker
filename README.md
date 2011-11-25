@@ -14,7 +14,6 @@ platforms is planned).
  * Testing has been done with the DeckLink HD Extreme 3D; no idea if other
    cards would work.
 
-
 ### Installation
 
 Run `bootstrap.sh` in the root directory to set everything up.
@@ -50,11 +49,11 @@ For example, to run the SVG test hixie-007.xml, try this:
 
     ./bin/runtest.py tpageload tsvg:hixie-007.xml
 
-You should then have a bunch of capture data stored in `src/talos/captures`.
-You can run some basic analysis on the capture utility as follows:
+A capture of this test should be stored in `src/talos/captures`.
 
-    ./bin/analyze.py <captured file>
+The recommended way of viewing captures (and performing analysis)
+is through the Eideticker web interface. To run it, execute:
 
-For example:
+    ./bin/webapp.sh
 
-    ./bin/analyze.py  captures/capture-2011-11-11T11:23:51.627183.zip
+Then connect to http://localhost:8080
