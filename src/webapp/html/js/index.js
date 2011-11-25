@@ -6,9 +6,6 @@ $(function() {
           if (data.length > 0) {
             $('#capture-list').html(ich.capture_list({captures: data}));
             $('.capture-row').click(function() {
-              $('.capture-row').removeClass('blue');
-              $(this).addClass('blue');
-
               window.location.hash = '/captures/' + $(this).attr('id');
             });
           } else {
@@ -19,6 +16,8 @@ $(function() {
       '/([^\/]*)': {
         on: function(capture_id) {
           $.getJSON('api/captures/' + capture_id, function(data) {
+            $("#"+capture_id.replace(/(:|\.)/g,'\\$1')).addClass('blue');
+
             var num_frames = data['num_frames'];
             var image_url = "";
             if (num_frames > 0) {
