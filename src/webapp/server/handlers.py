@@ -21,8 +21,11 @@ class CapturesHandler:
                 continue
 
             capture = videocapture.Capture(os.path.join(CAPTURE_DIR, fname))
-            captures.append(dict({ "id": fname, "length": capture.num_frames/60.0,
-                                   "num_frames": capture.num_frames }, **capture.metadata))
+            if capture.num_frames > 0:
+                captures.append(dict({ "id": fname,
+                                       "length": capture.num_frames/60.0,
+                                       "num_frames": capture.num_frames },
+                                     **capture.metadata))
 
         return captures
 
