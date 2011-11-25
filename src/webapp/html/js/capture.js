@@ -174,6 +174,7 @@ $(function() {
           $('#capture-detail').html(ich.capture_detail({
             date: summary['date'],
             num_frames: summary['num_frames'],
+            device: summary['device'],
             length_str: getTimeStr(summary['length'])
           }));
         });

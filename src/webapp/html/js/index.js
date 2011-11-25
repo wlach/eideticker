@@ -29,6 +29,7 @@ $(function() {
             $('#capture-detail').html(ich.capture_detail({
               date: data['date'],
               num_frames: num_frames,
+              device: data['device'],
               length_str: getTimeStr(data['length']),
               image_url: image_url
             }));
