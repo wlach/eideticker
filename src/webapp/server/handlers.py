@@ -59,12 +59,12 @@ class CaptureImageHandler:
     def GET(self, name, num):
         params, body = templeton.handlers.get_request_parms()
         (width, height, cropped) = (params.get('width'), params.get('height'),
-                                    params.get('cropped'))
-
+                                    bool(int(params.get('cropped', [ False ])[0])))
+        print params.get('cropped')
+        print cropped
         capture = videocapture.Capture(os.path.join(CAPTURE_DIR, name))
         im = capture.get_frame_image(num, cropped=cropped)
         if width and height:
-            print (width, height)
             im.thumbnail((int(width[0]), int(height[0])), Image.ANTIALIAS)
 
         output = StringIO.StringIO()
