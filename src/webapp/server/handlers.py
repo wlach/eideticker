@@ -20,13 +20,9 @@ class CapturesHandler:
             if fname == ".gitignore" or os.path.splitext(fname)[1] <> '.zip':
                 continue
 
-            fullpath = os.path.join(CAPTURE_DIR, fname)
-            with ZipFile(fullpath, 'r') as archive:
-                metadata = json.loads(archive.open('metadata.json').read())
-                num_frames = len(filter(lambda s: s[0:7] == "images/" and len(s) > 8,
-                                        archive.namelist()))
-                captures.append(dict({ "id": fname, "length": num_frames/60.0,
-                                       "num_frames": num_frames }, **metadata))
+            capture = videocapture.Capture(os.path.join(CAPTURE_DIR, fname))
+            captures.append(dict({ "id": fname, "length": capture.num_frames/60.0,
+                                   "num_frames": capture.num_frames }, **capture.metadata))
 
         return captures
 

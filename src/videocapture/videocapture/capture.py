@@ -70,6 +70,9 @@ class Capture(object):
             raise CaptureException("Capture file '%s' does not appear to be an "
                                    "Eideticker capture file" % filename)
 
+        self.num_frames = len(filter(lambda s: s[0:7] == "images/" and len(s) > 8,
+                                     self.archive.namelist()))
+
         self.dimensions = None
         if self.metadata['device'] == 'LG-P999':
             self.dimensions = CaptureDimensionsLgPortrait()
