@@ -26,10 +26,6 @@ $(function() {
               image_url = "api/captures/" + capture_id + "/images/" + parseInt(num_frames/2) + "?width= " + im_w + "&height=" + im_h;
             }
             $('#capture-detail').html(ich.capture_detail({
-              date: data['date'],
-              num_frames: num_frames,
-              device: data['device'],
-              length_str: getTimeStr(data['length']),
               image_url: image_url
             }));
 
