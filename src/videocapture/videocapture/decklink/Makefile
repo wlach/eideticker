@@ -27,7 +27,7 @@
 CC=g++
 SDK_PATH=sdk
 CFLAGS=-Wno-multichar -I $(SDK_PATH) -fno-rtti
-LDFLAGS=-lm -ldl -lpthread
+LDFLAGS=-lrt -lm -ldl -lpthread
 
 decklink-capture: Capture.cpp $(SDK_PATH)/DeckLinkAPIDispatch.cpp
 	$(CC) -lrt -o decklink-capture Capture.cpp $(SDK_PATH)/DeckLinkAPIDispatch.cpp $(CFLAGS) $(LDFLAGS)
