@@ -1,3 +1,30 @@
+// this crude "class" allows us to avoid fetching the same resource over and over
+var resourceCache = {
+  get: function(resourceURL, cb) {
+    if (this.urlCache[resourceURL]) {
+      cb(this.urlCache[resourceURL]);
+    } else {
+      if (!this.cbs[resourceURL]) { // first
+        this.cbs[resourceURL] = [cb];
+        var that = this;
+
+        $.getJSON(resourceURL, function(data) {
+          that.urlCache[resourceURL] = data;
+          that.cbs[resourceURL].forEach(function(cb) {
+            cb(data);
+          });
+
+          that.cbs[resourceURL] = [];
+        });
+      } else {
+        this.cbs[resourceURL][this.cbs[resourceURL].length] = cb;
+      }
+    }
+  },
+  urlCache: {},
+  cbs: {}
+};
+
 function getTimeStr(seconds) {
   var minutes = Math.floor(seconds / 60);
   var seconds = (seconds - (minutes * 60)).toFixed(2);

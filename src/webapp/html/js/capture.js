@@ -1,32 +1,4 @@
-// this crude class allows us to avoid fetching the same resource over and over
-var resourceCache = {
-  get: function(resourceURL, cb) {
-    if (this.urlCache[resourceURL]) {
-      cb(this.urlCache[resourceURL]);
-    } else {
-      if (!this.cbs[resourceURL]) { // first
-        this.cbs[resourceURL] = [cb];
-        var that = this;
-
-        $.getJSON(resourceURL, function(data) {
-          that.urlCache[resourceURL] = data;
-          that.cbs[resourceURL].forEach(function(cb) {
-            cb(data);
-          });
-
-          that.cbs[resourceURL] = [];
-        });
-      } else {
-        this.cbs[resourceURL][this.cbs[resourceURL].length] = cb;
-      }
-    }
-  },
-  urlCache: {},
-  cbs: {}
-};
-
 function displayFrameDiffs(captureId, minFrameNum, maxFrameNum, threshold) {
-
   resourceCache.get('api/captures/' + captureId, function(captureSummary) {
     resourceCache.get('api/captures/' + captureId + '/framediff', function(frameDiffs) {
       var groups = [ { start: 1 } ];
