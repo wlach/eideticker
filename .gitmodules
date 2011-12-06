@@ -10,3 +10,6 @@
 [submodule "src/templeton"]
 	path = src/templeton
 	url = git://github.com/wlach/templeton.git
+[submodule "src/mozbase"]
+	path = src/mozbase
+	url = git://github.com/wlach/mozbase.git

@@ -37,13 +37,7 @@
 #
 # ***** END LICENSE BLOCK *****
 
-PYPI_DEPS=" \
-pyyaml \
-"
-
 BASEDIR=$PWD
-TALOS_DIR=src/talos/talos
-TALOS_EXTENSION_DIR=$TALOS_DIR/mobile_profile/extensions
 
 # Check out git submodules
 git submodule init
@@ -51,33 +45,13 @@ git submodule update
 
 # Create virtualenv
 virtualenv .
-./bin/easy_install $PYPI_DEPS
 
 # Build up videocapture utility (FIXME: should be part of the egg building process)
 make -C src/videocapture/videocapture/decklink
 
 # Install videocapture and jsbridge python eggs (and their deps)
 ./bin/pip install -e src/videocapture
-./bin/pip install -e src/mozmill/mozrunner
-./bin/pip install -e src/mozmill/jsbridge
+./bin/pip install -e src/mozbase/mozhttpd
+./bin/pip install -e src/mozbase/mozrunner
+./bin/pip install -e src/mozbase/mozdevice
 ./bin/pip install -e src/templeton
-
-# Install fennecmark extension required by mobile talos
-if [ ! -e $TALOS_EXTENSION_DIR/bench@taras.glek ]; then
-    hg clone http://hg.mozilla.org/users/tglek_mozilla.com/fennecmark \
-        $TALOS_EXTENSION_DIR/bench@taras.glek
-fi
-
-# Link to local extensions required by talos videocapture
-for I in eideticker@mozilla.com jsbridge@mozilla.com pageloader@mozilla.org; do
-    rm -f $TALOS_EXTENSION_DIR/$I
-done
-ln -sf $BASEDIR/src/ffx-extension $TALOS_EXTENSION_DIR/eideticker@mozilla.com
-ln -sf $BASEDIR/src/mozmill/jsbridge/jsbridge/extension $TALOS_EXTENSION_DIR/jsbridge@mozilla.com
-ln -sf $BASEDIR/src/pageloader $TALOS_EXTENSION_DIR/pageloader@mozilla.org
-
-# Install mobile tp4 pageset
-if [ ! -e $TALOS_DIR/page_load_test/mobile_tp4 ]; then
-    wget http://people.mozilla.org/~jmaher/mobile_tp4.zip -O downloads/mobile_tp4.zip
-    unzip -o downloads/mobile_tp4.zip -d $TALOS_DIR/page_load_test
-fi

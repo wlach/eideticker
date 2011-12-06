@@ -37,125 +37,80 @@
 #
 # ***** END LICENSE BLOCK *****
 
-import atexit
+import json
+import mozdevice
+import mozhttpd
+import mozprofile
+import mozrunner
 import optparse
 import os
-import sys
-import json
 import signal
 import subprocess
+import sys
+import time
+import urllib
+import videocapture
 
 BINDIR = os.path.dirname(__file__)
-TALOS_DIR = os.path.abspath(os.path.join(BINDIR, "../src/talos/talos"))
 CAPTURE_DIR = os.path.abspath(os.path.join(BINDIR, "../captures"))
-CONFIG_FILE = os.path.abspath(os.path.join(BINDIR, "../conf/talos.config"))
-MANIFEST_FILES = {
-    "tp4m": "page_load_test/tp4m.manifest",
-    "tsvg": "page_load_test/svg/svg.manifest"
-    }
 
-class FatalError(Exception):
-  def __init__(self, msg):
-    self.msg = msg
-  def __str__(self):
-    return repr(self.msg)
+captureController = videocapture.CaptureController("LG-P999")
+finished = False
 
-class TalosRunner:
+class EidetickerHandler(mozhttpd.MozRequestHandler):
+    def do_GET(self):
+        def json_response_ok(responsedict):
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            json_data = json.dumps(responsedict)
+            self.send_header('Content-Length', len(json_data))
+            self.end_headers()
+            self.wfile.write(json_data)
 
-    def __init__(self, testname, manifest, pagename):
-        try:
-            self.config = json.loads(open(CONFIG_FILE).read())
-        except:
-            raise FatalError("Could not read configuration file %s" % CONFIG_FILE)
+        # this is a bit of a ridiculous hack, but it seems to work ok
+        if self.path == '/api/captures/start':
+            capture_file = os.path.join(CAPTURE_DIR, "capture-%s.zip" %
+                                        datetime.datetime.now().isoformat())
+            captureController.launch(capture_file)
+            json_response_ok({'capturing': True})
 
-        self.testname = testname
-        self.manifest = manifest
-        self.pagename = pagename
+        elif self.path == '/api/captures/end':
+            captureController.terminate()
+            json_response_ok({'capturing': False})
+            finished = True
 
-    def _kill_bcontrollers(self):
-        pids = subprocess.check_output("ps ax | grep bcontroller.py | grep -v grep | "
-                                       " cut -d ' ' -f 1", shell=True).split()
-        for pid in pids:
-            os.kill(int(pid), 9)
-
-    def _write_manifest_file(self):
-        manifest_file = MANIFEST_FILES.get(self.manifest)
-        if not manifest_file:
-            raise FatalError("No file associated with manifest %s" % self.manifest)
-
-        manifest_file = os.path.join(TALOS_DIR, manifest_file)
-        page = None
-        try:
-            for line in open(manifest_file).readlines():
-                if self.pagename in line:
-                    page = line.rstrip()
-                    break
-        except:
-            raise FatalError("Unable to read from manifest file %s" % manifest_file)
-
-        if not page:
-            raise FatalError("Page %s not found in manifest" % pagename)
-
-        abridged_manifest_file = os.path.join(TALOS_DIR, "page_load_test/v.manifest")
-        try:
-            with open(abridged_manifest_file, "w") as f:
-                f.write(page+"\n")
-        except:
-            raise FatalError("Can't write abridged manifest file %s" % abridged_manifest_file)
-
-    def run(self):
-        print "TESTNAME: %s" % self.testname
-        if self.testname == "tpageload":
-            print "WRITING manifest"
-            self._write_manifest_file()
-
-        try:
-            os.chdir(TALOS_DIR)
-            def check_shell_call(str):
-                if os.system(str) != 0:
-                    raise FatalError("Subprocess call '%s' failed" % str)
-
-            check_shell_call("%s remotePerfConfigurator.py -v -e %s "
-                             "--activeTests %s --sampleConfig eideticker-base.config "
-                             "--noChrome --videoCapture --captureDir %s --develop "
-                             "--remoteDevice=%s "
-                             "--output eideticker-%s.config" % (sys.executable,
-                                                                self.config['appname'],
-                                                                self.testname,
-                                                                CAPTURE_DIR,
-                                                                self.config['device_ip'],
-                                                                self.testname))
-            check_shell_call("%s run_tests.py -d -n eideticker-%s.config" %
-                             (sys.executable, self.testname))
-        finally:
-            self._kill_bcontrollers()
+        else:
+            mozhttpd.MozRequestHandler.do_GET(self)
 
 def main(args=sys.argv[1:]):
-    usage = "usage: %prog [options] <test name> [subtest]"
+    usage = "usage: %prog [options] <fennec appname>"
     parser = optparse.OptionParser(usage)
 
     options, args = parser.parse_args()
-    if len(args) < 1 or len(args) > 2:
+    if len(args) != 1:
         parser.error("incorrect number of arguments")
+    appname = args[0]
 
-    testnames = [ "tpageload", "tcolorcycle" ] # maybe eventually load this from a file
-    (testname, manifest, pagename) = (args[0], None, None)
-    if testname not in testnames:
-        parser.error("test '%s' not valid. valid tests are: %s" % (
-                testname, " ".join(testnames)))
+    host = mozhttpd.iface.get_lan_ip()
+    http = mozhttpd.MozHttpd(handler_class=EidetickerHandler, host=host, port=0)
+    http.start(block=False)
 
-    if testname == "tpageload":
-        if len(args) < 2:
-            parser.error("must specify a subtest with a manifest and page "
-                         "name (e.g. tp5m:m.news.google.com) for tpageload")
-        else:
-            (manifest, pagename) = args[1].split(":")
+    dm = mozdevice.DeviceManagerADB()
+    profile = mozprofile.Profile()
 
-    try:
-        runner = TalosRunner(testname, manifest, pagename)
-        runner.run()
-    except FatalError, err:
-        print >> sys.stderr, "ERROR: " + err.msg
-        sys.exit(1)
+    baseurl = "http://%s:%s" % (host, http.httpd.server_port)
+    print baseurl
+    testurl = "%s/speedtests/fishtank/Default.html" % baseurl
+    args = ['%s/start.html?testurl=%s' % (baseurl, testurl)]
+
+    runner = mozrunner.RemoteFennecRunner(dm, profile, args, appname=appname)
+    runner.start()
+
+    timeout = 60
+    timer = 0
+    interval = 0.1
+    while not finished and timer < timeout:
+        time.sleep(interval)
+        timer += interval
 
 main()
