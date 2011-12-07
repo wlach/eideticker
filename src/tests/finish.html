@@ -1,0 +1,15 @@
+<html>
+<head>
+  <title>Mozilla Eideticker Runner: Finish Page</title>
+  <script type="text/javascript" src="js/jquery.min.js"></script>
+</head>
+<body style="background-color:#F00">
+</body>
+<script>
+  setTimeout(function() {
+    // tell harness that we're done!!LOL
+     $.getJSON("/api/captures/end", function(data) {
+     });
+  }, 5000);
+</script>
+</html>

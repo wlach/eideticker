@@ -37,6 +37,7 @@
 #
 # ***** END LICENSE BLOCK *****
 
+import datetime
 import json
 import mozdevice
 import mozhttpd
@@ -53,8 +54,10 @@ import videocapture
 
 BINDIR = os.path.dirname(__file__)
 CAPTURE_DIR = os.path.abspath(os.path.join(BINDIR, "../captures"))
+TEST_DIR = os.path.abspath(os.path.join(BINDIR, "../src/tests"))
 
 captureController = videocapture.CaptureController("LG-P999")
+captureControllerFinishing = False
 finished = False
 
 class EidetickerHandler(mozhttpd.MozRequestHandler):
@@ -75,6 +78,9 @@ class EidetickerHandler(mozhttpd.MozRequestHandler):
             json_response_ok({'capturing': True})
 
         elif self.path == '/api/captures/end':
+            global finished
+            global captureControllerFinishing
+            captureControllerFinishing = True
             captureController.terminate()
             json_response_ok({'capturing': False})
             finished = True
@@ -83,34 +89,48 @@ class EidetickerHandler(mozhttpd.MozRequestHandler):
             mozhttpd.MozRequestHandler.do_GET(self)
 
 def main(args=sys.argv[1:]):
-    usage = "usage: %prog [options] <fennec appname>"
+    usage = "usage: %prog [options] <fennec appname> <test path>"
     parser = optparse.OptionParser(usage)
 
     options, args = parser.parse_args()
-    if len(args) != 1:
+    if len(args) != 2:
         parser.error("incorrect number of arguments")
     appname = args[0]
+    try:
+        testpath = os.path.abspath(args[1]).split(TEST_DIR)[1][1:]
+    except:
+        print "Test must be relative to %s" % TEST_DIR
+        sys.exit(1)
 
     host = mozhttpd.iface.get_lan_ip()
-    http = mozhttpd.MozHttpd(handler_class=EidetickerHandler, host=host, port=0)
+    http = mozhttpd.MozHttpd(handler_class=EidetickerHandler, docroot=TEST_DIR, 
+                             host=host, port=0)
     http.start(block=False)
 
     dm = mozdevice.DeviceManagerADB()
     profile = mozprofile.Profile()
 
     baseurl = "http://%s:%s" % (host, http.httpd.server_port)
-    print baseurl
-    testurl = "%s/speedtests/fishtank/Default.html" % baseurl
-    args = ['%s/start.html?testurl=%s' % (baseurl, testurl)]
+    args = ['%s/start.html?testpath=%s' % (baseurl, testpath)]
 
     runner = mozrunner.RemoteFennecRunner(dm, profile, args, appname=appname)
-    runner.start()
+    runner.start_instance()
 
-    timeout = 60
+    timeout = 100
     timer = 0
     interval = 0.1
     while not finished and timer < timeout:
         time.sleep(interval)
         timer += interval
+
+    print "Waiting for capture controller to finish..."
+    while captureControllerFinishing and not finished:
+        time.sleep(interval)
+
+    if not finished:
+        print "Did not finish test! Error!"
+        sys.exit(1)
+
+    runner.kill_all_instances()
 
 main()
