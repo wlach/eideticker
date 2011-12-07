@@ -128,7 +128,7 @@ class Capture(object):
                 frame = self.get_frame(i, True).astype('float')
                 print "Processing frame %s" % i
                 if i > 1:
-                    diffsums.append(numpy.linalg.norm(frame - prevframe) / numpy.abs(frame).sum())
+                    diffsums.append(numpy.linalg.norm(frame - prevframe))
                 prevframe = frame
             pickle.dump({'diffsums': diffsums}, open(self.cache_filename, 'w'))
 
