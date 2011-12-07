@@ -77,7 +77,8 @@ function displayFrameDiffs(captureId, minFrameNum, maxFrameNum, threshold) {
       var frame1=minFrameNum;
       var frame2=minFrameNum;
       for (i=minFrameNum; i<maxFrameNum; i++) {
-        if (frameDiffs[i-1] <= threshold) {
+        var frameDiff = frameDiffs[i-1];
+        if (frameDiff <= threshold) {
           frame2=i;
         } else {
           if (frame1 !== frame2) {
@@ -85,8 +86,8 @@ function displayFrameDiffs(captureId, minFrameNum, maxFrameNum, threshold) {
             frameViews.push({
               frame1_num: frame1,
               frame2_num: frame2,
-              frame1_thumb_url: getCaptureThumbnailImageURL(captureId, captureSummary, frame1, {cropped:true}),
-              frame1_url: getCaptureImageURL(captureId, frame1, {cropped:true})
+              frame1_thumb_url: getCaptureThumbnailImageURL(captureId, captureSummary, i, {cropped:true}),
+              frame1_url: getCaptureImageURL(captureId, i, {cropped:true})
             });
           }
           // push a framediff View
@@ -98,7 +99,8 @@ function displayFrameDiffs(captureId, minFrameNum, maxFrameNum, threshold) {
             frame2_thumb_url: getCaptureThumbnailImageURL(captureId, captureSummary, i+1, {cropped:true}),
             frame2_url: getCaptureImageURL(captureId, i+1, {cropped:true}),
             framediff_thumb_url: getFrameDiffThumbnailImageURL(captureId, captureSummary, i, i+1),
-            framediff_url: getFrameDiffImageURL(captureId, i, i+1, {})
+            framediff_url: getFrameDiffImageURL(captureId, i, i+1, {}),
+            framediff: frameDiff
           });
 
           frame1=frame2=(i+1);
@@ -109,7 +111,8 @@ function displayFrameDiffs(captureId, minFrameNum, maxFrameNum, threshold) {
         frameViews.push({
           frame1_num: frame1,
           frame2_num: frame2,
-          frame1_url: getCaptureThumbnailImageURL(captureId, captureSummary, frame1, {cropped:true})
+          frame1_thumb_url: getCaptureThumbnailImageURL(captureId, captureSummary, i, {cropped:true}),
+          frame1_url: getCaptureImageURL(captureId, i, {cropped:true})
         });
       }
 

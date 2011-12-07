@@ -152,6 +152,9 @@
             <li><a href="{{framediff_url}}" target="_blank"><img class="thumbnail" src="{{framediff_thumb_url}}"/></a></li>
             {{/framediff_url}}
           </ul>
+          {{#framediff}}
+          <p>Frame diff: {{framediff}} pixels</p>
+          {{/framediff}}
         </div>
       </div>
       {{/frameviews}}
