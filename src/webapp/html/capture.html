@@ -144,12 +144,12 @@
         <div class="span14">
           <h3>Frame {{frame1_num}} - {{frame2_num}}</h3>
           <ul class="media-grid">
-            <li><a><img class="thumbnail" src="{{frame1_url}}"/></a></li>
+            <li><a href="{{frame1_url}}" target="_blank"><img class="thumbnail" src="{{frame1_thumb_url}}"/></a></li>
             {{#frame2_url}}
-            <li><a><img class="thumbnail" src="{{frame2_url}}"/></a></li>
+            <li><a href="{{frame2_url}}" target="_blank"><img class="thumbnail" src="{{frame2_thumb_url}}"/></a></li>
             {{/frame2_url}}
             {{#framediff_url}}
-            <li><a><img class="thumbnail" src="{{framediff_url}}"/></a></li>
+            <li><a href="{{framediff_url}}" target="_blank"><img class="thumbnail" src="{{framediff_thumb_url}}"/></a></li>
             {{/framediff_url}}
           </ul>
         </div>

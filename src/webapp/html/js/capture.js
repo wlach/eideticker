@@ -85,16 +85,20 @@ function displayFrameDiffs(captureId, minFrameNum, maxFrameNum, threshold) {
             frameViews.push({
               frame1_num: frame1,
               frame2_num: frame2,
-              frame1_url: getCaptureThumbnailImageURL(captureId, captureSummary, frame1, true)
+              frame1_thumb_url: getCaptureThumbnailImageURL(captureId, captureSummary, frame1, {cropped:true}),
+              frame1_url: getCaptureImageURL(captureId, frame1, {cropped:true})
             });
           }
           // push a framediff View
           frameViews.push({
             frame1_num: i,
             frame2_num: i+1,
-            frame1_url: getCaptureThumbnailImageURL(captureId, captureSummary, i, true),
-            frame2_url: getCaptureThumbnailImageURL(captureId, captureSummary, i+1, true),
-            framediff_url: getFrameDiffThumbnailImageURL(captureId, captureSummary, i, i+1)
+            frame1_thumb_url: getCaptureThumbnailImageURL(captureId, captureSummary, i, {cropped:true}),
+            frame1_url: getCaptureImageURL(captureId, i, {cropped:true}),
+            frame2_thumb_url: getCaptureThumbnailImageURL(captureId, captureSummary, i+1, {cropped:true}),
+            frame2_url: getCaptureImageURL(captureId, i+1, {cropped:true}),
+            framediff_thumb_url: getFrameDiffThumbnailImageURL(captureId, captureSummary, i, i+1),
+            framediff_url: getFrameDiffImageURL(captureId, i, i+1, {})
           });
 
           frame1=frame2=(i+1);
@@ -105,7 +109,7 @@ function displayFrameDiffs(captureId, minFrameNum, maxFrameNum, threshold) {
         frameViews.push({
           frame1_num: frame1,
           frame2_num: frame2,
-          frame1_url: getCaptureThumbnailImageURL(captureId, captureSummary, frame1, true)
+          frame1_url: getCaptureThumbnailImageURL(captureId, captureSummary, frame1, {cropped:true})
         });
       }
 

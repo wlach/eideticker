@@ -36,31 +36,38 @@ function getTimeStr(seconds) {
   return timeStr + seconds + " sec";
 }
 
+function getParamStr(paramdict) {
+  return Object.keys(paramdict).map(function(key) {
+    return key + "=" + +(paramdict[key]);
+  }).join("&");
+}
+
 function getScaledCaptureImageDimensions(captureSummary, minWidth) {
   return {
-    'width': parseInt(minWidth),
-    'height': parseInt((minWidth / captureSummary.width) * captureSummary.height)
+    width: parseInt(minWidth),
+    height: parseInt((minWidth / captureSummary.width) * captureSummary.height)
   };
 }
 
-function getCaptureImageURL(captureId, frameNum, width, height, cropped) {
+function getCaptureImageURL(captureId, frameNum, params) {
   return "api/captures/" + captureId + "/images/" + frameNum +
-    "?width= " + width + "&height=" + height + "&cropped=" + +cropped;
+    "?" + getParamStr(params);
 }
 
-function getCaptureThumbnailImageURL(captureId, captureSummary, frameNum, cropped) {
-  var dimensions = getScaledCaptureImageDimensions(captureSummary, 400);
-  return getCaptureImageURL(captureId, frameNum, dimensions.width,
-                            dimensions.height, cropped);
+function getCaptureThumbnailImageURL(captureId, captureSummary, frameNum, params) {
+  var params = jQuery.extend({}, params,
+                             getScaledCaptureImageDimensions(captureSummary,
+                                                             400));
+  return getCaptureImageURL(captureId, frameNum, params);
 }
 
-function getFrameDiffImageURL(captureId, frameNum1, frameNum2, width, height) {
+function getFrameDiffImageURL(captureId, frameNum1, frameNum2, params) {
   return "api/captures/" + captureId + "/framediff/images/" +
-    frameNum1 + '-' + frameNum2 + "?width=" + width + "&height=" + height;
+    frameNum1 + '-' + frameNum2 + "?" + getParamStr(params);
 }
 
 function getFrameDiffThumbnailImageURL(captureId, captureSummary, frameNum1, frameNum2) {
-  var dimensions = getScaledCaptureImageDimensions(captureSummary, 400);
-  return getFrameDiffImageURL(captureId, frameNum1, frameNum2, dimensions.width,
-                              dimensions.height);
+  var params = getScaledCaptureImageDimensions(captureSummary, 400);
+
+  return getFrameDiffImageURL(captureId, frameNum1, frameNum2, params);
 }
