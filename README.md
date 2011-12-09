@@ -26,28 +26,14 @@ that up in your shell by running this command within the root directory:
     source ./bin/activate
 
 The next step is to configure Eideticker to work with a copy of Fennec on
-your phone. Currently we only support the LG G2X, running Android 2.2,
-rooted and with a fairly recent version of Fennec. Assuming this is your
-configuration, you should be able to get Eideticker running by installing
-SUTAgent on your device and then issuing the following commands:
+your phone. Currently we only support the LG G2X, running Android 2.2.
+Both native and XUL-based Fennec should work.
 
-    ./bin/setup.py <ip address of phone> \
-                   <name of fennec application to test>
+    ./bin/runtest.py <fennec appname> <path to test>
 
-For example, I've built a custom version of fennec with the name
-org.mozilla.fennec_wlach, and my phone has an ip address of 192.168.1.4.
-I'd thus run setup-talos.sh as follows:
+For example, to run the canvas clock example, try this:
 
-    ./bin/setup.py 192.168.1.4 org.mozilla.fennec_wlach
-
-Once you've configured talos, you can capture the results of an eideticker
-test with a single command:
-
-    ./bin/runtest.py <name of test> <subtest>
-
-For example, to run the SVG test hixie-007.xml, try this:
-
-    ./bin/runtest.py tpageload tsvg:hixie-007.xml
+    ./bin/runtest.py org.mozilla.fennec src/tests/canvas/clock.html
 
 A capture of this test should be stored in `src/talos/captures`.
 
@@ -57,3 +43,6 @@ is through the Eideticker web interface. To run it, execute:
     ./bin/webapp.sh
 
 Then connect to http://localhost:8080
+
+(note that currently converting frames in the frame difference screen is rather
+slow and there is no loading indicator, please be patient!)
