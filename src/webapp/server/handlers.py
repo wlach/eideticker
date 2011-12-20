@@ -33,26 +33,14 @@ class CaptureHandler:
 
     @templeton.handlers.json_response
     def GET(self, name):
-        path = os.path.join(CAPTURE_DIR, name)
-        # FIXME: generalize this duplicated code in capture.py
-        with ZipFile(path, 'r') as archive:
-            metadata = json.loads(archive.open('metadata.json').read())
-            num_frames = len(filter(lambda s: s[0:7] == "images/" and len(s) > 8,
-                                    archive.namelist()))
-            (width, height) = (0,0)
-            if num_frames > 0:
-                f = tempfile.TemporaryFile(suffix=".png")
-                f.write(archive.read('images/1.png'))
-                f.seek(0)
-                im = Image.open(f)
-                (width, height) = im.size
+        try:
+            capture = videocapture.Capture(os.path.join(CAPTURE_DIR, name))
 
-            return dict({ "id": name, "length": num_frames/60.0,
-                          "num_frames": num_frames,
-                          "width": width, "height": height },
-                        **metadata)
-        raise web.notfound()
-
+            return dict({ "id": name, "length": capture.num_frames/60.0,
+                          "num_frames": capture.num_frames },
+                        **capture.metadata)
+        except:
+            raise web.notfound()
 
 class CaptureImageHandler:
 
@@ -60,8 +48,6 @@ class CaptureImageHandler:
         params, body = templeton.handlers.get_request_parms()
         (width, height, cropped) = (params.get('width'), params.get('height'),
                                     bool(int(params.get('cropped', [ False ])[0])))
-        print params.get('cropped')
-        print cropped
         capture = videocapture.Capture(os.path.join(CAPTURE_DIR, name))
         im = capture.get_frame_image(num, cropped=cropped)
         if width and height:

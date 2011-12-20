@@ -1,10 +1,12 @@
 function displayFrameDiffs(captureId, minFrameNum, maxFrameNum, threshold) {
   resourceCache.get('api/captures/' + captureId, function(captureSummary) {
     resourceCache.get('api/captures/' + captureId + '/framediff', function(frameDiffs) {
-      var groups = [ { start: 1 } ];
-      var i = 1;
+      var i = captureSummary.start_frame;
+      var groups = [ { start: captureSummary.start_frame } ];
       var lastUnique = false;
       var visibleLength = 1;
+      console.log(captureSummary);
+      console.log(frameDiffs);
       frameDiffs.forEach(function(diff) {
         if (diff > threshold) {
           lastUnique = true;
@@ -72,22 +74,24 @@ function displayFrameDiffs(captureId, minFrameNum, maxFrameNum, threshold) {
       if (i < (groups.length-1)) {
         someNextInvisible = true;
       }
+      console.log(visibleGroups);
 
       var frameViews = [];
-      var frame1=minFrameNum;
-      var frame2=minFrameNum;
+      var frame1_num=minFrameNum;
+      var frame2_num=minFrameNum;
       for (i=minFrameNum; i<maxFrameNum; i++) {
-        var frameDiff = frameDiffs[i-1];
+        var frameIndex = (i-captureSummary.start_frame);
+        var frameDiff = frameDiffs[frameIndex];
         if (frameDiff <= threshold) {
-          frame2=i;
+          frame2_num=i;
         } else {
-          if (frame1 !== frame2) {
+          if (frame1_num !== frame2_num) {
             // push an identity frame view
             frameViews.push({
-              frame1_num: frame1,
-              frame2_num: frame2,
-              frame1_thumb_url: getCaptureThumbnailImageURL(captureId, captureSummary, i, {cropped:true}),
-              frame1_url: getCaptureImageURL(captureId, i, {cropped:true})
+              frame1_num: frame1_num,
+              frame2_num: frame2_num,
+              frame1_thumb_url: getCaptureThumbnailImageURL(captureId, captureSummary, frame1_num, {cropped:true}),
+              frame1_url: getCaptureImageURL(captureId, frame1_num, {cropped:true})
             });
           }
           // push a framediff View
@@ -103,18 +107,20 @@ function displayFrameDiffs(captureId, minFrameNum, maxFrameNum, threshold) {
             framediff: frameDiff
           });
 
-          frame1=frame2=(i+1);
+          frame1_num=frame2_num=(i+1);
         }
       }
-      if (frame1 !== frame2) {
+      if (frame1_num !== frame2_num) {
         // push an identity frame view
         frameViews.push({
-          frame1_num: frame1,
-          frame2_num: frame2,
-          frame1_thumb_url: getCaptureThumbnailImageURL(captureId, captureSummary, i, {cropped:true}),
-          frame1_url: getCaptureImageURL(captureId, i, {cropped:true})
+          frame1_num: frame1_num,
+          frame2_num: frame2_num,
+          frame1_thumb_url: getCaptureThumbnailImageURL(captureId, captureSummary, frame1_num, 
+                                                        {cropped:true}),
+          frame1_url: getCaptureImageURL(captureId, frame1_num, {cropped:true})
         });
       }
+      console.log(frameViews)
 
       $("#framediff-viz").html(ich.framediff_viz({
         captureid: captureId,
@@ -161,10 +167,10 @@ $(function() {
     },
     '/([^\/]*)/framediff-\([0-9]+\)': {
       on: function(captureId, threshold) {
-        resourceCache.get('api/captures/' + captureId, function(summary) {
+        resourceCache.get('api/captures/' + captureId, function(captureSummary) {
           $('#header').html(ich.capture_header( {
             captureId: captureId,
-            title: summary['date']
+            title: captureSummary.date
           }));
           $('#framediff-tab').addClass('active');
 
@@ -177,8 +183,8 @@ $(function() {
                   return prev+1;
                 }
                 return prev;
-            });
-            var totalFrames = framediffs.length;
+            }, 0);
+            var totalFrames = (captureSummary.end_frame - captureSummary.start_frame);
             var minFPS = (uniqueFrames / totalFrames)*60.0;
 
             $("#framediff-analysis-results").html(ich.framediff_analysis_results({

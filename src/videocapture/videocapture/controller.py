@@ -44,6 +44,7 @@ import tempfile
 import time
 import datetime
 import os
+import capture
 
 DECKLINK_DIR = os.path.join(os.path.dirname(__file__), 'decklink')
 
@@ -111,7 +112,7 @@ class CaptureController(object):
             self.capture_proc.wait()  # or poll and error out if still running?
             self.capture_proc = None
 
-        print 'converting'
+        print 'Converting...'
         # convert raw file
         # if this is too slow, we'll have to make this asynchronous and
         # have multiple states
@@ -122,6 +123,10 @@ class CaptureController(object):
                 self.output_raw_file.name,
                 metadata, self.output_filename)
         subprocess.Popen(args, close_fds=True).wait()
+
+        print "Generating metadata..."
+        c = capture.Capture(self.output_filename)
+        c.generate_metadata()
 
         self.output_filename = None
         self.output_raw_file = None

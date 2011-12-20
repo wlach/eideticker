@@ -35,7 +35,8 @@ For example, to run the canvas clock example, try this:
 
     ./bin/runtest.py org.mozilla.fennec src/tests/canvas/clock.html
 
-A capture of this test should be stored in `src/talos/captures`.
+A capture of this test should be stored in `captures` off the root eideticker
+directory.
 
 The recommended way of viewing captures (and performing analysis)
 is through the Eideticker web interface. To run it, execute:

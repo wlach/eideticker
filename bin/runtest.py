@@ -103,16 +103,20 @@ def main(args=sys.argv[1:]):
         sys.exit(1)
 
     host = mozhttpd.iface.get_lan_ip()
-    http = mozhttpd.MozHttpd(handler_class=EidetickerHandler, docroot=TEST_DIR, 
+    http = mozhttpd.MozHttpd(handler_class=EidetickerHandler, docroot=TEST_DIR,
                              host=host, port=0)
     http.start(block=False)
+    import socket
+    s = socket.socket()
+    s.connect
 
-    dm = mozdevice.DeviceManagerADB()
+    dm = mozdevice.DeviceManagerADB(packageName=appname)
     profile = mozprofile.Profile()
 
     baseurl = "http://%s:%s" % (host, http.httpd.server_port)
     args = ['%s/start.html?testpath=%s' % (baseurl, testpath)]
 
+    print "ARGS: " + str(args)
     runner = mozrunner.RemoteFennecRunner(dm, profile, args, appname=appname)
     runner.start_instance()
 
