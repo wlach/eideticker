@@ -5,8 +5,6 @@ function displayFrameDiffs(captureId, minFrameNum, maxFrameNum, threshold) {
       var groups = [ { start: captureSummary.start_frame } ];
       var lastUnique = false;
       var visibleLength = 1;
-      console.log(captureSummary);
-      console.log(frameDiffs);
       frameDiffs.forEach(function(diff) {
         if (diff > threshold) {
           lastUnique = true;
@@ -45,7 +43,6 @@ function displayFrameDiffs(captureId, minFrameNum, maxFrameNum, threshold) {
           // previous next
           if (i>0) {
             previous = groups[(i-1)].start + "-" + groups[(i-1)].end;
-            console.log(previous);
           }
           if (i < (groups.length-1)) {
             next = groups[(i+1)].start + "-" + groups[(i+1)].end;
@@ -74,7 +71,6 @@ function displayFrameDiffs(captureId, minFrameNum, maxFrameNum, threshold) {
       if (i < (groups.length-1)) {
         someNextInvisible = true;
       }
-      console.log(visibleGroups);
 
       var frameViews = [];
       var frame1_num=minFrameNum;
@@ -120,7 +116,6 @@ function displayFrameDiffs(captureId, minFrameNum, maxFrameNum, threshold) {
           frame1_url: getCaptureImageURL(captureId, frame1_num, {cropped:true})
         });
       }
-      console.log(frameViews)
 
       $("#framediff-viz").html(ich.framediff_viz({
         captureid: captureId,
