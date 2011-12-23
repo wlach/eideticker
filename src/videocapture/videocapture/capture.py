@@ -49,10 +49,6 @@ class CaptureDimensions(object):
         self.bbox = bbox
         self.size = (self.bbox[2] - self.bbox[0], self.bbox[3] - self.bbox[1])
 
-class CaptureDimensionsLgPortrait(CaptureDimensions):
-    def __init__(self):
-        CaptureDimensions.__init__(self, (613, 0, 1307, 1080))
-
 class CaptureException(Exception):
     def __init__(self, msg):
         self.msg = msg
@@ -75,36 +71,41 @@ class Capture(object):
         self.num_frames = len(filter(lambda s: s[0:7] == "images/" and len(s) > 8,
                                      self.archive.namelist()))
 
-        self.dimensions = None
-        if self.metadata['device'] == 'LG-P999':
-            self.dimensions = CaptureDimensionsLgPortrait()
-
-        # If we don't have any preset dimensions, infer them from the size of frames
-        if not self.dimensions:
-            frame = self.get_frame(0)
-            self.dimensions = CaptureDimensions(0, 0, frame.size[0], frame.size[1])
-
         # Name of capture filename (in case we need to modify it)
         self.filename = filename
+
+    @property
+    def start_frame(self):
+        return self.metadata.get('start_frame')
+
+    @property
+    def end_frame(self):
+        return self.metadata.get('end_frame')
+
+    @property
+    def capture_dimensions(self):
+        return CaptureDimensions(self.metadata.get('capture_dimensions'))
 
     def write_video(self, outputfile):
         outputfile.write(self.archive.open('movie.avi').read())
 
-    def get_frame_image(self, framenum, cropped=False):
-        return self._get_frame_image('images/%s.png' % framenum, cropped)
+    def get_frame_image(self, framenum, cropped=False, grayscale=False):
+        return self._get_frame_image('images/%s.png' % framenum, cropped, grayscale)
 
-    def _get_frame_image(self, filename, cropped=False):
+    def _get_frame_image(self, filename, cropped=False, grayscale=False):
         buf = StringIO.StringIO()
         buf.write(self.archive.read(filename))
         buf.seek(0)
         im = Image.open(buf)
-        if self.dimensions and cropped:
+        if grayscale:
+            im = im.convert("L")
+        if self.metadata.get('capture_dimensions') and cropped:
             return im.crop(self.metadata['capture_dimensions'])
         else:
             return im
 
-    def get_frame(self, framenum, cropped=False):
-        return numpy.array(self.get_frame_image(framenum, cropped))
+    def get_frame(self, framenum, cropped=False, grayscale=False):
+        return numpy.array(self.get_frame_image(framenum, cropped, grayscale))
 
     def get_framediff_image(self, framenum1, framenum2, cropped=False):
         frame1 = self.get_frame(framenum1, cropped)
@@ -125,8 +126,8 @@ class Capture(object):
             diffsums = None
             prevframe = None
             diffsums = []
-            print "Getting diffsums %s <-> %s" % (self.metadata['start_frame'], self.metadata['end_frame'])
-            for i in range(self.metadata['start_frame'], self.metadata['end_frame']):
+            print "Getting diffsums %s <-> %s" % (self.start_frame, self.end_frame)
+            for i in range(self.start_frame, self.end_frame):
                 frame = self.get_frame(i, True).astype('float')
                 if prevframe != None:
                     diffsums.append(numpy.linalg.norm(frame - prevframe))

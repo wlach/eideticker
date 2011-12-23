@@ -7,7 +7,6 @@ import videocapture
 from zipfile import ZipFile
 import Image
 import tempfile
-import StringIO
 
 CAPTURE_DIR=os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../captures"))
 
@@ -44,6 +43,7 @@ class CaptureHandler:
 
 class CaptureImageHandler:
 
+    @templeton.handlers.png_response
     def GET(self, name, num):
         params, body = templeton.handlers.get_request_parms()
         (width, height, cropped) = (params.get('width'), params.get('height'),
@@ -53,14 +53,7 @@ class CaptureImageHandler:
         if width and height:
             im.thumbnail((int(width[0]), int(height[0])), Image.ANTIALIAS)
 
-        output = StringIO.StringIO()
-        im.save(output, format="PNG")
-        data = output.getvalue()
-        web.header('Content-Length', len(data))
-        web.header('Content-Type', 'image/png')
-        return data
-
-        #raise web.notfound()
+        return im
 
 class FrameDifferenceHandler:
 
@@ -71,6 +64,7 @@ class FrameDifferenceHandler:
 
 class FrameDifferenceImageHandler:
 
+    @templeton.handlers.png_response
     def GET(self, name, framenum1, framenum2):
         params, body = templeton.handlers.get_request_parms()
         (width, height) = (params.get('width'), params.get('height'))
@@ -80,12 +74,29 @@ class FrameDifferenceImageHandler:
         if width and height:
             im.thumbnail((int(width[0]), int(height[0])), Image.ANTIALIAS)
 
-        output = StringIO.StringIO()
-        im.save(output, format="PNG")
-        data = output.getvalue()
-        web.header('Content-Length', len(data))
-        web.header('Content-Type', 'image/png')
-        return data
+        return im
+
+class CheckerboardHandler:
+
+    @templeton.handlers.json_response
+    def GET(self, name):
+        capture = videocapture.Capture(os.path.join(CAPTURE_DIR, name))
+        return videocapture.get_checkerboarding_percents(capture)
+
+class CheckerboardImageHandler:
+
+    @templeton.handlers.png_response
+    def GET(self, name, framenum):
+        params, body = templeton.handlers.get_request_parms()
+        (width, height) = (params.get('width'), params.get('height'))
+
+        capture = videocapture.Capture(os.path.join(CAPTURE_DIR, name))
+        im = videocapture.get_checkerboard_image(capture, framenum)
+        if width and height:
+            im.thumbnail((int(width[0]), int(height[0])), Image.ANTIALIAS)
+
+        return im
+
 
 # URLs go here. "/api/" will be automatically prepended to each.
 urls = (
@@ -93,7 +104,7 @@ urls = (
     '/captures/([^/]+)/?', "CaptureHandler",
     '/captures/([^/]+)/images/([0-9]+)/?', "CaptureImageHandler",
     '/captures/([^/]+)/framediff/?', "FrameDifferenceHandler",
-    '/captures/([^/]+)/framediff/images/([0-9]+)-([0-9]+)/?', "FrameDifferenceImageHandler"
+    '/captures/([^/]+)/framediff/images/([0-9]+)-([0-9]+)/?', "FrameDifferenceImageHandler",
+    '/captures/([^/]+)/checkerboard/?', "CheckerboardHandler",
+    '/captures/([^/]+)/checkerboard/images/([0-9]+)/?', "CheckerboardImageHandler"
 )
-
-# Handler classes go here

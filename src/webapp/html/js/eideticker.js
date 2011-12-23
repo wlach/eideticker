@@ -71,3 +71,14 @@ function getFrameDiffThumbnailImageURL(captureId, captureSummary, frameNum1, fra
 
   return getFrameDiffImageURL(captureId, frameNum1, frameNum2, params);
 }
+
+function getCheckerboardImageURL(captureId, captureSummary, frameNum, params) {
+  return "api/captures/" + captureId + "/checkerboard/images/" +
+    frameNum + "?" + getParamStr(params);
+}
+
+function getCheckerboardThumbnailImageURL(captureId, captureSummary, frameNum, params) {
+  var params = getScaledCaptureImageDimensions(captureSummary, 400);
+
+  return getCheckerboardImageURL(captureId, captureSummary, frameNum, params);
+}

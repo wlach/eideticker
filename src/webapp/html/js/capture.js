@@ -132,6 +132,130 @@ function displayFrameDiffs(captureId, minFrameNum, maxFrameNum, threshold) {
   });
 }
 
+function getFrameDiffGroups(captureSummary, frameDiffs, threshold, groupSize) {
+  var i = captureSummary.start_frame;
+  var groups = [ { start: captureSummary.start_frame } ];
+  var lastUnique = false;
+  var visibleLength = 1;
+  frameDiffs.forEach(function(diff) {
+    if (diff > threshold) {
+      lastUnique = true;
+      visibleLength++;
+
+      if (groupSize && visibleLength > groupSize) {
+        groups[groups.length] = { start: i };
+        visibleLength = 1;
+      }
+    } else if (lastUnique) {
+      visibleLength++;
+      lastUnique = false;
+    }
+
+    // Update end
+    if (groups.length > 0) {
+      groups[groups.length-1].end = (i+1);
+    }
+    i++;
+  });
+
+  return groups;
+}
+
+function getFrameViews(captureId, captureSummary, frameDiffs, minFrameNum, maxFrameNum) {
+}
+
+function displayCheckerboard(captureId) {
+  resourceCache.get('api/captures/' + captureId, function(captureSummary) {
+    resourceCache.get('api/captures/' + captureId + '/checkerboard', function(checkerboardPercents) {
+      resourceCache.get('api/captures/' + captureId + '/framediff', function(frameDiffs) {
+        var numCheckerboards = checkerboardPercents.reduce(function(prev, curr, i, a) {
+          if (curr > 0.0) {
+            return prev+1;
+          }
+          return prev;
+        }, 0);
+        var overallCheckerboardPercent = checkerboardPercents.reduce(function(prev, curr, i, a) {
+          return prev+curr;
+        }, 0) / checkerboardPercents.length;
+
+        $("#maincontent").html(ich.checkerboard_summary({
+          overall_checkerboard_percent: overallCheckerboardPercent,
+          num_checkerboards: numCheckerboards,
+          num_frames: checkerboardPercents.length
+        }));
+
+        //var frameDiffGroup = getFrameDiffGroups(captureSummary, frameDiffs, 2500, 0)[0];
+        var frameViews = [];
+        var frame1_num=captureSummary.start_frame;
+        var frame2_num=captureSummary.start_frame;
+        var minFrameNum = captureSummary.start_frame;
+        var maxFrameNum = captureSummary.end_frame;
+
+        for (i=minFrameNum; i<maxFrameNum; i++) {
+          var frameIndex = (i-captureSummary.start_frame);
+          var frameDiff = frameDiffs[frameIndex];
+          if (frameDiff <= 2500) {
+            frame2_num=i;
+          } else {
+            if (frame1_num !== frame2_num) {
+              frameViews.push({
+                title: "Frames " + frame1_num + " - " + frame2_num,
+                images: [
+                  { url: getCaptureImageURL(captureId, frame1_num, {cropped:true}),
+                    thumb_url: getCaptureThumbnailImageURL(captureId, captureSummary, frame1_num,
+                                                           {cropped:true})
+                  },
+                  { url: getCheckerboardImageURL(captureId, captureSummary, i, {}),
+                    thumb_url: getCheckerboardThumbnailImageURL(captureId, captureSummary, i)
+                  }
+                ],
+                extra_info: null
+              });
+            }
+            // push a single frame view
+            frameViews.push({
+              title: "Frame " + frame1_num,
+              images: [
+                { url: getCaptureImageURL(captureId, frame1_num, {cropped:true}),
+                  thumb_url: getCaptureThumbnailImageURL(captureId, captureSummary, frame1_num,
+                                                         {cropped:true})
+                },
+                { url: getCheckerboardImageURL(captureId, captureSummary, i, {}),
+                  thumb_url: getCheckerboardThumbnailImageURL(captureId, captureSummary, i)
+                }
+              ],
+              extra_info: null
+            });
+
+            frame1_num=frame2_num=(i+1);
+          }
+        }
+        if (frame1_num !== frame2_num) {
+          // push an identity frame view
+          frameViews.push({
+            title: "Frames " + frame1_num + " - " + frame2_num,
+            images: [
+              { url: getCaptureImageURL(captureId, frame1_num, {cropped:true}),
+                thumb_url: getCaptureThumbnailImageURL(captureId, captureSummary, frame1_num,
+                                                       {cropped:true})
+              },
+              { url: getCheckerboardImageURL(captureId, captureSummary, i, {}),
+                thumb_url: getCheckerboardThumbnailImageURL(captureId, captureSummary, i)
+              }
+            ],
+            extra_info: null
+          });
+        }
+
+        $("#checkerboard-viz").html(ich.checkerboard_viz({
+          captureid: captureId,
+          frameviews: frameViews
+        }));
+      });
+    });
+  });
+}
+
 $(function() {
   var router = Router({
     '/([^\/]*)/summary': {
@@ -201,6 +325,19 @@ $(function() {
         on: function(captureId, threshold, minFrameNum, maxFrameNum) {
           displayFrameDiffs(captureId, parseInt(minFrameNum), parseInt(maxFrameNum), threshold);
         }
+      }
+    },
+    '/([^\/]*)/checkerboard': {
+      on: function(captureId, threshold) {
+        resourceCache.get('api/captures/' + captureId, function(captureSummary) {
+          $('#header').html(ich.capture_header( {
+            captureId: captureId,
+            title: captureSummary.date
+          }));
+          $('#checkerboard-tab').addClass('active');
+
+          displayCheckerboard(captureId);
+        });
       }
     }
   }).use({ recurse: 'forward' }).init();
