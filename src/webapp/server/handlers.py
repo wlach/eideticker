@@ -98,7 +98,7 @@ class FrameDifferenceHandler:
     @templeton.handlers.json_response
     def GET(self, name):
         capture = videocapture.Capture(os.path.join(CAPTURE_DIR, name))
-        return capture.get_framediff_sums()
+        return videocapture.get_framediff_sums(capture)
 
 class FrameDifferenceImageHandler:
 
@@ -108,7 +108,7 @@ class FrameDifferenceImageHandler:
         (width, height) = (params.get('width'), params.get('height'))
 
         capture = videocapture.Capture(os.path.join(CAPTURE_DIR, name))
-        im = capture.get_framediff_image(framenum1, framenum2, cropped=True)
+        im = videocapture.get_framediff_image(capture, framenum1, framenum2, cropped=True)
         if width and height:
             im.thumbnail((int(width[0]), int(height[0])), Image.ANTIALIAS)
 

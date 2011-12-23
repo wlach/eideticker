@@ -109,36 +109,6 @@ class Capture(object):
     def get_frame(self, framenum, cropped=False, grayscale=False):
         return numpy.array(self.get_frame_image(framenum, cropped, grayscale))
 
-    def get_framediff_image(self, framenum1, framenum2, cropped=False):
-        frame1 = self.get_frame(framenum1, cropped)
-        frame2 = self.get_frame(framenum2, cropped)
-        framediff = numpy.abs(frame1.astype('float') - frame2.astype('float'))
-        return Image.fromarray(framediff.astype(numpy.uint8))
-
-    def get_framediff_sums(self):
-        try:
-            cache = pickle.load(open(self.cache_filename, 'r'))
-        except:
-            cache = {}
-
-        try:
-            diffsums = cache['diffsums']
-        except:
-            # Frame differences
-            diffsums = None
-            prevframe = None
-            diffsums = []
-            print "Getting diffsums %s <-> %s" % (self.start_frame, self.end_frame)
-            for i in range(self.start_frame, self.end_frame):
-                frame = self.get_frame(i, True).astype('float')
-                if prevframe != None:
-                    diffsums.append(numpy.linalg.norm(frame - prevframe))
-                prevframe = frame
-            cache['diffsums'] = diffsums
-            pickle.dump(cache, open(self.cache_filename, 'w'))
-
-        return diffsums
-
     def _get_biggest_square(self, rgb, framenum):
         frame = self.get_frame(framenum, False).astype('int16')
         framesquares = []
