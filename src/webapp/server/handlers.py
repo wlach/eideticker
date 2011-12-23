@@ -41,6 +41,44 @@ class CaptureHandler:
         except:
             raise web.notfound()
 
+class CaptureVideoHandler:
+
+    def GET(self, name):
+        try:
+            capture = videocapture.Capture(os.path.join(CAPTURE_DIR, name))
+            videofile = capture.get_video()
+            data = videofile.getvalue()
+            web.header('Content-Type', 'video/webm')
+
+            # Using idea from here:
+            # http://vanderwijk.info/2010/9/17/implementing-http-206-partial-content-support-for-web-py
+            range = web.ctx.env.get('HTTP_RANGE')
+            if range is None:
+                web.header('Content-Length', len(data))
+                return data
+
+            total = len(data)
+            _, r = range.split("=")
+            partial_start, partial_end = r.split("-")
+
+            start = int(partial_start)
+
+            if not partial_end:
+                end = total-1
+            else:
+                end = int(partial_end)
+
+            chunksize = (end-start)+1
+
+            web.ctx.status = "206 Partial Content"
+            web.header("Content-Range", "bytes %d-%d/%d" % (start, end, total))
+            web.header("Accept-Ranges", "bytes")
+            web.header("Content-Length", chunksize)
+
+            return data[start:end+1]
+        except:
+            raise web.notfound()
+
 class CaptureImageHandler:
 
     @templeton.handlers.png_response
@@ -102,6 +140,7 @@ class CheckerboardImageHandler:
 urls = (
     '/captures/?', "CapturesHandler",
     '/captures/([^/]+)/?', "CaptureHandler",
+    '/captures/([^/]+)/video/?', "CaptureVideoHandler",
     '/captures/([^/]+)/images/([0-9]+)/?', "CaptureImageHandler",
     '/captures/([^/]+)/framediff/?', "FrameDifferenceHandler",
     '/captures/([^/]+)/framediff/images/([0-9]+)-([0-9]+)/?', "FrameDifferenceImageHandler",

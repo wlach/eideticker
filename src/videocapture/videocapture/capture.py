@@ -86,8 +86,10 @@ class Capture(object):
     def capture_dimensions(self):
         return CaptureDimensions(self.metadata.get('capture_dimensions'))
 
-    def write_video(self, outputfile):
-        outputfile.write(self.archive.open('movie.avi').read())
+    def get_video(self):
+        buf = StringIO.StringIO()
+        buf.write(self.archive.read('movie.webm'))
+        return buf
 
     def get_frame_image(self, framenum, cropped=False, grayscale=False):
         return self._get_frame_image('images/%s.png' % framenum, cropped, grayscale)

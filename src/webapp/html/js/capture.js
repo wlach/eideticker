@@ -260,26 +260,30 @@ $(function() {
   var router = Router({
     '/([^\/]*)/summary': {
       on: function(captureId) {
-        resourceCache.get('api/captures/' + captureId, function(summary) {
+        resourceCache.get('api/captures/' + captureId, function(captureSummary) {
           $('#header').html(ich.capture_header( {
             captureId: captureId,
-            title: summary['date']
+            title: captureSummary['date']
           }));
           $('#summary-tab').addClass('active');
 
           $("#maincontent").html(ich.capture_summary({}));
 
-          var num_frames = summary['num_frames'];
+          var num_frames = captureSummary['num_frames'];
           if (num_frames > 0) {
+            var dimensions = getScaledCaptureImageDimensions(captureSummary, 400);
+            console.log(dimensions);
             $('#capture-video').html(ich.capture_video({
-              video_url: getCaptureThumbnailImageURL(captureId, summary, parseInt(num_frames/2), false)
+              url: 'api/captures/' + captureId + '/video/',
+              width: dimensions.width,
+              height: dimensions.height
             }));
           }
           $('#capture-detail').html(ich.capture_detail({
-            date: summary['date'],
-            num_frames: summary['num_frames'],
-            device: summary['device'],
-            length_str: getTimeStr(summary['length'])
+            date: captureSummary['date'],
+            num_frames: captureSummary['num_frames'],
+            device: captureSummary['device'],
+            length_str: getTimeStr(captureSummary['length'])
           }));
         });
       }
