@@ -258,86 +258,79 @@ function displayCheckerboard(captureId) {
 
 $(function() {
   var router = Router({
-    '/([^\/]*)/summary': {
+    '/([^\/]*)': {
       on: function(captureId) {
         resourceCache.get('api/captures/' + captureId, function(captureSummary) {
           $('#header').html(ich.capture_header( {
             captureId: captureId,
             title: captureSummary.name
           }));
-          $('#summary-tab').addClass('active');
-
-          $("#maincontent").html(ich.capture_summary({}));
-
-          if (captureSummary.numFrames > 0) {
-            var dimensions = getScaledCaptureImageDimensions(captureSummary, 400);
-            $('#capture-video').html(ich.capture_video({
-              url: 'api/captures/' + captureId + '/video/',
-              width: dimensions.width,
-              height: dimensions.height
-            }));
-          }
-          $('#capture-detail').html(ich.capture_detail({
-            date: captureSummary.date,
-            num_frames: captureSummary.numFrames,
-            device: captureSummary.device,
-            length_str: getTimeStr(captureSummary.length)
-          }));
         });
-      }
-    },
-    '/([^\/]*)/framediff-\([0-9]+\)': {
-      on: function(captureId, threshold) {
-        resourceCache.get('api/captures/' + captureId, function(captureSummary) {
-          $('#header').html(ich.capture_header( {
-            captureId: captureId,
-            title: captureSummary.name
-          }));
-          $('#framediff-tab').addClass('active');
+      },
+      '/summary': {
+        on: function(captureId) {
+          resourceCache.get('api/captures/' + captureId, function(captureSummary) {
+            $('#summary-tab').addClass('active');
+            $("#maincontent").html(ich.capture_summary({}));
 
-          $("#maincontent").html(ich.framediff_summary({}));
+            if (captureSummary.numFrames > 0) {
+              var dimensions = getScaledCaptureImageDimensions(captureSummary, 400);
+              $('#capture-video').html(ich.capture_video({
+                url: 'api/captures/' + captureId + '/video/',
+                width: dimensions.width,
+                height: dimensions.height
+              }));
+            }
+            $('#capture-detail').html(ich.capture_detail({
+              date: captureSummary.date,
+              num_frames: captureSummary.numFrames,
+              device: captureSummary.device,
+              length_str: getTimeStr(captureSummary.length)
+            }));
+          });
+        }
+      },
+      '/framediff-\([0-9]+\)': {
+        on: function(captureId, threshold) {
+          resourceCache.get('api/captures/' + captureId, function(captureSummary) {
+            $('#framediff-tab').addClass('active');
+            $("#maincontent").html(ich.framediff_summary({}));
 
-          resourceCache.get('api/captures/' + captureId + '/framediff', function(framediffs) {
-            var uniqueFrames = framediffs.reduce(function(prev, curr, i, a) {
+            resourceCache.get('api/captures/' + captureId + '/framediff', function(framediffs) {
+              var uniqueFrames = framediffs.reduce(function(prev, curr, i, a) {
                 if (curr > threshold ) {
                   return prev+1;
                 }
                 return prev;
-            }, 0);
-            var minFPS = (uniqueFrames / captureSummary.numFrames)*60.0;
+              }, 0);
+              var minFPS = (uniqueFrames / captureSummary.numFrames)*60.0;
 
-            $("#framediff-analysis-results").html(ich.framediff_analysis_results({
-              unique: uniqueFrames,
-              total: captureSummary.numFrames,
-              minfps: minFPS
-            }));
+              $("#framediff-analysis-results").html(ich.framediff_analysis_results({
+                unique: uniqueFrames,
+                total: captureSummary.numFrames,
+                minfps: minFPS
+              }));
 
-            $("#rgb-diff-threshold").val(threshold);
-            $("#rgb-diff-threshold").change(function() {
-              window.location.hash = '/'+captureId+'/framediff-'+$("#rgb-diff-threshold").val();
+              $("#rgb-diff-threshold").val(threshold);
+              $("#rgb-diff-threshold").change(function() {
+                window.location.hash = '/'+captureId+'/framediff-'+$("#rgb-diff-threshold").val();
+              });
             });
+
+            displayFrameDiffs(captureId, 0, 0, threshold);
           });
-
-          displayFrameDiffs(captureId, 0, 0, threshold);
-        });
-      },
-      '/([0-9]+)-([0-9]+)': {
-        on: function(captureId, threshold, minFrameNum, maxFrameNum) {
-          displayFrameDiffs(captureId, parseInt(minFrameNum), parseInt(maxFrameNum), threshold);
+        },
+        '/([0-9]+)-([0-9]+)': {
+          on: function(captureId, threshold, minFrameNum, maxFrameNum) {
+            displayFrameDiffs(captureId, parseInt(minFrameNum), parseInt(maxFrameNum), threshold);
+          }
         }
-      }
-    },
-    '/([^\/]*)/checkerboard': {
-      on: function(captureId, threshold) {
-        resourceCache.get('api/captures/' + captureId, function(captureSummary) {
-          $('#header').html(ich.capture_header( {
-            captureId: captureId,
-            title: captureSummary.name
-          }));
-          $('#checkerboard-tab').addClass('active');
-
-          displayCheckerboard(captureId);
-        });
+      },
+      '/checkerboard': {
+        on: function(captureId, threshold) {
+            $('#checkerboard-tab').addClass('active');
+            displayCheckerboard(captureId);
+        }
       }
     }
   }).use({ recurse: 'forward' }).init();
