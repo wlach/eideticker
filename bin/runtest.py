@@ -59,6 +59,7 @@ TEST_DIR = os.path.abspath(os.path.join(BINDIR, "../src/tests"))
 captureController = videocapture.CaptureController("LG-P999")
 captureControllerFinishing = False
 finished = False
+capture_name = None
 
 class EidetickerHandler(mozhttpd.MozRequestHandler):
     def do_GET(self):
@@ -72,9 +73,10 @@ class EidetickerHandler(mozhttpd.MozRequestHandler):
 
         # this is a bit of a ridiculous hack, but it seems to work ok
         if self.path == '/api/captures/start':
+            global capture_name
             capture_file = os.path.join(CAPTURE_DIR, "capture-%s.zip" %
                                         datetime.datetime.now().isoformat())
-            captureController.launch(capture_file)
+            captureController.launch(capture_name, capture_file)
             json_response_ok({'capturing': True})
 
         elif self.path == '/api/captures/end':
@@ -89,8 +91,13 @@ class EidetickerHandler(mozhttpd.MozRequestHandler):
             mozhttpd.MozRequestHandler.do_GET(self)
 
 def main(args=sys.argv[1:]):
+    global capture_name
+
     usage = "usage: %prog [options] <fennec appname> <test path>"
     parser = optparse.OptionParser(usage)
+    parser.add_option("--name", action="store",
+                      type = "string", dest = "capture_name",
+                      help = "name to give capture")
 
     options, args = parser.parse_args()
     if len(args) != 2:
@@ -101,6 +108,10 @@ def main(args=sys.argv[1:]):
     except:
         print "Test must be relative to %s" % TEST_DIR
         sys.exit(1)
+
+    capture_name = options.capture_name
+    if not capture_name:
+        capture_name = testpath
 
     host = mozhttpd.iface.get_lan_ip()
     http = mozhttpd.MozHttpd(handler_class=EidetickerHandler, docroot=TEST_DIR,

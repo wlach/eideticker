@@ -98,9 +98,10 @@ class CaptureController(object):
         self.output_filename = None
         self.output_raw_filename = None
         self.capture_time = None
+        self.capture_name = None
         self.device_name = device_name
 
-    def launch(self, output_filename):
+    def launch(self, capture_name, output_filename):
         print 'launch requested'
         if self.capture_proc:
             print 'capture already running'
@@ -109,6 +110,7 @@ class CaptureController(object):
         self.output_raw_file = tempfile.NamedTemporaryFile()
         self.output_filename = output_filename
         self.capture_time = datetime.datetime.now()
+        self.capture_name = capture_name
         args = (os.path.join(DECKLINK_DIR, 'decklink-capture'),
                 '-m',
                 '13',
@@ -226,7 +228,8 @@ class CaptureController(object):
         zipfile = ZipFile(self.output_filename, 'a')
 
         zipfile.writestr('metadata.json',
-                         json.dumps({'device': self.device_name,
+                         json.dumps({'name': self.capture_name,
+                                     'device': self.device_name,
                                      'date': self.capture_time.isoformat(),
                                      'frameDimensions': frame_dimensions,
                                      'captureArea': capture_area,

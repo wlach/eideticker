@@ -263,7 +263,7 @@ $(function() {
         resourceCache.get('api/captures/' + captureId, function(captureSummary) {
           $('#header').html(ich.capture_header( {
             captureId: captureId,
-            title: captureSummary['date']
+            title: captureSummary.name
           }));
           $('#summary-tab').addClass('active');
 
