@@ -18,11 +18,11 @@ $(function() {
           $.getJSON('api/captures/' + capture_id, function(data) {
             $("#"+capture_id.replace(/(:|\.)/g,'\\$1')).addClass('blue');
 
-            var num_frames = data['num_frames'];
+            var num_frames = data.numFrames;
             var image_url = "";
             if (num_frames > 0) {
               var im_w = parseInt(240);
-              var im_h = parseInt((im_w / data['width']) * data['height']);
+              var im_h = parseInt((im_w / data.frameDimensions[0]) * data.frameDimensions[1]);
               image_url = "api/captures/" + capture_id + "/images/" + parseInt(num_frames/2) + "?width= " + im_w + "&height=" + im_h;
             }
             $('#capture-detail').html(ich.capture_detail({

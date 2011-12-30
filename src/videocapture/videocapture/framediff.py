@@ -57,7 +57,7 @@ def get_framediff_sums(capture):
         diffsums = None
         prevframe = None
         diffsums = []
-        for i in range(capture.start_frame, capture.end_frame):
+        for i in range(1, capture.num_frames+1):
             frame = capture.get_frame(i, True).astype('float')
             if prevframe != None:
                 diffsums.append(numpy.linalg.norm(frame - prevframe))

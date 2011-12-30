@@ -45,8 +45,49 @@ import time
 import datetime
 import os
 import capture
+import re
+
+import Image
+import numpy
+from zipfile import ZipFile
 
 DECKLINK_DIR = os.path.join(os.path.dirname(__file__), 'decklink')
+
+def _natural_key(str):
+    """See http://www.codinghorror.com/blog/archives/001018.html"""
+    return [int(s) if s.isdigit() else s for s in re.split(r'(\d+)', str)]
+
+def _get_biggest_square(rgb, imagefile):
+    image = numpy.array(Image.open(imagefile), dtype=numpy.int16)
+    imagesquares = []
+
+    # An array representing whether each pixel's RGB components are within
+    # the box's threshold
+    mask = numpy.array(rgb,dtype=numpy.int16)
+    threshold = numpy.int16(30)
+
+    thresharray = numpy.abs(image-mask)
+    thresharray = ((thresharray[:,:,0]+thresharray[:,:,1]+thresharray[:,:,2]) < threshold)
+    for y, row in enumerate(thresharray):
+        scanline = None
+        # assumption: there aren't several boxes on this same line
+        where = numpy.nonzero(row)[0]
+        if len(where):
+            scanline = [where[0], where[-1]]
+
+        if scanline:
+            found_existing = False
+            for square in imagesquares:
+                if abs(square[0] - scanline[0]) < 1 and abs(square[2] - scanline[1]) < 1:
+                    square[3] = y
+                    found_existing = True
+            if not found_existing:
+                imagesquares.append([int(scanline[0]), y, int(scanline[1]), y])
+
+    if imagesquares:
+        return max(imagesquares, key=lambda box: (box[2]-box[0])*(box[3]-box[1]))
+    else:
+        return None
 
 class CaptureController(object):
 
@@ -65,7 +106,7 @@ class CaptureController(object):
             print 'capture already running'
             return
         print 'launching'
-        self.output_raw_file = tempfile.NamedTemporaryFile(delete=False)
+        self.output_raw_file = tempfile.NamedTemporaryFile()
         self.output_filename = output_filename
         self.capture_time = datetime.datetime.now()
         args = (os.path.join(DECKLINK_DIR, 'decklink-capture'),
@@ -116,17 +157,88 @@ class CaptureController(object):
         # convert raw file
         # if this is too slow, we'll have to make this asynchronous and
         # have multiple states
-        metadata = json.dumps({'device': self.device_name,
-                               'date': self.capture_time.isoformat(),
-                               'version': 1 })
-        args = (os.path.join(DECKLINK_DIR, 'decklink-convert.sh'),
-                self.output_raw_file.name,
-                metadata, self.output_filename)
-        subprocess.Popen(args, close_fds=True).wait()
+        tempdir = tempfile.mkdtemp()
 
-        print "Generating metadata..."
-        c = capture.Capture(self.output_filename)
-        c.generate_metadata()
+        subprocess.Popen((os.path.join(DECKLINK_DIR, 'decklink-convert.sh'),
+                          self.output_raw_file.name, tempdir),
+                         close_fds=True).wait()
+
+        print "Cropping to start/end of capture..."
+        imagefiles = [os.path.join(tempdir, path) for path in sorted(os.listdir(tempdir),
+                                                                     key=_natural_key)]
+        num_frames = len(imagefiles)
+
+        # full image dimensions
+        frame_dimensions = (0,0)
+        if num_frames > 0:
+            im = Image.open(imagefiles[0])
+            frame_dimensions = im.size
+
+        # start frame
+        print "Getting start frame / capture dimensions ..."
+        squares = []
+        start_frame = 0
+        capture_area = None
+        for (i, imagefile) in enumerate(imagefiles):
+            squares.append(_get_biggest_square((0,255,0), imagefile))
+
+            if i > 1 and not squares[-1] and squares[-2]:
+                start_frame = i
+                capture_area = squares[-2]
+                break
+
+        # end frame
+        print "Getting end frame ..."
+        squares = []
+        end_frame = num_frames
+        for i in range(num_frames-1, 0, -1):
+            squares.append(_get_biggest_square((255,0,0), imagefiles[i]))
+
+            if len(squares) > 1 and not squares[-1] and squares[-2]:
+                end_frame = i
+                break
+
+        print "Rewriting images ..."
+        imagedir = tempfile.mkdtemp()
+
+        def _rewrite_frame(framenum, dirname, imagefilename):
+            os.rename(imagefilename, os.path.join(dirname, '%s.png' % framenum))
+
+        # map the frame before the start frame to the zeroth frame (if possible)
+        if start_frame > 1:
+            _rewrite_frame(0, imagedir, imagefiles[start_frame-1])
+
+        # last frame is the first red frame, or the very last frame in the
+        # sequence (for the edge case where there is no red frame)
+        last_frame = min(num_frames-1, end_frame+2)
+
+        # copy the remaining frames into numeric order starting from 1
+        for (i,j) in enumerate(range(start_frame, last_frame)):
+            _rewrite_frame((i+1), imagedir, imagefiles[j])
+
+        print "Creating movie ..."
+        moviefile = tempfile.NamedTemporaryFile(suffix=".webm")
+        subprocess.Popen(('ffmpeg', '-y', '-r', '60', '-i',
+                          os.path.join(imagedir, '%d.png'),
+                          moviefile.name), close_fds=True).wait()
+
+        print "Writing final capture..."
+        zipfile = ZipFile(self.output_filename, 'a')
+
+        zipfile.writestr('metadata.json',
+                         json.dumps({'device': self.device_name,
+                                     'date': self.capture_time.isoformat(),
+                                     'frameDimensions': frame_dimensions,
+                                     'captureArea': capture_area,
+                                     'version': 1 }))
+
+        zipfile.writestr('movie.webm', moviefile.read())
+
+        for imagefilename in os.listdir(imagedir):
+            zipfile.writestr("images/%s" % imagefilename,
+                             open(os.path.join(imagedir, imagefilename)).read())
+
+        zipfile.close()
 
         self.output_filename = None
         self.output_raw_file = None

@@ -1,8 +1,8 @@
 function displayFrameDiffs(captureId, minFrameNum, maxFrameNum, threshold) {
   resourceCache.get('api/captures/' + captureId, function(captureSummary) {
     resourceCache.get('api/captures/' + captureId + '/framediff', function(frameDiffs) {
-      var i = captureSummary.start_frame;
-      var groups = [ { start: captureSummary.start_frame } ];
+      var i = 1;
+      var groups = [ { start: 1 } ];
       var lastUnique = false;
       var visibleLength = 1;
       frameDiffs.forEach(function(diff) {
@@ -76,7 +76,7 @@ function displayFrameDiffs(captureId, minFrameNum, maxFrameNum, threshold) {
       var frame1_num=minFrameNum;
       var frame2_num=minFrameNum;
       for (i=minFrameNum; i<maxFrameNum; i++) {
-        var frameIndex = (i-captureSummary.start_frame);
+        var frameIndex = (i-1);
         var frameDiff = frameDiffs[frameIndex];
         if (frameDiff <= threshold) {
           frame2_num=i;
@@ -133,8 +133,8 @@ function displayFrameDiffs(captureId, minFrameNum, maxFrameNum, threshold) {
 }
 
 function getFrameDiffGroups(captureSummary, frameDiffs, threshold, groupSize) {
-  var i = captureSummary.start_frame;
-  var groups = [ { start: captureSummary.start_frame } ];
+  var i = 1;
+  var groups = [ { start: 1 } ];
   var lastUnique = false;
   var visibleLength = 1;
   frameDiffs.forEach(function(diff) {
@@ -186,13 +186,13 @@ function displayCheckerboard(captureId) {
 
         //var frameDiffGroup = getFrameDiffGroups(captureSummary, frameDiffs, 2500, 0)[0];
         var frameViews = [];
-        var frame1_num=captureSummary.start_frame;
-        var frame2_num=captureSummary.start_frame;
-        var minFrameNum = captureSummary.start_frame;
-        var maxFrameNum = captureSummary.end_frame;
+        var frame1_num = 1;
+        var frame2_num = 1;
+        var minFrameNum = 1;
+        var maxFrameNum = captureSummary.numFrames+1;
 
         for (i=minFrameNum; i<maxFrameNum; i++) {
-          var frameIndex = (i-captureSummary.start_frame);
+          var frameIndex = (i-1);
           var frameDiff = frameDiffs[frameIndex];
           if (frameDiff <= 2500) {
             frame2_num=i;
@@ -269,10 +269,8 @@ $(function() {
 
           $("#maincontent").html(ich.capture_summary({}));
 
-          var num_frames = captureSummary['num_frames'];
-          if (num_frames > 0) {
+          if (captureSummary.numFrames > 0) {
             var dimensions = getScaledCaptureImageDimensions(captureSummary, 400);
-            console.log(dimensions);
             $('#capture-video').html(ich.capture_video({
               url: 'api/captures/' + captureId + '/video/',
               width: dimensions.width,
@@ -280,10 +278,10 @@ $(function() {
             }));
           }
           $('#capture-detail').html(ich.capture_detail({
-            date: captureSummary['date'],
-            num_frames: captureSummary['num_frames'],
-            device: captureSummary['device'],
-            length_str: getTimeStr(captureSummary['length'])
+            date: captureSummary.date,
+            num_frames: captureSummary.numFrames,
+            device: captureSummary.device,
+            length_str: getTimeStr(captureSummary.length)
           }));
         });
       }
@@ -300,19 +298,17 @@ $(function() {
           $("#maincontent").html(ich.framediff_summary({}));
 
           resourceCache.get('api/captures/' + captureId + '/framediff', function(framediffs) {
-
             var uniqueFrames = framediffs.reduce(function(prev, curr, i, a) {
                 if (curr > threshold ) {
                   return prev+1;
                 }
                 return prev;
             }, 0);
-            var totalFrames = (captureSummary.end_frame - captureSummary.start_frame);
-            var minFPS = (uniqueFrames / totalFrames)*60.0;
+            var minFPS = (uniqueFrames / captureSummary.numFrames)*60.0;
 
             $("#framediff-analysis-results").html(ich.framediff_analysis_results({
               unique: uniqueFrames,
-              total: totalFrames,
+              total: captureSummary.numFrames,
               minfps: minFPS
             }));
 

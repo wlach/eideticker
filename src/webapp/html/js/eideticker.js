@@ -1,3 +1,4 @@
+"use strict";
 // this crude "class" allows us to avoid fetching the same resource over and over
 var resourceCache = {
   get: function(resourceURL, cb) {
@@ -45,7 +46,8 @@ function getParamStr(paramdict) {
 function getScaledCaptureImageDimensions(captureSummary, minWidth) {
   return {
     width: parseInt(minWidth),
-    height: parseInt((minWidth / captureSummary.width) * captureSummary.height)
+    height: parseInt((minWidth / captureSummary.frameDimensions[0]) *
+                     captureSummary.frameDimensions[1])
   };
 }
 

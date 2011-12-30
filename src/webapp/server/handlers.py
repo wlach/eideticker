@@ -23,7 +23,7 @@ class CapturesHandler:
             if capture.num_frames > 0:
                 captures.append(dict({ "id": fname,
                                        "length": capture.num_frames/60.0,
-                                       "num_frames": capture.num_frames },
+                                       "numFrames": capture.num_frames },
                                      **capture.metadata))
 
         return captures
@@ -36,7 +36,7 @@ class CaptureHandler:
             capture = videocapture.Capture(os.path.join(CAPTURE_DIR, name))
 
             return dict({ "id": name, "length": capture.num_frames/60.0,
-                          "num_frames": capture.num_frames },
+                          "numFrames": capture.num_frames },
                         **capture.metadata)
         except:
             raise web.notfound()

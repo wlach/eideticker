@@ -48,17 +48,18 @@ def get_checkerboarding_percents(capture):
         percents = cache['checkerboard_percents']
     except:
         percents = []
-        for i in range(capture.start_frame, capture.end_frame):
+        for i in range(1, capture.num_frames+1):
             lines = get_checkerboard_lines(capture, i)
             percents.append(float((lines == 1).sum()) / len(lines))
         cache['checkerboard_percents'] = percents
         pickle.dump(cache, open(capture.cache_filename, 'w'))
 
+
     return percents
 
 def get_checkerboard_image(capture, framenum):
     lines = get_checkerboard_lines(capture, framenum)
-    size = capture.capture_dimensions.size
+    size = capture.capture_area.size
     imgarray = numpy.zeros((size[0], size[1]),
                            dtype=numpy.uint32)
     imgarray.shape = size[1],size[0]
@@ -68,7 +69,7 @@ def get_checkerboard_image(capture, framenum):
 
 def get_checkerboard_lines(capture, framenum):
     imgarray = capture.get_frame(framenum, True, True).astype('float')
-    lines = numpy.zeros(shape=capture.capture_dimensions.size[1])
+    lines = numpy.zeros(shape=capture.capture_area.size[1])
     for (y, row) in enumerate(imgarray):
         runs = []
         currentrun = None
