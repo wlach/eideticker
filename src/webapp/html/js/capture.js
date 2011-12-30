@@ -291,7 +291,7 @@ $(function() {
         resourceCache.get('api/captures/' + captureId, function(captureSummary) {
           $('#header').html(ich.capture_header( {
             captureId: captureId,
-            title: captureSummary.date
+            title: captureSummary.name
           }));
           $('#framediff-tab').addClass('active');
 
@@ -332,7 +332,7 @@ $(function() {
         resourceCache.get('api/captures/' + captureId, function(captureSummary) {
           $('#header').html(ich.capture_header( {
             captureId: captureId,
-            title: captureSummary.date
+            title: captureSummary.name
           }));
           $('#checkerboard-tab').addClass('active');
 
