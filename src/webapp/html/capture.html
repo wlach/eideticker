@@ -59,6 +59,7 @@
     <script src="js/ICanHaz.min.js"></script>
     <script src="js/eideticker.js"></script>
     <script src="js/capture.js"></script>
+    <script src="js/spin.js"></script>
 
     <script id="capture_header" type="text/html">
       <div class="page-header">
@@ -69,6 +70,14 @@
         <li class="function-tab" id="framediff-tab"><a href="#/{{captureId}}/framediff-0">Frame Difference</a></li>
         <li class="function-tab" id="checkerboard-tab"><a href="#/{{captureId}}/checkerboard">Checkerboarding</a></li>
       </ul>
+    </script>
+
+    <script id="loading_screen" type="text/html">
+      <div class="row">
+        <div class="span14">
+          <div id="loading_element" style="height:200px;"></div>
+        </div>
+      </div>
     </script>
 
     <script id="capture_summary" type="text/html">

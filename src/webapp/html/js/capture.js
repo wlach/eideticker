@@ -164,57 +164,41 @@ function getFrameDiffGroups(captureSummary, frameDiffs, threshold, groupSize) {
 function getFrameViews(captureId, captureSummary, frameDiffs, minFrameNum, maxFrameNum) {
 }
 
-function displayCheckerboard(captureId) {
-  resourceCache.get('api/captures/' + captureId, function(captureSummary) {
-    resourceCache.get('api/captures/' + captureId + '/checkerboard', function(checkerboardPercents) {
-      resourceCache.get('api/captures/' + captureId + '/framediff', function(frameDiffs) {
-        var numCheckerboards = checkerboardPercents.reduce(function(prev, curr, i, a) {
-          if (curr > 0.0) {
-            return prev+1;
-          }
-          return prev;
-        }, 0);
-        var overallCheckerboardPercent = checkerboardPercents.reduce(function(prev, curr, i, a) {
-          return prev+curr;
-        }, 0) / checkerboardPercents.length;
+function displayCheckerboard(captureId, captureSummary) {
+  resourceCache.get('api/captures/' + captureId + '/checkerboard', function(checkerboardPercents) {
+    resourceCache.get('api/captures/' + captureId + '/framediff', function(frameDiffs) {
+      var numCheckerboards = checkerboardPercents.reduce(function(prev, curr, i, a) {
+        if (curr > 0.0) {
+          return prev+1;
+        }
+        return prev;
+      }, 0);
+      var overallCheckerboardPercent = checkerboardPercents.reduce(function(prev, curr, i, a) {
+        return prev+curr;
+      }, 0) / checkerboardPercents.length;
 
-        $("#maincontent").html(ich.checkerboard_summary({
-          overall_checkerboard_percent: overallCheckerboardPercent,
-          num_checkerboards: numCheckerboards,
-          num_frames: checkerboardPercents.length
-        }));
+      $("#maincontent").html(ich.checkerboard_summary({
+        overall_checkerboard_percent: overallCheckerboardPercent,
+        num_checkerboards: numCheckerboards,
+        num_frames: checkerboardPercents.length
+      }));
 
-        //var frameDiffGroup = getFrameDiffGroups(captureSummary, frameDiffs, 2500, 0)[0];
-        var frameViews = [];
-        var frame1_num = 1;
-        var frame2_num = 1;
-        var minFrameNum = 1;
-        var maxFrameNum = captureSummary.numFrames+1;
+      //var frameDiffGroup = getFrameDiffGroups(captureSummary, frameDiffs, 2500, 0)[0];
+      var frameViews = [];
+      var frame1_num = 1;
+      var frame2_num = 1;
+      var minFrameNum = 1;
+      var maxFrameNum = captureSummary.numFrames+1;
 
-        for (i=minFrameNum; i<maxFrameNum; i++) {
-          var frameIndex = (i-1);
-          var frameDiff = frameDiffs[frameIndex];
-          if (frameDiff <= 2500) {
-            frame2_num=i;
-          } else {
-            if (frame1_num !== frame2_num) {
-              frameViews.push({
-                title: "Frames " + frame1_num + " - " + frame2_num,
-                images: [
-                  { url: getCaptureImageURL(captureId, frame1_num, {cropped:true}),
-                    thumb_url: getCaptureThumbnailImageURL(captureId, captureSummary, frame1_num,
-                                                           {cropped:true})
-                  },
-                  { url: getCheckerboardImageURL(captureId, captureSummary, i, {}),
-                    thumb_url: getCheckerboardThumbnailImageURL(captureId, captureSummary, i)
-                  }
-                ],
-                extra_info: null
-              });
-            }
-            // push a single frame view
+      for (i=minFrameNum; i<maxFrameNum; i++) {
+        var frameIndex = (i-1);
+        var frameDiff = frameDiffs[frameIndex];
+        if (frameDiff <= 2500) {
+          frame2_num=i;
+        } else {
+          if (frame1_num !== frame2_num) {
             frameViews.push({
-              title: "Frame " + frame1_num,
+              title: "Frames " + frame1_num + " - " + frame2_num,
               images: [
                 { url: getCaptureImageURL(captureId, frame1_num, {cropped:true}),
                   thumb_url: getCaptureThumbnailImageURL(captureId, captureSummary, frame1_num,
@@ -226,14 +210,10 @@ function displayCheckerboard(captureId) {
               ],
               extra_info: null
             });
-
-            frame1_num=frame2_num=(i+1);
           }
-        }
-        if (frame1_num !== frame2_num) {
-          // push an identity frame view
+          // push a single frame view
           frameViews.push({
-            title: "Frames " + frame1_num + " - " + frame2_num,
+            title: "Frame " + frame1_num,
             images: [
               { url: getCaptureImageURL(captureId, frame1_num, {cropped:true}),
                 thumb_url: getCaptureThumbnailImageURL(captureId, captureSummary, frame1_num,
@@ -245,13 +225,31 @@ function displayCheckerboard(captureId) {
             ],
             extra_info: null
           });
-        }
 
-        $("#checkerboard-viz").html(ich.checkerboard_viz({
-          captureid: captureId,
-          frameviews: frameViews
-        }));
-      });
+          frame1_num=frame2_num=(i+1);
+        }
+      }
+      if (frame1_num !== frame2_num) {
+        // push an identity frame view
+        frameViews.push({
+          title: "Frames " + frame1_num + " - " + frame2_num,
+          images: [
+            { url: getCaptureImageURL(captureId, frame1_num, {cropped:true}),
+              thumb_url: getCaptureThumbnailImageURL(captureId, captureSummary, frame1_num,
+                                                     {cropped:true})
+            },
+            { url: getCheckerboardImageURL(captureId, captureSummary, i, {}),
+              thumb_url: getCheckerboardThumbnailImageURL(captureId, captureSummary, i)
+            }
+          ],
+          extra_info: null
+        });
+      }
+
+      $("#checkerboard-viz").html(ich.checkerboard_viz({
+        captureid: captureId,
+        frameviews: frameViews
+      }));
     });
   });
 }
@@ -272,7 +270,6 @@ $(function() {
           resourceCache.get('api/captures/' + captureId, function(captureSummary) {
             $('#summary-tab').addClass('active');
             $("#maincontent").html(ich.capture_summary({}));
-
             if (captureSummary.numFrames > 0) {
               var dimensions = getScaledCaptureImageDimensions(captureSummary, 400);
               $('#capture-video').html(ich.capture_video({
@@ -294,9 +291,12 @@ $(function() {
         on: function(captureId, threshold) {
           resourceCache.get('api/captures/' + captureId, function(captureSummary) {
             $('#framediff-tab').addClass('active');
-            $("#maincontent").html(ich.framediff_summary({}));
+
+            $("#maincontent").html(ich.loading_screen({}));
+            $("#loading_element").spin();
 
             resourceCache.get('api/captures/' + captureId + '/framediff', function(framediffs) {
+              $("#maincontent").html(ich.framediff_summary({}));
               var uniqueFrames = framediffs.reduce(function(prev, curr, i, a) {
                 if (curr > threshold ) {
                   return prev+1;
@@ -328,8 +328,14 @@ $(function() {
       },
       '/checkerboard': {
         on: function(captureId, threshold) {
+          resourceCache.get('api/captures/' + captureId, function(captureSummary) {
             $('#checkerboard-tab').addClass('active');
-            displayCheckerboard(captureId);
+
+            $("#maincontent").html(ich.loading_screen({}));
+            $("#loading_element").spin();
+
+            displayCheckerboard(captureId, captureSummary);
+          });
         }
       }
     }
