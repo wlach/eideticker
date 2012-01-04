@@ -129,6 +129,10 @@ def main(args=sys.argv[1:]):
 
     print "ARGS: " + str(args)
     runner = mozrunner.RemoteFennecRunner(dm, profile, args, appname=appname)
+    if runner.is_instance_running():
+        print "An instance of Firefox is running. Please stop it before running Eideticker."
+        sys.exit(1)
+
     runner.start_instance()
 
     timeout = 100
