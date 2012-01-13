@@ -42,14 +42,14 @@ import os
 import sys
 import videocapture
 
-usage = "usage: %prog [options] <capture file>"
+usage = "usage: %prog [options] <capture name> <capture file>"
 parser = optparse.OptionParser(usage)
 options, args = parser.parse_args()
-if len(args) <> 1:
+if len(args) != 2:
     parser.error("incorrect number of arguments")
 
 captureController = videocapture.CaptureController("Unknown")
-captureController.launch(args[0])
+captureController.launch(args[0], args[1])
 
 print "Should be capturing. Press enter to stop!"
 raw_input()
