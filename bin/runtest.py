@@ -69,7 +69,6 @@ class CaptureServer(object):
 
     @mozhttpd.handlers.json_response
     def start_capture(self, query):
-        print "Start capture!!!"
         capture_file = os.path.join(CAPTURE_DIR, "capture-%s.zip" %
                                     datetime.datetime.now().isoformat())
         self.capture_controller.launch(capture_name, capture_file)
@@ -77,7 +76,6 @@ class CaptureServer(object):
 
     @mozhttpd.handlers.json_response
     def end_capture(self, query):
-        print "End capture!!!!"
         self.capture_finished = True
         self.capture_controller.terminate_capture()
         return (200, {'capturing': False})
