@@ -48,11 +48,13 @@ options, args = parser.parse_args()
 if len(args) != 2:
     parser.error("incorrect number of arguments")
 
-captureController = videocapture.CaptureController("Unknown")
-captureController.launch(args[0], args[1])
+controller = videocapture.CaptureController("Unknown")
+controller.launch(args[0], args[1])
 
 print "Should be capturing. Press enter to stop!"
 raw_input()
 print "Done!"
+controller.terminate_capture()
 
-captureController.terminate()
+print "Converting capture..."
+controller.convert_capture()

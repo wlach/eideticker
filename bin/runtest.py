@@ -56,39 +56,31 @@ BINDIR = os.path.dirname(__file__)
 CAPTURE_DIR = os.path.abspath(os.path.join(BINDIR, "../captures"))
 TEST_DIR = os.path.abspath(os.path.join(BINDIR, "../src/tests"))
 
-captureController = videocapture.CaptureController("LG-P999")
-captureControllerFinishing = False
-finished = False
+capture_controller = videocapture.CaptureController("LG-P999")
 capture_name = None
 
-class EidetickerHandler(mozhttpd.MozRequestHandler):
-    def do_GET(self):
-        def json_response_ok(responsedict):
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json; charset=utf-8')
-            json_data = json.dumps(responsedict)
-            self.send_header('Content-Length', len(json_data))
-            self.end_headers()
-            self.wfile.write(json_data)
+class CaptureServer(object):
 
-        # this is a bit of a ridiculous hack, but it seems to work ok
-        if self.path == '/api/captures/start':
-            global capture_name
-            capture_file = os.path.join(CAPTURE_DIR, "capture-%s.zip" %
-                                        datetime.datetime.now().isoformat())
-            captureController.launch(capture_name, capture_file)
-            json_response_ok({'capturing': True})
+    def __init__(self, capture_name, capture_controller):
+        self.capture_name = capture_name
+        self.capture_controller = capture_controller
+        self.capture_finished = False
+        self.capture_controller_finishing = False
 
-        elif self.path == '/api/captures/end':
-            global finished
-            global captureControllerFinishing
-            captureControllerFinishing = True
-            captureController.terminate()
-            json_response_ok({'capturing': False})
-            finished = True
+    @mozhttpd.handlers.json_response
+    def start_capture(self, query):
+        print "Start capture!!!"
+        capture_file = os.path.join(CAPTURE_DIR, "capture-%s.zip" %
+                                    datetime.datetime.now().isoformat())
+        self.capture_controller.launch(capture_name, capture_file)
+        return (200, {'capturing': True})
 
-        else:
-            mozhttpd.MozRequestHandler.do_GET(self)
+    @mozhttpd.handlers.json_response
+    def end_capture(self, query):
+        print "End capture!!!!"
+        self.capture_finished = True
+        self.capture_controller.terminate_capture()
+        return (200, {'capturing': False})
 
 def main(args=sys.argv[1:]):
     global capture_name
@@ -113,9 +105,16 @@ def main(args=sys.argv[1:]):
     if not capture_name:
         capture_name = testpath
 
+    capture_server = CaptureServer(capture_name, capture_controller)
     host = mozhttpd.iface.get_lan_ip()
-    http = mozhttpd.MozHttpd(handler_class=EidetickerHandler, docroot=TEST_DIR,
-                             host=host, port=0)
+    http = mozhttpd.MozHttpd(docroot=TEST_DIR,
+                             host=host, port=0,
+                             urlhandlers = [ { 'method': 'GET',
+                                               'path': '/api/captures/start/?',
+                                               'function': capture_server.start_capture },
+                                             { 'method': 'GET',
+                                               'path': '/api/captures/end/?',
+                                               'function': capture_server.end_capture } ])
     http.start(block=False)
     import socket
     s = socket.socket()
@@ -127,7 +126,6 @@ def main(args=sys.argv[1:]):
     baseurl = "http://%s:%s" % (host, http.httpd.server_port)
     args = ['%s/start.html?testpath=%s' % (baseurl, testpath)]
 
-    print "ARGS: " + str(args)
     runner = mozrunner.RemoteFennecRunner(dm, profile, args, appname=appname)
     if runner.is_instance_running():
         print "An instance of Firefox is running. Please stop it before running Eideticker."
@@ -138,17 +136,16 @@ def main(args=sys.argv[1:]):
     timeout = 100
     timer = 0
     interval = 0.1
-    while not finished and timer < timeout:
+    while not capture_server.capture_finished and timer < timeout:
         time.sleep(interval)
         timer += interval
 
-    print "Waiting for capture controller to finish..."
-    while captureControllerFinishing and not finished:
-        time.sleep(interval)
-
-    if not finished:
+    if not capture_server.capture_finished:
         print "Did not finish test! Error!"
         sys.exit(1)
+
+    print "Converting capture..."
+    capture_controller.convert_capture()
 
     runner.kill_all_instances()
 

@@ -128,7 +128,7 @@ class CaptureController(object):
             self.capture_proc = None
         return running == None
 
-    def terminate(self):
+    def terminate_capture(self):
         print 'terminate requested'
         if not self.capture_proc:
             print 'not running'
@@ -155,10 +155,8 @@ class CaptureController(object):
             self.capture_proc.wait()  # or poll and error out if still running?
             self.capture_proc = None
 
+    def convert_capture(self):
         print 'Converting...'
-        # convert raw file
-        # if this is too slow, we'll have to make this asynchronous and
-        # have multiple states
         tempdir = tempfile.mkdtemp()
 
         subprocess.Popen((os.path.join(DECKLINK_DIR, 'decklink-convert.sh'),
