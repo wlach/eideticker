@@ -48,5 +48,5 @@ is through the Eideticker web interface. To run it, execute:
 
 Then connect to http://localhost:8080
 
-(note that currently converting frames in the frame difference screen is rather
-slow and there is no loading indicator, please be patient!)
+(note that the first time you view them, there will be a several minute wait to
+see frame difference and checkerboarding statistics -- please be patient!)
