@@ -14,6 +14,9 @@ platforms is planned).
  * Testing has been done with the DeckLink HD Extreme 3D; no idea if other
    cards would work.
 
+* Installed Android SDK with the tools in your path. Please follow the
+  instructions at https://wiki.mozilla.org/Mobile/Fennec/Android#Setup_a_Build_Environment
+
 ### Installation
 
 Run `bootstrap.sh` in the root directory to set everything up.
