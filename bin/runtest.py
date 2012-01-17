@@ -50,6 +50,7 @@ import subprocess
 import sys
 import time
 import urllib
+import urlparse
 import videocapture
 
 BINDIR = os.path.dirname(__file__)
@@ -79,6 +80,19 @@ class CaptureServer(object):
         self.capture_finished = True
         self.capture_controller.terminate_capture()
         return (200, {'capturing': False})
+
+    @mozhttpd.handlers.json_response
+    def input(self, query, postdata):
+        commands = urlparse.parse_qs(postdata)['commands[]']
+        print commands
+        proc = subprocess.Popen(['monkeyrunner',
+                                 os.path.join(BINDIR, 'devicecontroller.py')],
+                                stdin=subprocess.PIPE)
+        for command in commands:
+            proc.stdin.write('%s\n' % command)
+
+        proc.wait()
+        return (200, {})
 
 def main(args=sys.argv[1:]):
     global capture_name
@@ -112,7 +126,10 @@ def main(args=sys.argv[1:]):
                                                'function': capture_server.start_capture },
                                              { 'method': 'GET',
                                                'path': '/api/captures/end/?',
-                                               'function': capture_server.end_capture } ])
+                                               'function': capture_server.end_capture },
+                                             { 'method': 'POST',
+                                               'path': '/api/captures/input/?',
+                                               'function': capture_server.input } ])
     http.start(block=False)
     import socket
     s = socket.socket()
