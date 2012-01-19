@@ -61,37 +61,50 @@ capture_controller = videocapture.CaptureController("LG-P999")
 capture_name = None
 
 class CaptureServer(object):
+    finished = False
+    controller_finishing = False
+    monkey_proc = None
+    start_frame = None
+    end_frame = None
 
-    def __init__(self, capture_name, capture_controller):
+    def __init__(self, capture_name, controller):
         self.capture_name = capture_name
-        self.capture_controller = capture_controller
-        self.capture_finished = False
-        self.capture_controller_finishing = False
+        self.controller = controller
 
     @mozhttpd.handlers.json_response
     def start_capture(self, query):
         capture_file = os.path.join(CAPTURE_DIR, "capture-%s.zip" %
                                     datetime.datetime.now().isoformat())
-        self.capture_controller.launch(capture_name, capture_file)
+        self.controller.launch(capture_name, capture_file)
+
+        # open up a monkeyrunner process on startup so we don't have to wait
+        # for it later (note that not all tests use monkeyrunner)
+        args = ['monkeyrunner', os.path.join(BINDIR, 'devicecontroller.py')]
+        self.monkey_proc = subprocess.Popen(args, stdin=subprocess.PIPE)
+
         return (200, {'capturing': True})
 
     @mozhttpd.handlers.json_response
     def end_capture(self, query):
-        self.capture_finished = True
-        self.capture_controller.terminate_capture()
+        self.finished = True
+        self.controller.terminate_capture()
+        if self.monkey_proc and not self.monkey_proc.poll():
+            self.monkey_proc.kill()
         return (200, {'capturing': False})
 
     @mozhttpd.handlers.json_response
     def input(self, query, postdata):
         commands = urlparse.parse_qs(postdata)['commands[]']
+        self.start_frame = self.controller.capture_framenum()
+        #print "GOT COMMANDS. Framenum: %s" % self.start_frame
         print commands
-        proc = subprocess.Popen(['monkeyrunner',
-                                 os.path.join(BINDIR, 'devicecontroller.py')],
-                                stdin=subprocess.PIPE)
         for command in commands:
-            proc.stdin.write('%s\n' % command)
+            self.monkey_proc.stdin.write('%s\n' % command)
+        self.monkey_proc.stdin.write('quit\n')
+        self.monkey_proc.wait()
+        self.end_frame = self.controller.capture_framenum()
+        #print "DONE COMMANDS. Framenum: %s" % self.end_frame
 
-        proc.wait()
         return (200, {})
 
 def main(args=sys.argv[1:]):
@@ -151,16 +164,16 @@ def main(args=sys.argv[1:]):
     timeout = 100
     timer = 0
     interval = 0.1
-    while not capture_server.capture_finished and timer < timeout:
+    while not capture_server.finished and timer < timeout:
         time.sleep(interval)
         timer += interval
 
-    if not capture_server.capture_finished:
+    if not capture_server.finished:
         print "Did not finish test! Error!"
         sys.exit(1)
 
     print "Converting capture..."
-    capture_controller.convert_capture()
+    capture_controller.convert_capture(capture_server.start_frame, capture_server.end_frame)
 
     runner.kill_all_instances()
 

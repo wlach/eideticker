@@ -532,12 +532,19 @@ and <code>cancel</code> methods.
 <script src="../../js/jquery.min.js"></script>
 <script>
 $(document).ready(function() {
-    $.post('/api/captures/input', { 'commands': [ 'scroll_down',
-                                                  'scroll_down',
-                                                  'quit' ] },
-           function() {
-             Eideticker.finish();
-           });
+    // scroll, but only after a timeout to make sure the page is *really* loaded and stable
+    setTimeout(function() {
+      $.post('/api/captures/input', { 'commands': [ 'scroll_down',
+                                                    'scroll_down',
+                                                    'sleep',
+                                                    'sleep',
+                                                    'sleep',
+                                                    'sleep',
+                                                    'sleep' ] },
+             function() {
+               Eideticker.finish();
+             });
+    }, 5000);
 });
 </script>
 </body>

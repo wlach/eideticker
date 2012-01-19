@@ -52,6 +52,8 @@ IDeckLinkDisplayModeIterator* displayModeIterator;
 static int g_videoModeIndex = -1;
 const char* g_videoOutputFile = NULL;
 static int g_maxFrames = -1;
+static int g_debug = 0;
+static int g_printFrameNums = 0;
 
 static unsigned long frameCount = 0;
 timespec g_lastFrameTime;
@@ -102,7 +104,7 @@ HRESULT DeckLinkCaptureDelegate::VideoInputFrameArrived(IDeckLinkVideoInputFrame
 	
     // Handle Video Frame
     if (videoFrame)
-    {	
+    {
         if (videoFrame->GetFlags() & bmdFrameHasNoInputSource)
         {
             fprintf(stderr, "Frame received (#%lu) - No input signal "
@@ -110,12 +112,20 @@ HRESULT DeckLinkCaptureDelegate::VideoInputFrameArrived(IDeckLinkVideoInputFrame
         }
         else
         {
-            fprintf(stderr, "Frame received (#%lu) [%d ms] - Valid Frame - "
-                    "Size: %li bytes\n", 
-                    frameCount,
-                    elapsedmSec,
-                    videoFrame->GetRowBytes() * videoFrame->GetHeight());
-			
+            if (g_printFrameNums)
+            {
+                printf("%lu\n", frameCount);
+                fflush(stdout);
+            }
+            if (g_debug)
+            {
+               fprintf(stderr, "Frame received (#%lu) [%d ms] - Valid Frame - "
+                      "Size: %li bytes\n",
+                      frameCount,
+                      elapsedmSec,
+                      videoFrame->GetRowBytes() * videoFrame->GetHeight());
+            }
+
             if (videoOutputFile != -1)
             {
                 videoFrame->GetBytes(&frameBytes);
@@ -235,10 +245,16 @@ int main(int argc, char *argv[])
     }
 	
     // Parse command line options
-    while ((ch = getopt(argc, argv, "?h3f:m:n:p:")) != -1) 
+    while ((ch = getopt(argc, argv, "do?h3f:m:n:p:")) != -1) 
     {
         switch (ch) 
         {
+        case 'd':
+            g_debug = 1;
+            break;
+        case 'o':
+            g_printFrameNums = 1;
+            break;
         case 'm':
             g_videoModeIndex = atoi(optarg);
             break;

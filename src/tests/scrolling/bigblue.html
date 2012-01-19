@@ -57,26 +57,18 @@ function randomImageURL() {
   return imageCanvas.toDataURL();
 }
 
-function init(){
+setTimeout(function() {
+  $("body").css("background-color", "#0FF");
 
-  setTimeout(function() {
-    $("body").css("background-color", "#0FF");
-
-    for (var i=0; i<500; i++) {
+  for (var i=0; i<500; i++) {
      $('#outer').append("<img src='" + randomImageURL() + "'></img>");
      $('#outer').append("<div class='outer'><div class='inner'><p>OH HAI</p></div></div>");
-    }
-
-    setInterval(scroll, 100);
-    setTimeout(function() { Eideticker.finish() }, 5000);
-  }, 500);
-}
-
-function scroll(){
-window.scrollBy(0,800);
-}
-
-init();
+  }
+  $.post('/api/captures/input', { 'commands': [ 'scroll_down', 'scroll_down', 'quit' ] },
+       function() {
+          Eideticker.finish();
+       });
+}, 500);
 </script>
 </body>
 </html>

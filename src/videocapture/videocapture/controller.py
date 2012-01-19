@@ -46,6 +46,7 @@ import datetime
 import os
 import capture
 import re
+import threading
 
 import Image
 import numpy
@@ -89,10 +90,62 @@ def _get_biggest_square(rgb, imagefile):
     else:
         return None
 
+class CaptureThread(threading.Thread):
+    framenum = 0
+    finished = False
+    capture_proc = None
+
+    def __init__(self, output_raw_filename):
+        threading.Thread.__init__(self)
+        self.output_raw_filename = output_raw_filename
+
+
+    def stop(self):
+        self.finished = True
+        self.capture_proc.terminate()
+        for i in range(2):
+            rc = self.capture_proc.poll()
+            print 'rc: %s' % str(rc)
+            if rc != None:
+                print 'terminated'
+                self.capture_proc.wait()  # necessary?
+                return
+
+        print 'still running!'
+        # terminate failed; try forcibly killing it
+        try:
+            self.capture_proc.kill()
+        except:
+            pass
+        self.capture_proc.wait()  # or poll and error out if still running?
+
+    def run(self):
+        args = (os.path.join(DECKLINK_DIR, 'decklink-capture'),
+                '-o',
+                '-m',
+                '13',
+                '-p',
+                '0',
+                '-f',
+                self.output_raw_filename)
+
+        self.capture_proc = subprocess.Popen(args, stdout=subprocess.PIPE)
+        print "Opening!"
+        while not self.finished:
+            try:
+                line = self.capture_proc.stdout.readline()
+            except KeyboardInterrupt:
+                break
+
+            if not line:
+                break
+
+            self.framenum=int(line.rstrip())
+
 class CaptureController(object):
 
     def __init__(self, device_name):
-        self.capture_proc = None
+        self.capture_thread = None
         self.null_read = file('/dev/null', 'r')
         self.null_write = file('/dev/null', 'w')
         self.output_filename = None
@@ -102,60 +155,30 @@ class CaptureController(object):
         self.device_name = device_name
 
     def launch(self, capture_name, output_filename):
-        print 'launch requested'
-        if self.capture_proc:
-            print 'capture already running'
-            return
-        print 'launching'
+        # should not call this more than once
+        assert not self.capture_thread
+
         self.output_raw_file = tempfile.NamedTemporaryFile()
         self.output_filename = output_filename
         self.capture_time = datetime.datetime.now()
         self.capture_name = capture_name
-        args = (os.path.join(DECKLINK_DIR, 'decklink-capture'),
-                '-m',
-                '13',
-                '-p',
-                '0',
-                '-f',
-                self.output_raw_file.name)
-        self.capture_proc = subprocess.Popen(args, close_fds=True)
+        self.capture_thread = CaptureThread(self.output_raw_file.name)
+        self.capture_thread.start()
 
-    def running(self):
-        if not self.capture_proc:
-            return False
-        running = self.capture_proc.poll()
-        if running != None:
-            self.capture_proc = None
-        return running == None
+    def capture_framenum(self):
+        assert self.capture_thread
+        return self.capture_thread.framenum
 
     def terminate_capture(self):
-        print 'terminate requested'
-        if not self.capture_proc:
-            print 'not running'
-            return
+        # should not call this when no capture is ongoing
+        assert self.capture_thread
 
         print 'terminating...'
-        self.capture_proc.terminate()
-        for i in range(0, 5):
-            rc = self.capture_proc.poll()
-            print 'rc: %s' % str(rc)
-            if rc != None:
-                print 'terminated'
-                self.capture_proc.wait()  # necessary?
-                self.capture_proc = None
-                break
-            time.sleep(1)
-        if self.capture_proc:
-            print 'still running!'
-            # terminate failed; try forcibly killing it
-            try:
-                self.capture_proc.kill()
-            except:
-                pass
-            self.capture_proc.wait()  # or poll and error out if still running?
-            self.capture_proc = None
+        self.capture_thread.stop()
+        self.capture_thread.join()
+        self.capture_thread = None
 
-    def convert_capture(self):
+    def convert_capture(self, start_frame, end_frame):
         print 'Converting...'
         tempdir = tempfile.mkdtemp()
 
@@ -175,28 +198,29 @@ class CaptureController(object):
             frame_dimensions = im.size
 
         # start frame
-        print "Getting start frame / capture dimensions ..."
+        print "Getting capture dimensions (and maybe start frame)..."
         squares = []
-        start_frame = 0
         capture_area = None
         for (i, imagefile) in enumerate(imagefiles):
             squares.append(_get_biggest_square((0,255,0), imagefile))
 
             if i > 1 and not squares[-1] and squares[-2]:
-                start_frame = i
+                if not start_frame:
+                    start_frame = i
                 capture_area = squares[-2]
                 break
 
         # end frame
-        print "Getting end frame ..."
-        squares = []
-        end_frame = num_frames
-        for i in range(num_frames-1, 0, -1):
-            squares.append(_get_biggest_square((255,0,0), imagefiles[i]))
-
-            if len(squares) > 1 and not squares[-1] and squares[-2]:
-                end_frame = i
-                break
+        if not end_frame:
+            print "Getting end frame ..."
+            squares = []
+            end_frame = num_frames
+            for i in range(num_frames-1, 0, -1):
+                squares.append(_get_biggest_square((255,0,0), imagefiles[i]))
+                
+                if len(squares) > 1 and not squares[-1] and squares[-2]:
+                    end_frame = i
+                    break
 
         print "Rewriting images ..."
         imagedir = tempfile.mkdtemp()

@@ -7,6 +7,7 @@
 # http://developer.android.com/guide/developing/tools/monkeyrunner_concepts.html)
 
 import sys
+import time
 from com.android.monkeyrunner import MonkeyRunner, MonkeyDevice
 
 class Device(object):
@@ -39,5 +40,7 @@ while 1:
         break
     elif cmd == "scroll_down":
         device.scroll_down()
+    elif cmd == "sleep":
+        time.sleep(1)
     else:
         raise Exception("Unknown command")
