@@ -1,6 +1,8 @@
 *.pyc
 *~
 bin/activate
+bin/activate.csh
+bin/activate.fish
 bin/activate_this.py
 bin/decklink-capture
 bin/decklink-convert.sh
@@ -8,15 +10,18 @@ bin/easy_install
 bin/easy_install-2.7
 bin/eideticker-server
 bin/manifestparser
+bin/mozhttpd
 bin/mozinfo
 bin/mozprofile
 bin/mozrunner
 bin/pip
+bin/pip-2.7
 bin/python
 bin/templeton
 bin/templeton.fcgi
 bin/templetond
 captures/*zip
+captures/*cache
 conf/talos.config
 downloads/mobile_tp4.zip
 include/
