@@ -57,4 +57,4 @@ print "Done!"
 controller.terminate_capture()
 
 print "Converting capture..."
-controller.convert_capture()
+controller.convert_capture(None, None)
