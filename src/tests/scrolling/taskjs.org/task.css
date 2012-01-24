@@ -1,16 +1,16 @@
 html {
   width: 100%;
+}
+body {
+  margin: 0;
+  border-top: solid 2px #707070;
+  padding: 80px 0;
   background-color: #F0F;
   background-image: url("noise.png"), -webkit-gradient(radial, 50% 0%, 0, 50% 0%, 750, color-stop(0%, #fff), color-stop(100%, #d0e0ff));
   background-image: url("noise.png"), -webkit-radial-gradient(top center, #fff, #d0e0ff 750px);
   background-image: url("noise.png"), -moz-radial-gradient(top center, #fff, #d0e0ff 750px);
   background-image: url("noise.png"), -o-radial-gradient(top center, #fff, #d0e0ff 750px);
   background-image: url("noise.png"), radial-gradient(top center, #fff, #d0e0ff 750px);
-}
-body {
-  margin: 0;
-  border-top: solid 2px #707070;
-  padding: 80px 0;
 }
 .title {
   color: #9d532e;

@@ -149,7 +149,7 @@ def main(args=sys.argv[1:]):
     s.connect
 
     dm = mozdevice.DeviceManagerADB(packageName=appname)
-    profile = mozprofile.Profile()
+    profile = mozprofile.Profile(preferences = { 'gfx.show_checkerboard_pattern': False })
 
     baseurl = "http://%s:%s" % (host, http.httpd.server_port)
     args = ['%s/start.html?testpath=%s' % (baseurl, testpath)]

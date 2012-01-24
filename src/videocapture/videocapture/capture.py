@@ -94,9 +94,9 @@ class Capture(object):
         if grayscale:
             im = im.convert("L")
         if self.metadata.get('captureArea') and cropped:
-            return im.crop(self.metadata['captureArea'])
-        else:
-            return im
+            im = im.crop(self.metadata['captureArea'])
 
-    def get_frame(self, framenum, cropped=False, grayscale=False):
-        return numpy.array(self.get_frame_image(framenum, cropped, grayscale))
+        return im
+
+    def get_frame(self, framenum, cropped=False, grayscale=False, type=numpy.float):
+        return numpy.array(self.get_frame_image(framenum, cropped, grayscale), dtype=type)

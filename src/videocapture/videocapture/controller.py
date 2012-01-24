@@ -45,6 +45,7 @@ import time
 import datetime
 import os
 import capture
+from square import get_biggest_square
 import re
 import threading
 
@@ -57,38 +58,6 @@ DECKLINK_DIR = os.path.join(os.path.dirname(__file__), 'decklink')
 def _natural_key(str):
     """See http://www.codinghorror.com/blog/archives/001018.html"""
     return [int(s) if s.isdigit() else s for s in re.split(r'(\d+)', str)]
-
-def _get_biggest_square(rgb, imagefile):
-    image = numpy.array(Image.open(imagefile), dtype=numpy.int16)
-    imagesquares = []
-
-    # An array representing whether each pixel's RGB components are within
-    # the box's threshold
-    mask = numpy.array(rgb,dtype=numpy.int16)
-    threshold = numpy.int16(30)
-
-    thresharray = numpy.abs(image-mask)
-    thresharray = ((thresharray[:,:,0]+thresharray[:,:,1]+thresharray[:,:,2]) < threshold)
-    for y, row in enumerate(thresharray):
-        scanline = None
-        # assumption: there aren't several boxes on this same line
-        where = numpy.nonzero(row)[0]
-        if len(where):
-            scanline = [where[0], where[-1]]
-
-        if scanline:
-            found_existing = False
-            for square in imagesquares:
-                if abs(square[0] - scanline[0]) < 1 and abs(square[2] - scanline[1]) < 1:
-                    square[3] = y
-                    found_existing = True
-            if not found_existing:
-                imagesquares.append([int(scanline[0]), y, int(scanline[1]), y])
-
-    if imagesquares:
-        return max(imagesquares, key=lambda box: (box[2]-box[0])*(box[3]-box[1]))
-    else:
-        return None
 
 class CaptureThread(threading.Thread):
     framenum = 0
@@ -202,13 +171,17 @@ class CaptureController(object):
         squares = []
         capture_area = None
         for (i, imagefile) in enumerate(imagefiles):
-            squares.append(_get_biggest_square((0,255,0), imagefile))
+            imgarray = numpy.array(Image.open(imagefile), dtype=numpy.int16)
+            squares.append(get_biggest_square((0,255,0), imgarray))
 
             if i > 1 and not squares[-1] and squares[-2]:
                 if not start_frame:
                     start_frame = i
                 capture_area = squares[-2]
                 break
+        # If we still don't have a start frame, set it to 1
+        if not start_frame:
+            start_frame = 1
 
         # end frame
         if not end_frame:
@@ -216,8 +189,9 @@ class CaptureController(object):
             squares = []
             end_frame = num_frames
             for i in range(num_frames-1, 0, -1):
-                squares.append(_get_biggest_square((255,0,0), imagefiles[i]))
-                
+                imgarray = numpy.array(Image.open(imagefiles[i]), dtype=numpy.int16)
+                squares.append(get_biggest_square((255,0,0), imgarray))
+
                 if len(squares) > 1 and not squares[-1] and squares[-2]:
                     end_frame = i
                     break
