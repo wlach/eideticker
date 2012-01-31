@@ -144,9 +144,22 @@ def main(args=sys.argv[1:]):
                                                'path': '/api/captures/input/?',
                                                'function': capture_server.input } ])
     http.start(block=False)
-    import socket
-    s = socket.socket()
-    s.connect
+
+    connected = False
+    tries = 0
+    while not connected and tries < 20:
+        tries+=1
+        import socket
+        s = socket.socket()
+        try:
+            s.connect((host, http.httpd.server_port))
+            connected = True
+        except Exception, e:
+            print "Can't connect to %s:%s, retrying..." % (host, http.httpd.server_port)
+
+    if not connected:
+        print "Could not open webserver. Error!"
+        sys.exit(1)
 
     dm = mozdevice.DeviceManagerADB(packageName=appname)
     profile = mozprofile.Profile(preferences = { 'gfx.show_checkerboard_pattern': False })
