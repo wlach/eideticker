@@ -58,7 +58,6 @@ CAPTURE_DIR = os.path.abspath(os.path.join(BINDIR, "../captures"))
 TEST_DIR = os.path.abspath(os.path.join(BINDIR, "../src/tests"))
 
 capture_controller = videocapture.CaptureController("LG-P999")
-capture_name = None
 
 class CaptureServer(object):
     finished = False
@@ -67,20 +66,21 @@ class CaptureServer(object):
     start_frame = None
     end_frame = None
 
-    def __init__(self, capture_name, controller):
+    def __init__(self, capture_name, capture_file, controller):
         self.capture_name = capture_name
+        self.capture_file = capture_file
         self.controller = controller
+
+        # open up a monkeyrunner process on startup, wait for it to give a
+        # line so we don't have to wait
+        # for it later (note that not all tests use monkeyrunner)
+        args = ['monkeyrunner', os.path.join(BINDIR, 'devicecontroller.py')]
+        self.monkey_proc = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        line = self.monkey_proc.stdout.readline()
 
     @mozhttpd.handlers.json_response
     def start_capture(self, query):
-        capture_file = os.path.join(CAPTURE_DIR, "capture-%s.zip" %
-                                    datetime.datetime.now().isoformat())
-        self.controller.launch(capture_name, capture_file)
-
-        # open up a monkeyrunner process on startup so we don't have to wait
-        # for it later (note that not all tests use monkeyrunner)
-        args = ['monkeyrunner', os.path.join(BINDIR, 'devicecontroller.py')]
-        self.monkey_proc = subprocess.Popen(args, stdin=subprocess.PIPE)
+        self.controller.launch(self.capture_name, self.capture_file)
 
         return (200, {'capturing': True})
 
@@ -108,13 +108,14 @@ class CaptureServer(object):
         return (200, {})
 
 def main(args=sys.argv[1:]):
-    global capture_name
-
     usage = "usage: %prog [options] <fennec appname> <test path>"
     parser = optparse.OptionParser(usage)
     parser.add_option("--name", action="store",
                       type = "string", dest = "capture_name",
                       help = "name to give capture")
+    parser.add_option("--capture-file", action="store",
+                      type = "string", dest = "capture_file",
+                      help = "name to give to capture file")
 
     options, args = parser.parse_args()
     if len(args) != 2:
@@ -129,8 +130,12 @@ def main(args=sys.argv[1:]):
     capture_name = options.capture_name
     if not capture_name:
         capture_name = testpath
+    capture_file = options.capture_file
+    if not capture_file:
+        capture_file = os.path.join(CAPTURE_DIR, "capture-%s.zip" %
+                                         datetime.datetime.now().isoformat())
 
-    capture_server = CaptureServer(capture_name, capture_controller)
+    capture_server = CaptureServer(capture_name, capture_file, capture_controller)
     host = mozhttpd.iface.get_lan_ip()
     http = mozhttpd.MozHttpd(docroot=TEST_DIR,
                              host=host, port=0,

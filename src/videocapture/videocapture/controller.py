@@ -63,11 +63,12 @@ class CaptureThread(threading.Thread):
     framenum = 0
     finished = False
     capture_proc = None
+    debug = False
 
-    def __init__(self, output_raw_filename):
+    def __init__(self, output_raw_filename, debug=False):
         threading.Thread.__init__(self)
         self.output_raw_filename = output_raw_filename
-
+        self.debug = debug
 
     def stop(self):
         self.finished = True
@@ -118,12 +119,12 @@ class CaptureController(object):
         self.null_read = file('/dev/null', 'r')
         self.null_write = file('/dev/null', 'w')
         self.output_filename = None
-        self.output_raw_filename = None
+        self.output_raw_file = None
         self.capture_time = None
         self.capture_name = None
         self.device_name = device_name
 
-    def launch(self, capture_name, output_filename):
+    def launch(self, capture_name, output_filename, debug=False):
         # should not call this more than once
         assert not self.capture_thread
 
@@ -131,7 +132,7 @@ class CaptureController(object):
         self.output_filename = output_filename
         self.capture_time = datetime.datetime.now()
         self.capture_name = capture_name
-        self.capture_thread = CaptureThread(self.output_raw_file.name)
+        self.capture_thread = CaptureThread(self.output_raw_file.name, debug=debug)
         self.capture_thread.start()
 
     def capture_framenum(self):
@@ -142,13 +143,11 @@ class CaptureController(object):
         # should not call this when no capture is ongoing
         assert self.capture_thread
 
-        print 'terminating...'
         self.capture_thread.stop()
         self.capture_thread.join()
         self.capture_thread = None
 
     def convert_capture(self, start_frame, end_frame):
-        print 'Converting...'
         tempdir = tempfile.mkdtemp()
 
         subprocess.Popen((os.path.join(DECKLINK_DIR, 'decklink-convert.sh'),
