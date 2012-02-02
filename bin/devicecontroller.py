@@ -34,13 +34,21 @@ while 1:
     if not line:
         break
 
-    cmd = line.rstrip()
+    tokens = line.rstrip().split()
+    if len(tokens) < 1:
+        raise Exception("No command")
+
+    (cmd, params) = (tokens[0], tokens[1:])
 
     if cmd == "quit":
+        print "QUIT: %s" % time.time()
         break
     elif cmd == "scroll_down":
         device.scroll_down()
     elif cmd == "sleep":
-        time.sleep(1)
+        sleeptime = 1
+        if len(params) > 0:
+            sleeptime = int(params[0])
+        time.sleep(sleeptime)
     else:
         raise Exception("Unknown command")

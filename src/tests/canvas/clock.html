@@ -19,12 +19,8 @@
 <canvas id="canvas" width="300px" height="300px"></canvas>
 
 <script src="../js/eideticker.js"></script>
+<script src="../js/jquery.min.js"></script>
 <script>
-function init(){
-  clock();
-  setInterval(clock,10);
-  setTimeout(function() { Eideticker.finish() }, 10000);
-}
 function clock(){
   var now = new Date();
   var ctx = document.getElementById('canvas').getContext('2d');
@@ -120,7 +116,17 @@ function clock(){
   ctx.restore();
 }
 
-init();
+$(document).ready(function() {
+    // scroll, but only after a timeout to make sure the page is *really* loaded and stable
+    setTimeout(function() {
+      clock();
+      setInterval(clock,10);
+      $.post('/api/captures/input', { 'commands': [ 'sleep 5' ] },
+             function() {
+               Eideticker.finish();
+             });
+    }, 5000);
+});
 </script>
 </body>
 </html>
