@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Eideticker Dashboard</title>
+
+    <!-- Le HTML5 shim, for IE6-8 support of HTML elements -->
+    <!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <!-- Le styles -->
+    <link href="css/bootstrap.css" rel="stylesheet">
+    <style type="text/css">
+      body {
+        padding-top: 60px;
+        padding-bottom: 40px;
+      }
+      .sidebar-nav {
+        padding: 9px 0;
+      }
+      #content {
+        padding: 9px;
+      }
+      #graph-container {
+        padding-top: 18px;
+        min-height: 400px;
+      }
+      
+    </style>
+  </head>
+
+  <body>
+
+    <div class="navbar navbar-fixed-top">
+      <div class="navbar-inner">
+        <div class="container-fluid">
+          <a class="brand" href="#">Eideticker Dashboard</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="container-fluid">
+      <div class="row-fluid">
+        <div class="span3">
+          <div class="well sidebar-nav">
+            <ul class="nav nav-list" id="functions">
+              <li class="nav-header">Tests</li>
+              <li class="active" id="checkerboard-li"><a href="#/checkerboarding">Checkerboarding</a></li>
+              <li id="canvas-li"><a href="#/canvas">Canvas</a></li>
+            </ul>
+          </div><!--/.well -->
+        </div><!--/span-->
+        <div class="span9">
+          <div id="content">
+          </div>
+        </div>
+      </div>
+      <hr>
+
+      <footer>
+      <p>Built by <a href="http://wiki.mozilla.org/Auto-tools">Mozilla Firefox Automation & Tools Engineering</a>. Source available on <a href="https://github.com/mozilla/eideticker">github</a>.</p>
+      </footer>
+
+    </div><!--/.fluid-container-->
+
+
+    <!-- Le javascript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="js/jquery-1.7.1.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+    <script src="js/ICanHaz.min.js"></script>
+    <script src="js/SS.min.js"></script>
+    <script src="js/jquery.flot.js"></script>
+    <script src="js/jquery.flot.stack.js"></script>
+    <script src="js/jquery.flot.axislabels.js"></script>
+    <script src="js/jquery.flot.hiddengraphs.js"></script>
+    <script src="js/index.js"></script>
+
+  <script id="graph" type="text/html">
+    <div class="row-fluid">
+      <div class="span9">
+        <h1>{{title}}</h1>
+      </div>
+    </div>
+    <div class="row-fluid">
+      <div class="span9">
+        <p></p>
+        <div id="graph-container"></div>
+      </div>
+    </div>
+  </script>
+  </body>
+</html>
