@@ -199,7 +199,10 @@ class CaptureController(object):
         imagedir = tempfile.mkdtemp()
 
         def _rewrite_frame(framenum, dirname, imagefilename):
-            os.rename(imagefilename, os.path.join(dirname, '%s.png' % framenum))
+            im = Image.open(imagefilename)
+            if capture_area:
+                im = im.crop(capture_area)
+            im.save(os.path.join(dirname, '%s.png' % framenum))
 
         # map the frame before the start frame to the zeroth frame (if possible)
         if start_frame > 1:
@@ -227,7 +230,6 @@ class CaptureController(object):
                                      'device': self.device_name,
                                      'date': self.capture_time.isoformat(),
                                      'frameDimensions': frame_dimensions,
-                                     'captureArea': capture_area,
                                      'version': 1 }))
 
         zipfile.writestr('movie.webm', moviefile.read())

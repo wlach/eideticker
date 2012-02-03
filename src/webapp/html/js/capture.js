@@ -86,18 +86,18 @@ function displayFrameDiffs(captureId, minFrameNum, maxFrameNum, threshold) {
             frameViews.push({
               frame1_num: frame1_num,
               frame2_num: frame2_num,
-              frame1_thumb_url: getCaptureThumbnailImageURL(captureId, captureSummary, frame1_num, {cropped:true}),
-              frame1_url: getCaptureImageURL(captureId, frame1_num, {cropped:true})
+              frame1_thumb_url: getCaptureThumbnailImageURL(captureId, captureSummary, frame1_num, {}),
+              frame1_url: getCaptureImageURL(captureId, frame1_num, {})
             });
           }
           // push a framediff View
           frameViews.push({
             frame1_num: i,
             frame2_num: i+1,
-            frame1_thumb_url: getCaptureThumbnailImageURL(captureId, captureSummary, i, {cropped:true}),
-            frame1_url: getCaptureImageURL(captureId, i, {cropped:true}),
-            frame2_thumb_url: getCaptureThumbnailImageURL(captureId, captureSummary, i+1, {cropped:true}),
-            frame2_url: getCaptureImageURL(captureId, i+1, {cropped:true}),
+            frame1_thumb_url: getCaptureThumbnailImageURL(captureId, captureSummary, i, {}),
+            frame1_url: getCaptureImageURL(captureId, i, {}),
+            frame2_thumb_url: getCaptureThumbnailImageURL(captureId, captureSummary, i+1, {}),
+            frame2_url: getCaptureImageURL(captureId, i+1, {}),
             framediff_thumb_url: getFrameDiffThumbnailImageURL(captureId, captureSummary, i, i+1),
             framediff_url: getFrameDiffImageURL(captureId, i, i+1, {}),
             framediff: frameDiff
@@ -112,8 +112,8 @@ function displayFrameDiffs(captureId, minFrameNum, maxFrameNum, threshold) {
           frame1_num: frame1_num,
           frame2_num: frame2_num,
           frame1_thumb_url: getCaptureThumbnailImageURL(captureId, captureSummary, frame1_num, 
-                                                        {cropped:true}),
-          frame1_url: getCaptureImageURL(captureId, frame1_num, {cropped:true})
+                                                        {}),
+          frame1_url: getCaptureImageURL(captureId, frame1_num, {})
         });
       }
 
@@ -200,9 +200,9 @@ function displayCheckerboard(captureId, captureSummary) {
             frameViews.push({
               title: "Frames " + frame1_num + " - " + frame2_num,
               images: [
-                { url: getCaptureImageURL(captureId, frame1_num, {cropped:true}),
+                { url: getCaptureImageURL(captureId, frame1_num, {}),
                   thumb_url: getCaptureThumbnailImageURL(captureId, captureSummary, frame1_num,
-                                                         {cropped:true})
+                                                         {})
                 },
                 { url: getCheckerboardImageURL(captureId, captureSummary, i, {}),
                   thumb_url: getCheckerboardThumbnailImageURL(captureId, captureSummary, i)
@@ -215,9 +215,9 @@ function displayCheckerboard(captureId, captureSummary) {
           frameViews.push({
             title: "Frame " + frame1_num,
             images: [
-              { url: getCaptureImageURL(captureId, frame1_num, {cropped:true}),
+              { url: getCaptureImageURL(captureId, frame1_num, {}),
                 thumb_url: getCaptureThumbnailImageURL(captureId, captureSummary, frame1_num,
-                                                       {cropped:true})
+                                                       {})
               },
               { url: getCheckerboardImageURL(captureId, captureSummary, i, {}),
                 thumb_url: getCheckerboardThumbnailImageURL(captureId, captureSummary, i)
@@ -234,9 +234,9 @@ function displayCheckerboard(captureId, captureSummary) {
         frameViews.push({
           title: "Frames " + frame1_num + " - " + frame2_num,
           images: [
-            { url: getCaptureImageURL(captureId, frame1_num, {cropped:true}),
+            { url: getCaptureImageURL(captureId, frame1_num, {}),
               thumb_url: getCaptureThumbnailImageURL(captureId, captureSummary, frame1_num,
-                                                     {cropped:true})
+                                                     {})
             },
             { url: getCheckerboardImageURL(captureId, captureSummary, i, {}),
               thumb_url: getCheckerboardThumbnailImageURL(captureId, captureSummary, i)

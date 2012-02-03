@@ -84,10 +84,9 @@ class CaptureImageHandler:
     @templeton.handlers.png_response
     def GET(self, name, num):
         params, body = templeton.handlers.get_request_parms()
-        (width, height, cropped) = (params.get('width'), params.get('height'),
-                                    bool(int(params.get('cropped', [ False ])[0])))
+        (width, height) = (params.get('width'), params.get('height'))
         capture = videocapture.Capture(os.path.join(CAPTURE_DIR, name))
-        im = capture.get_frame_image(num, cropped=cropped)
+        im = capture.get_frame_image(num)
         if width and height:
             im.thumbnail((int(width[0]), int(height[0])), Image.ANTIALIAS)
 
@@ -108,7 +107,7 @@ class FrameDifferenceImageHandler:
         (width, height) = (params.get('width'), params.get('height'))
 
         capture = videocapture.Capture(os.path.join(CAPTURE_DIR, name))
-        im = videocapture.get_framediff_image(capture, framenum1, framenum2, cropped=True)
+        im = videocapture.get_framediff_image(capture, framenum1, framenum2)
         if width and height:
             im.thumbnail((int(width[0]), int(height[0])), Image.ANTIALIAS)
 

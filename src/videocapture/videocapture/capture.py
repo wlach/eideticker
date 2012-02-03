@@ -75,28 +75,26 @@ class Capture(object):
         self.filename = filename
 
     @property
-    def capture_area(self):
-        return CaptureDimensions(self.metadata.get('captureArea'))
+    def length(self):
+        return self.num_frames / 60.0
 
     def get_video(self):
         buf = StringIO.StringIO()
         buf.write(self.archive.read('movie.webm'))
         return buf
 
-    def get_frame_image(self, framenum, cropped=False, grayscale=False):
-        return self._get_frame_image('images/%s.png' % framenum, cropped, grayscale)
+    def get_frame_image(self, framenum, grayscale=False):
+        return self._get_frame_image('images/%s.png' % framenum, grayscale)
 
-    def _get_frame_image(self, filename, cropped=False, grayscale=False):
+    def _get_frame_image(self, filename, grayscale=False):
         buf = StringIO.StringIO()
         buf.write(self.archive.read(filename))
         buf.seek(0)
         im = Image.open(buf)
         if grayscale:
             im = im.convert("L")
-        if self.metadata.get('captureArea') and cropped:
-            im = im.crop(self.metadata['captureArea'])
 
         return im
 
-    def get_frame(self, framenum, cropped=False, grayscale=False, type=numpy.float):
-        return numpy.array(self.get_frame_image(framenum, cropped, grayscale), dtype=type)
+    def get_frame(self, framenum, grayscale=False, type=numpy.float):
+        return numpy.array(self.get_frame_image(framenum, grayscale), dtype=type)
