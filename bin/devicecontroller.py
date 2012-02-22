@@ -25,6 +25,8 @@ class Device(object):
 
 device = Device()
 
+print "READY"
+
 while 1:
     try:
         line = sys.stdin.readline()
