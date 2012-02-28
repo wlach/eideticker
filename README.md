@@ -7,7 +7,10 @@ platforms is planned).
 
 ### Requirements
 
-* Linux system with zip and ffmpeg installed.
+* Linux system with zip, ffmpeg, and virtualenv installed. On Ubuntu, you can
+  get this setup by running:
+
+    sudo apt-get install -y ffmpeg zip virtualenv
 
 * Blackmagic Design DeckLink card and the appropriate drivers.
 
