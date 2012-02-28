@@ -39,6 +39,15 @@
 
 BASEDIR=$PWD
 
+
+which virtualenv > /dev/null
+if [ $? != 0 ]; then
+    echo "Please install virtualenv ('sudo apt-get install -y virtualenv' on Ubuntu)"
+    exit 1
+fi
+
+set -e
+
 # Check out git submodules
 git submodule init
 git submodule update
