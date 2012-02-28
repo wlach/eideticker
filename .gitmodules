@@ -1,12 +1,3 @@
-[submodule "src/talos"]
-	path = src/talos
-	url = git://github.com/wlach/talos.git
-[submodule "src/mozmill"]
-	path = src/mozmill
-	url = git://github.com/ctalbert/mozmill.git
-[submodule "src/pageloader"]
-	path = src/pageloader
-	url = git://github.com/wlach/pageloader.git
 [submodule "src/templeton"]
 	path = src/templeton
 	url = git://github.com/wlach/templeton.git
