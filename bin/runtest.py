@@ -42,7 +42,6 @@ import json
 import mozdevice
 import mozhttpd
 import mozprofile
-import mozrunner
 import optparse
 import os
 import signal
@@ -52,12 +51,13 @@ import time
 import urllib
 import urlparse
 import videocapture
+import StringIO
 
 BINDIR = os.path.dirname(__file__)
 CAPTURE_DIR = os.path.abspath(os.path.join(BINDIR, "../captures"))
 TEST_DIR = os.path.abspath(os.path.join(BINDIR, "../src/tests"))
 
-capture_controller = videocapture.CaptureController("LG-P999")
+capture_controller = videocapture.CaptureController()
 
 class CaptureServer(object):
     finished = False
@@ -66,8 +66,8 @@ class CaptureServer(object):
     start_frame = None
     end_frame = None
 
-    def __init__(self, capture_name, capture_file, controller):
-        self.capture_name = capture_name
+    def __init__(self, capture_metadata, capture_file, controller):
+        self.capture_metadata = capture_metadata
         self.capture_file = capture_file
         self.controller = controller
 
@@ -79,13 +79,13 @@ class CaptureServer(object):
         line = self.monkey_proc.stdout.readline()
 
     @mozhttpd.handlers.json_response
-    def start_capture(self, query):
-        self.controller.launch(self.capture_name, self.capture_file)
+    def start_capture(self, request):
+        self.controller.start_capture(self.capture_file, self.capture_metadata)
 
         return (200, {'capturing': True})
 
     @mozhttpd.handlers.json_response
-    def end_capture(self, query):
+    def end_capture(self, request):
         self.finished = True
         self.controller.terminate_capture()
         if self.monkey_proc and not self.monkey_proc.poll():
@@ -93,8 +93,9 @@ class CaptureServer(object):
         return (200, {'capturing': False})
 
     @mozhttpd.handlers.json_response
-    def input(self, query, postdata):
-        commands = urlparse.parse_qs(postdata)['commands[]']
+    def input(self, request):
+        commands = urlparse.parse_qs(request.body)['commands[]']
+        print commands
         self.start_frame = self.controller.capture_framenum()
         #print "GOT COMMANDS. Framenum: %s" % self.start_frame
         print commands
@@ -107,8 +108,52 @@ class CaptureServer(object):
 
         return (200, {})
 
+class BrowserRunner(object):
+
+    def __init__(self, dm, appname, url):
+        self.dm = dm
+        self.appname = appname
+        self.url = url
+
+        activity_mappings = {
+            'com.android.browser': 'BrowserActivity'
+            }
+
+        # use activity mapping if not mozilla
+        if self.appname.startswith('org.mozilla'):
+            self.activity = 'App'
+        else:
+            self.activity = activity_mappings[self.appname]
+
+    def start(self):
+        # for fennec only, we create and use a profile
+        args = []
+        profile = None
+        if self.appname.startswith('org.mozilla'):
+            profile = mozprofile.Profile(preferences = { 'gfx.show_checkerboard_pattern': False })
+            remote_profile_dir = "/".join([self.dm.getDeviceRoot(),
+                                       os.path.basename(profile.profile)])
+            if not self.dm.pushDir(profile.profile, remote_profile_dir):
+                raise Exception("Failed to copy profile to device")
+
+            args.extend(["-profile", remote_profile_dir])
+
+        print "Starting %s... " % self.appname
+        self.dm.launchApplication(self.appname, activity=self.activity,
+                                  url=self.url, extra_args=args)
+
+    def stop(self):
+        self.dm.killProcess(self.appname)
+
+# FIXME: make this part of devicemanager
+def _shell_check_output(dm, args):
+    buf = StringIO.StringIO()
+    dm.shell(args, buf)
+    return buf.getvalue()
+
+
 def main(args=sys.argv[1:]):
-    usage = "usage: %prog [options] <fennec appname> <test path>"
+    usage = "usage: %prog [options] <appname> <test path>"
     parser = optparse.OptionParser(usage)
     parser.add_option("--name", action="store",
                       type = "string", dest = "capture_name",
@@ -135,7 +180,21 @@ def main(args=sys.argv[1:]):
         capture_file = os.path.join(CAPTURE_DIR, "capture-%s.zip" %
                                          datetime.datetime.now().isoformat())
 
-    capture_server = CaptureServer(capture_name, capture_file, capture_controller)
+    dm = mozdevice.DroidADB(packageName=appname)
+
+    if dm.processExist(appname):
+        print "An instance of %s is running. Please stop it before running Eideticker." % appname
+        sys.exit(1)
+
+    print "Creating webserver..."
+    capture_metadata = {
+        'name': capture_name,
+        'testpath': testpath,
+        'app': appname,
+        'device': _shell_check_output(dm, ["getprop", "ro.product.model"]).strip()
+        }
+    capture_server = CaptureServer(capture_metadata, capture_file,
+                                   capture_controller)
     host = mozhttpd.iface.get_lan_ip()
     http = mozhttpd.MozHttpd(docroot=TEST_DIR,
                              host=host, port=0,
@@ -166,18 +225,12 @@ def main(args=sys.argv[1:]):
         print "Could not open webserver. Error!"
         sys.exit(1)
 
-    dm = mozdevice.DeviceManagerADB(packageName=appname)
-    profile = mozprofile.Profile(preferences = { 'gfx.show_checkerboard_pattern': False })
-
-    baseurl = "http://%s:%s" % (host, http.httpd.server_port)
-    args = ['%s/start.html?testpath=%s' % (baseurl, testpath)]
-
-    runner = mozrunner.RemoteFennecRunner(dm, profile, args, appname=appname)
-    if runner.is_instance_running():
-        print "An instance of Firefox is running. Please stop it before running Eideticker."
-        sys.exit(1)
-
-    runner.start_instance()
+    url = "http://%s:%s/start.html?testpath=%s" % (host,
+                                                   http.httpd.server_port,
+                                                   testpath)
+    print "Test URL is: %s" % url
+    runner = BrowserRunner(dm, appname, url)
+    runner.start()
 
     timeout = 100
     timer = 0
@@ -186,13 +239,13 @@ def main(args=sys.argv[1:]):
         time.sleep(interval)
         timer += interval
 
+    runner.stop()
+
     if not capture_server.finished:
         print "Did not finish test! Error!"
         sys.exit(1)
 
     print "Converting capture..."
     capture_controller.convert_capture(capture_server.start_frame, capture_server.end_frame)
-
-    runner.kill_all_instances()
 
 main()

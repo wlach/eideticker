@@ -28,13 +28,15 @@ that up in your shell by running this command within the root directory:
 
     source ./bin/activate
 
-The next step is to configure Eideticker to work with a copy of Fennec on
-your phone. Currently we only support the LG G2X, running Android 2.2.
-Both native and XUL-based Fennec should work.
+You should now be set to run tests! You should be able to run Eideticker
+tests against any Android web browser, though currently only stock and
+Fennec (both XUL and native) have been tested. Just run the following
+on the command line:
 
-    ./bin/runtest.py <fennec appname> <path to test>
+    ./bin/runtest.py <appname> <path to test>
 
-For example, to run the canvas clock example, try this:
+For example, to run the canvas clock example against Fennec nightly, try
+this:
 
     ./bin/runtest.py org.mozilla.fennec src/tests/canvas/clock.html
 

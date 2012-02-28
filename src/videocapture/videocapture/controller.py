@@ -114,7 +114,7 @@ class CaptureThread(threading.Thread):
 
 class CaptureController(object):
 
-    def __init__(self, device_name):
+    def __init__(self):
         self.capture_thread = None
         self.null_read = file('/dev/null', 'r')
         self.null_write = file('/dev/null', 'w')
@@ -122,16 +122,15 @@ class CaptureController(object):
         self.output_raw_file = None
         self.capture_time = None
         self.capture_name = None
-        self.device_name = device_name
 
-    def launch(self, capture_name, output_filename, debug=False):
+    def start_capture(self, output_filename, capture_metadata = {}, debug=False):
         # should not call this more than once
         assert not self.capture_thread
 
         self.output_raw_file = tempfile.NamedTemporaryFile()
         self.output_filename = output_filename
         self.capture_time = datetime.datetime.now()
-        self.capture_name = capture_name
+        self.capture_metadata = capture_metadata
         self.capture_thread = CaptureThread(self.output_raw_file.name, debug=debug)
         self.capture_thread.start()
 
@@ -226,11 +225,10 @@ class CaptureController(object):
         zipfile = ZipFile(self.output_filename, 'a')
 
         zipfile.writestr('metadata.json',
-                         json.dumps({'name': self.capture_name,
-                                     'device': self.device_name,
-                                     'date': self.capture_time.isoformat(),
-                                     'frameDimensions': frame_dimensions,
-                                     'version': 1 }))
+                         json.dumps(dict({ 'date': self.capture_time.isoformat(),
+                                           'frameDimensions': frame_dimensions,
+                                           'version': 1 },
+                                         **self.capture_metadata)))
 
         zipfile.writestr('movie.webm', moviefile.read())
 
