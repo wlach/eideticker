@@ -35,7 +35,7 @@
 #
 # ***** END LICENSE BLOCK *****
 
-import Image
+from PIL import Image
 import StringIO
 import os
 from zipfile import ZipFile

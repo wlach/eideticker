@@ -49,7 +49,7 @@ from square import get_biggest_square
 import re
 import threading
 
-import Image
+from PIL import Image
 import numpy
 from zipfile import ZipFile
 
