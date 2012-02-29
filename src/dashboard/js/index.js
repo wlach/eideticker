@@ -1,3 +1,5 @@
+"use strict";
+
 function parseDate(datestr) {
   var parsed = datestr.split("-");
   var year = parsed[0];
@@ -7,11 +9,16 @@ function parseDate(datestr) {
   return Date.UTC(year, month, day);
 }
 
-function drawGraph(rawdata, ylabel) {
+function drawGraph(rawdata, measure, ylabel) {
   // show individual data points
   var graphdata = [];
   var color = 0;
+  var videoURLs = {};
+
+  var seriesIndex = 0;
   Object.keys(rawdata).sort().forEach(function(type) {
+    videoURLs[seriesIndex] = []
+    // point graph
     var series1 = {
       label: type,
       points: { show: true },
@@ -21,22 +28,25 @@ function drawGraph(rawdata, ylabel) {
 
     Object.keys(rawdata[type]).forEach(function(datestr) {
       rawdata[type][datestr].forEach(function(sample) {
-        series1.data.push([parseDate(datestr), sample["fps"] ]);
+        series1.data.push([parseDate(datestr), sample[measure] ]);
+        videoURLs[seriesIndex].push(sample.video);
       });
     });
     series1.data.sort();
     graphdata.push(series1);
 
+    // line graph (aggregate average per day)
     var series2 = {
       lines: { show: true },
       color: color,
-      data: []
+      data: [],
+      clickable: false
     };
     Object.keys(rawdata[type]).forEach(function(datestr) {
       var numSamples = 0;
       var total = 0;
       rawdata[type][datestr].forEach(function(sample) {
-        total += sample["fps"];
+        total += sample[measure];
         numSamples++;
       });
 
@@ -46,18 +56,35 @@ function drawGraph(rawdata, ylabel) {
     graphdata.push(series2);
 
     color++;
+    seriesIndex += 2;
   });
 
-  $.plot($("#graph-container"), graphdata, {
+  var plot = $.plot($("#graph-container"), graphdata, {
     xaxis: {
       mode: "time",
-      timeformat: "%y-%0m-%0d",
-      minTickSize: [1, "day"]
-
+      timeformat: "%0m-%0d"
     },
     yaxis: {
       axisLabel: ylabel,
       min: 0
+    },
+    grid: { clickable: true, hoverable: true },
+  });
+
+  $("#graph-container").bind("plotclick", function (event, pos, item) {
+    plot.unhighlight();
+    if (item) {
+      var videoURL = videoURLs[item.seriesIndex][item.dataIndex];
+      $('#datapoint-info').html(ich.graphDatapoint({ 'videoURL': videoURL,
+                                                     'measureName': measure,
+                                                     'measureValue': Math.round(100.0*item.datapoint[1])/100.0
+                                                   }));
+      $('#video').css('width', $('#video').parent().width());
+      $('#video').css('max-height', $('#graph-container').height());
+
+      plot.highlight(item.series, item.datapoint);
+    } else {
+      $('#datapoint-info').html(null);
     }
   });
 }
@@ -80,7 +107,7 @@ $(function() {
 
         $('#content').html(ich.graph({'title': 'Canvas Framerate'}));
         $.getJSON('data.json', function(rawdata) {
-          drawGraph(rawdata['src/tests/canvas/clock.html'], "Frames per second");
+          drawGraph(rawdata['src/tests/canvas/clock.html'], "fps", "Frames per second");
         });
       }
     }
