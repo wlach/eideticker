@@ -81,6 +81,7 @@ class Capture(object):
     def get_video(self):
         buf = StringIO.StringIO()
         buf.write(self.archive.read('movie.webm'))
+        buf.seek(0)
         return buf
 
     def get_frame_image(self, framenum, grayscale=False):
