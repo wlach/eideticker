@@ -18,11 +18,11 @@ class NestedDict(dict):
             return self.get(key)
         return self.setdefault(key, NestedDict())
 
-products = [
-    { "name": "aurora",
-      "url": "http://ftp.mozilla.org/pub/mozilla.org/mobile/nightly/latest-mozilla-aurora-android/fennec-12.0a2.en-US.android-arm.apk" },
+default_products = [
     { "name": "nightly",
-      "url": "http://ftp.mozilla.org/pub/mozilla.org/mobile/nightly/latest-mozilla-central-android/fennec-13.0a1.en-US.android-arm.apk" }
+      "url": "http://ftp.mozilla.org/pub/mozilla.org/mobile/nightly/latest-mozilla-central-android/fennec-13.0a1.en-US.android-arm.apk" },
+    { "name": "maple",
+      "url": "http://ftp.mozilla.org/pub/mozilla.org/mobile/nightly/latest-maple-android/fennec-13.0a1.en-US.android-arm.apk" }
 ]
 
 DOWNLOAD_DIR = os.path.join(os.path.dirname(__file__), "../downloads")
@@ -45,17 +45,23 @@ def kill_app(dm, appname):
         dm.runCmd(["shell", "su" "-c" "'kill %s'" % pid])
 
 def main(args=sys.argv[1:]):
-    usage = "usage: %prog [options] <test name> <output json file>"
+    usage = "usage: %prog [options] <test name> <output dir> [product name]"
     parser = optparse.OptionParser(usage)
     parser.add_option("-d", "--download",
                       action="store_true", dest = "download",
                       help = "Download new versions of the app")
     options, args = parser.parse_args()
 
-    if len(args) != 2:
+    if len(args) < 2 or len(args) > 3:
         parser.error("incorrect number of arguments")
 
-    (testname, datafile) = (args[0], args[1])
+    (testname, outputdir) = (args[0], args[1])
+    products = default_products
+    if len(args) > 2:
+        products = [product for product in default_products if product['name'] == args[2]]
+        if not products:
+            print "ERROR: No products matching '%s'" % product['name']
+    datafile = os.path.join(outputdir, 'data.json')
 
     data = NestedDict()
     if os.path.isfile(datafile):
@@ -72,7 +78,7 @@ def main(args=sys.argv[1:]):
             f.close()
 
         appinfo = get_appinfo(fname)
-        dm = mozdevice.DeviceManagerADB(packageName=appinfo['name'])
+        dm = mozdevice.DroidADB(packageName=appinfo['name'])
         dm.updateApp(fname)
 
         # Kill any existing instances of the processes
@@ -93,14 +99,24 @@ def main(args=sys.argv[1:]):
 
         capture = videocapture.Capture(capture_file)
 
+        # video file
+        video_path = os.path.join('videos', 'video-%s.webm' % time.time())
+        video_file = os.path.join(outputdir, video_path)
+        open(video_file, 'w').write(capture.get_video().read())
+
         # fps calculation
         framediff_sums = videocapture.get_framediff_sums(capture)
-        num_different_frames = 1 + len([framediff for framediff in framediff_sums if framediff > 1000])
+        num_different_frames = 1 + len([framediff for framediff in framediff_sums if framediff > 250])
         fps = num_different_frames / capture.length
+
+        # need to initialize dict for product if not there already
+        if not data[testname].get(product['name']):
+            data[testname][product['name']] = {}
 
         if not data[testname][product['name']].get(appinfo['date']):
             data[testname][product['name']][appinfo['date']] = []
-        data[testname][product['name']][appinfo['date']].append({ 'fps': fps })
+        data[testname][product['name']][appinfo['date']].append({ 'fps': fps,
+                                                                  'video': video_path })
 
     # Write the data to disk
     open(datafile, 'w').write(json.dumps(data))
