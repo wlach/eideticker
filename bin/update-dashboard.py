@@ -42,7 +42,7 @@ def kill_app(dm, appname):
     procs = dm.getProcessList()
     for (pid, name, user) in procs:
       if name == appname:
-        dm.runCmd(["shell", "su" "-c" "'kill %s'" % pid])
+        dm.runCmd(["shell", "echo kill %s | su" % pid])
 
 def main(args=sys.argv[1:]):
     usage = "usage: %prog [options] <test name> <output dir> [product name]"
