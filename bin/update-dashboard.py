@@ -47,9 +47,9 @@ def kill_app(dm, appname):
 def main(args=sys.argv[1:]):
     usage = "usage: %prog [options] <test name> <output dir> [product name]"
     parser = optparse.OptionParser(usage)
-    parser.add_option("-d", "--download",
-                      action="store_true", dest = "download",
-                      help = "Download new versions of the app")
+    parser.add_option("--no-download",
+                      action="store_true", dest = "no_download",
+                      help = "Don't download new versions of the app")
     options, args = parser.parse_args()
 
     if len(args) < 2 or len(args) > 3:
@@ -70,7 +70,7 @@ def main(args=sys.argv[1:]):
     for product in products:
         fname = os.path.join(DOWNLOAD_DIR, "fennec-%s.apk" % product['name'])
 
-        if options.download:
+        if not options.no_download:
             print "Downloading %s" % product['name']
             dl = urllib2.urlopen(product['url'])
             f = open(fname, 'w')
