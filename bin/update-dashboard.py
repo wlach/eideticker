@@ -21,8 +21,8 @@ class NestedDict(dict):
 default_products = [
     { "name": "nightly",
       "url": "http://ftp.mozilla.org/pub/mozilla.org/mobile/nightly/latest-mozilla-central-android/fennec-13.0a1.en-US.android-arm.apk" },
-    { "name": "maple",
-      "url": "http://ftp.mozilla.org/pub/mozilla.org/mobile/nightly/latest-maple-android/fennec-13.0a1.en-US.android-arm.apk" }
+#    { "name": "maple",
+#      "url": "http://ftp.mozilla.org/pub/mozilla.org/mobile/nightly/latest-maple-android/fennec-13.0a1.en-US.android-arm.apk" }
 ]
 
 DOWNLOAD_DIR = os.path.join(os.path.dirname(__file__), "../downloads")
