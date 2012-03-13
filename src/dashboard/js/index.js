@@ -14,10 +14,12 @@ function drawGraph(rawdata, measure, ylabel) {
   var graphdata = [];
   var color = 0;
   var videoURLs = {};
+  var dateStrs = {};
 
   var seriesIndex = 0;
   Object.keys(rawdata).sort().forEach(function(type) {
-    videoURLs[seriesIndex] = []
+    videoURLs[seriesIndex] = [];
+    dateStrs[seriesIndex] = [];
     // point graph
     var series1 = {
       label: type,
@@ -30,6 +32,7 @@ function drawGraph(rawdata, measure, ylabel) {
       rawdata[type][datestr].forEach(function(sample) {
         series1.data.push([parseDate(datestr), sample[measure] ]);
         videoURLs[seriesIndex].push(sample.video);
+        dateStrs[seriesIndex].push(datestr);
       });
     });
     series1.data.sort();
@@ -75,8 +78,10 @@ function drawGraph(rawdata, measure, ylabel) {
     plot.unhighlight();
     if (item) {
       var videoURL = videoURLs[item.seriesIndex][item.dataIndex];
+      var dateStr = dateStrs[item.seriesIndex][item.dataIndex];
       $('#datapoint-info').html(ich.graphDatapoint({ 'videoURL': videoURL,
                                                      'measureName': measure,
+                                                     'date': dateStr,
                                                      'measureValue': Math.round(100.0*item.datapoint[1])/100.0
                                                    }));
       $('#video').css('width', $('#video').parent().width());
