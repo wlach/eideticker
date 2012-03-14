@@ -13,13 +13,11 @@ function drawGraph(rawdata, measure, ylabel) {
   // show individual data points
   var graphdata = [];
   var color = 0;
-  var videoURLs = {};
-  var dateStrs = {};
+  var metadataHash = {};
 
   var seriesIndex = 0;
   Object.keys(rawdata).sort().forEach(function(type) {
-    videoURLs[seriesIndex] = [];
-    dateStrs[seriesIndex] = [];
+    metadataHash[seriesIndex] = [];
     // point graph
     var series1 = {
       label: type,
@@ -28,14 +26,12 @@ function drawGraph(rawdata, measure, ylabel) {
       data: []
     };
 
-    Object.keys(rawdata[type]).forEach(function(datestr) {
+    Object.keys(rawdata[type]).sort().forEach(function(datestr) {
       rawdata[type][datestr].forEach(function(sample) {
-        series1.data.push([parseDate(datestr), sample[measure] ]);
-        videoURLs[seriesIndex].push(sample.video);
-        dateStrs[seriesIndex].push(datestr);
+        series1.data.push([ parseDate(datestr), sample[measure] ]);
+        metadataHash[seriesIndex].push({'videoURL': sample.video, 'dateStr': datestr});
       });
     });
-    series1.data.sort();
     graphdata.push(series1);
 
     // line graph (aggregate average per day)
@@ -77,11 +73,10 @@ function drawGraph(rawdata, measure, ylabel) {
   $("#graph-container").bind("plotclick", function (event, pos, item) {
     plot.unhighlight();
     if (item) {
-      var videoURL = videoURLs[item.seriesIndex][item.dataIndex];
-      var dateStr = dateStrs[item.seriesIndex][item.dataIndex];
-      $('#datapoint-info').html(ich.graphDatapoint({ 'videoURL': videoURL,
+      var metadata = metadataHash[item.seriesIndex][item.dataIndex];
+      $('#datapoint-info').html(ich.graphDatapoint({ 'videoURL': metadata.videoURL,
                                                      'measureName': measure,
-                                                     'date': dateStr,
+                                                     'date': metadata.dateStr,
                                                      'measureValue': Math.round(100.0*item.datapoint[1])/100.0
                                                    }));
       $('#video').css('width', $('#video').parent().width());
