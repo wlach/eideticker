@@ -22,13 +22,12 @@ default_products = [
     { "name": "nightly",
       "url": "http://ftp.mozilla.org/pub/mozilla.org/mobile/nightly/latest-mozilla-central-android/fennec-13.0a1.en-US.android-arm.apk",
       "appname": "org.mozilla.fennec"
- },
+    },
     { "name": "xul",
       "url": "http://ftp.mozilla.org/pub/mobile/releases/latest/android/en-US/fennec-10.0.3esr.en-US.android-arm.apk",
       "appname": "org.mozilla.firefox"
     }
-#    { "name": "maple",
-#      "url": "http://ftp.mozilla.org/pub/mozilla.org/mobile/nightly/latest-maple-android/fennec-13.0a1.en-US.android-arm.apk" }
+
 ]
 
 DOWNLOAD_DIR = os.path.join(os.path.dirname(__file__), "../downloads")
@@ -117,10 +116,12 @@ def main(args=sys.argv[1:]):
         if not data[testname].get(product['name']):
             data[testname][product['name']] = {}
 
-        if not data[testname][product['name']].get(appinfo['date']):
-            data[testname][product['name']][appinfo['date']] = []
-        data[testname][product['name']][appinfo['date']].append({ 'fps': fps,
-                                                                  'video': video_path })
+        current_date = time.strftime("%Y-%m-%d")
+        if not data[testname][product['name']].get(current_date):
+            data[testname][product['name']][current_date] = []
+        data[testname][product['name']][current_date].append({ 'fps': fps,
+                                                               'video': video_path,
+                                                               'appdate': appinfo['date'] })
 
     # Write the data to disk
     open(datafile, 'w').write(json.dumps(data))
