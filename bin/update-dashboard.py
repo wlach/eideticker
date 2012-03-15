@@ -20,7 +20,13 @@ class NestedDict(dict):
 
 default_products = [
     { "name": "nightly",
-      "url": "http://ftp.mozilla.org/pub/mozilla.org/mobile/nightly/latest-mozilla-central-android/fennec-13.0a1.en-US.android-arm.apk" },
+      "url": "http://ftp.mozilla.org/pub/mozilla.org/mobile/nightly/latest-mozilla-central-android/fennec-13.0a1.en-US.android-arm.apk",
+      "appname": "org.mozilla.fennec"
+ },
+    { "name": "xul",
+      "url": "http://ftp.mozilla.org/pub/mobile/releases/latest/android/en-US/fennec-10.0.3esr.en-US.android-arm.apk",
+      "appname": "org.mozilla.firefox"
+    }
 #    { "name": "maple",
 #      "url": "http://ftp.mozilla.org/pub/mozilla.org/mobile/nightly/latest-maple-android/fennec-13.0a1.en-US.android-arm.apk" }
 ]
@@ -34,9 +40,7 @@ def get_appinfo(fname):
     config.readfp(archive.open('application.ini'))
     buildid = config.get('App', 'BuildID')
     (year, month, day) = (buildid[0:4], buildid[4:6], buildid[6:8])
-    name = archive.open('package-name.txt').read().rstrip()
-    return { 'date':  "%s-%s-%s" % (year, month, day),
-             'name': name }
+    return { 'date':  "%s-%s-%s" % (year, month, day) }
 
 def kill_app(dm, appname):
     procs = dm.getProcessList()
@@ -68,7 +72,7 @@ def main(args=sys.argv[1:]):
         data.update(json.loads(open(datafile).read()))
 
     for product in products:
-        fname = os.path.join(DOWNLOAD_DIR, "fennec-%s.apk" % product['name'])
+        fname = os.path.join(DOWNLOAD_DIR, "%s.apk" % product['name'])
 
         if not options.no_download:
             print "Downloading %s" % product['name']
@@ -78,11 +82,11 @@ def main(args=sys.argv[1:]):
             f.close()
 
         appinfo = get_appinfo(fname)
-        dm = mozdevice.DroidADB(packageName=appinfo['name'])
+        dm = mozdevice.DroidADB(packageName=product['appname'])
         dm.updateApp(fname)
 
         # Kill any existing instances of the processes
-        kill_app(dm, appinfo['name'])
+        kill_app(dm, product['appname'])
 
         # Now run the test
         capture_file = os.path.join(CAPTURE_DIR,
@@ -90,12 +94,12 @@ def main(args=sys.argv[1:]):
         retval = subprocess.call(["runtest.py", "--name",
                          "%s %s" % (product['name'], appinfo['date']),
                          "--capture-file", capture_file,
-                         appinfo['name'], testname])
+                         product['appname'], testname])
         if retval != 0:
             raise Exception("Failed to run test %s for %s" % (testname, product['name']))
 
         # Kill app after test complete
-        kill_app(dm, appinfo['name'])
+        kill_app(dm, product['appname'])
 
         capture = videocapture.Capture(capture_file)
 
