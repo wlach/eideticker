@@ -19,13 +19,20 @@ class NestedDict(dict):
         return self.setdefault(key, NestedDict())
 
 default_products = [
-    { "name": "nightly",
-      "url": "http://ftp.mozilla.org/pub/mozilla.org/mobile/nightly/latest-mozilla-central-android/fennec-13.0a1.en-US.android-arm.apk",
-      "appname": "org.mozilla.fennec"
+    {
+        "name": "nightly",
+        "url": "http://ftp.mozilla.org/pub/mozilla.org/mobile/nightly/latest-mozilla-central-android/fennec-13.0a1.en-US.android-arm.apk",
+        "appname": "org.mozilla.fennec"
     },
-    { "name": "xul",
-      "url": "http://ftp.mozilla.org/pub/mobile/releases/latest/android/en-US/fennec-10.0.3esr.en-US.android-arm.apk",
-      "appname": "org.mozilla.firefox"
+    {
+        "name": "xul",
+        "url": "http://ftp.mozilla.org/pub/mobile/releases/latest/android/en-US/fennec-10.0.3esr.en-US.android-arm.apk",
+        "appname": "org.mozilla.firefox"
+    },
+    {
+        "name": "stock",
+        "url": None,
+        "appname": "com.android.browser"
     }
 
 ]
@@ -64,6 +71,7 @@ def main(args=sys.argv[1:]):
         products = [product for product in default_products if product['name'] == args[2]]
         if not products:
             print "ERROR: No products matching '%s'" % product['name']
+    current_date = time.strftime("%Y-%m-%d")
     datafile = os.path.join(outputdir, 'data.json')
 
     data = NestedDict()
@@ -73,14 +81,20 @@ def main(args=sys.argv[1:]):
     for product in products:
         fname = os.path.join(DOWNLOAD_DIR, "%s.apk" % product['name'])
 
-        if not options.no_download:
+        if not options.no_download and product.get('url'):
             print "Downloading %s" % product['name']
             dl = urllib2.urlopen(product['url'])
             f = open(fname, 'w')
             f.write(dl.read())
             f.close()
 
-        appinfo = get_appinfo(fname)
+        if product.get('url'):
+            appinfo = get_appinfo(fname)
+            capture_name = "%s %s" % (product['name'], appinfo['date'])
+        else:
+            appinfo = { }
+            capture_name = "%s (taken on %s)" % (product['name'], current_date)
+
         dm = mozdevice.DroidADB(packageName=product['appname'])
         dm.updateApp(fname)
 
@@ -89,9 +103,11 @@ def main(args=sys.argv[1:]):
 
         # Now run the test
         capture_file = os.path.join(CAPTURE_DIR,
-                                    "%s-%s-%s.zip" % (product['name'], appinfo['date'], int(time.time())))
+                                    "%s-%s-%s.zip" % (product['name'],
+                                                      appinfo.get('date'),
+                                                      int(time.time())))
         retval = subprocess.call(["runtest.py", "--name",
-                         "%s %s" % (product['name'], appinfo['date']),
+                         capture_name,
                          "--capture-file", capture_file,
                          product['appname'], testname])
         if retval != 0:
@@ -116,12 +132,11 @@ def main(args=sys.argv[1:]):
         if not data[testname].get(product['name']):
             data[testname][product['name']] = {}
 
-        current_date = time.strftime("%Y-%m-%d")
         if not data[testname][product['name']].get(current_date):
             data[testname][product['name']][current_date] = []
         data[testname][product['name']][current_date].append({ 'fps': fps,
                                                                'video': video_path,
-                                                               'appdate': appinfo['date'] })
+                                                               'appdate': appinfo.get('date') })
 
     # Write the data to disk
     open(datafile, 'w').write(json.dumps(data))
