@@ -98,8 +98,16 @@
   <script id="graphDatapoint" type="text/html">
     <div class="span2 well">
       <video id="video" src="{{videoURL}}" controls></video>
-      <p>{{date}}<br/>
-      {{measureName}}: {{measureValue}}</p>
+      <dl>
+        <dt>Test Date</dt>
+        <dd>{{date}}</dd>
+        {{#appDate}}
+        <dt>Build Date</dt>
+        <dd>{{appDate}}</dd>
+        {{/appDate}}
+        <dt>{{measureName}}</dt>
+        <dd>{{measureValue}}</dd>
+      </dl>
     </div>
   </script>
 

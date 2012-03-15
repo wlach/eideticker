@@ -29,7 +29,7 @@ function drawGraph(rawdata, measure, ylabel) {
     Object.keys(rawdata[type]).sort().forEach(function(datestr) {
       rawdata[type][datestr].forEach(function(sample) {
         series1.data.push([ parseDate(datestr), sample[measure] ]);
-        metadataHash[seriesIndex].push({'videoURL': sample.video, 'dateStr': datestr});
+        metadataHash[seriesIndex].push({'videoURL': sample.video, 'dateStr': datestr, 'appDate': sample.appdate });
       });
     });
     graphdata.push(series1);
@@ -77,6 +77,7 @@ function drawGraph(rawdata, measure, ylabel) {
       $('#datapoint-info').html(ich.graphDatapoint({ 'videoURL': metadata.videoURL,
                                                      'measureName': measure,
                                                      'date': metadata.dateStr,
+                                                     'appDate': metadata.appDate,
                                                      'measureValue': Math.round(100.0*item.datapoint[1])/100.0
                                                    }));
       $('#video').css('width', $('#video').parent().width());
