@@ -70,7 +70,7 @@ def main(args=sys.argv[1:]):
     if len(args) > 2:
         products = [product for product in default_products if product['name'] == args[2]]
         if not products:
-            print "ERROR: No products matching '%s'" % product['name']
+            print "ERROR: No products matching '%s'" % args[2]
     current_date = time.strftime("%Y-%m-%d")
     datafile = os.path.join(outputdir, 'data.json')
 
