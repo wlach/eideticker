@@ -26,6 +26,7 @@ class Device(object):
 device = Device()
 
 print "READY"
+sys.stdout.flush()
 
 while 1:
     try:
