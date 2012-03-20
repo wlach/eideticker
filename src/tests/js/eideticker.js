@@ -5,7 +5,7 @@ var Eideticker = function () {
     loadTest: function(testurl) {
       setTimeout(function() {
         window.location.href = testurl;
-      }, 5000);
+      }, 2000);
     },
     start: function() {
       startTime = new Date();
