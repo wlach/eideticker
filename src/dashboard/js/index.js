@@ -98,7 +98,9 @@ $(function() {
         $('#functions').children('#checkerboard-li').addClass("active");
 
         $('#content').html(ich.graph({'title': 'Checkerboarding percents'}));
-        $('#graph-container').append("<p>Workin' on it! ;)</p>");
+        $.getJSON('data.json', function(rawdata) {
+          drawGraph(rawdata['taskjs'], "checkerboard", "Checkerboard area/duration");
+        });
       }
     },
     '/canvas': {
@@ -108,7 +110,7 @@ $(function() {
 
         $('#content').html(ich.graph({'title': 'Canvas Framerate'}));
         $.getJSON('data.json', function(rawdata) {
-          drawGraph(rawdata['src/tests/canvas/clock.html'], "fps", "Frames per second");
+          drawGraph(rawdata['clock'], "fps", "Frames per second");
         });
       }
     }

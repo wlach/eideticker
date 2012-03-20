@@ -118,7 +118,11 @@ class CheckerboardHandler:
     @templeton.handlers.json_response
     def GET(self, name):
         capture = videocapture.Capture(os.path.join(CAPTURE_DIR, name))
-        return videocapture.get_checkerboarding_percents(capture)
+        percents = videocapture.get_checkerboarding_percents(capture)
+        area_duration = videocapture.get_checkerboarding_area_duration(capture)
+        return { "areaDuration": area_duration,
+                 "numCheckerboards": len(filter(lambda f: f > 0.0, percents)),
+                 "numFrames": capture.num_frames }
 
 class CheckerboardImageHandler:
 

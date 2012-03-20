@@ -114,6 +114,7 @@ class BrowserRunner(object):
         self.dm = dm
         self.appname = appname
         self.url = url
+        self.intent = "android.intent.action.VIEW"
 
         activity_mappings = {
             'com.android.browser': 'BrowserActivity'
@@ -122,6 +123,7 @@ class BrowserRunner(object):
         # use activity mapping if not mozilla
         if self.appname.startswith('org.mozilla'):
             self.activity = 'App'
+            self.intent = None
         else:
             self.activity = activity_mappings[self.appname]
 
@@ -139,7 +141,8 @@ class BrowserRunner(object):
             args.extend(["-profile", remote_profile_dir])
 
         print "Starting %s... " % self.appname
-        self.dm.launchApplication(self.appname, activity=self.activity,
+        self.dm.launchApplication(self.appname, intent=self.intent,
+                                  activity=self.activity,
                                   url=self.url, extra_args=args)
 
     def stop(self):

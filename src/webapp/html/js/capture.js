@@ -165,22 +165,13 @@ function getFrameViews(captureId, captureSummary, frameDiffs, minFrameNum, maxFr
 }
 
 function displayCheckerboard(captureId, captureSummary) {
-  resourceCache.get('api/captures/' + captureId + '/checkerboard', function(checkerboardPercents) {
+  resourceCache.get('api/captures/' + captureId + '/checkerboard', function(checkerboardSummary) {
     resourceCache.get('api/captures/' + captureId + '/framediff', function(frameDiffs) {
-      var numCheckerboards = checkerboardPercents.reduce(function(prev, curr, i, a) {
-        if (curr > 0.0) {
-          return prev+1;
-        }
-        return prev;
-      }, 0);
-      var overallCheckerboardPercent = checkerboardPercents.reduce(function(prev, curr, i, a) {
-        return prev+curr;
-      }, 0) / checkerboardPercents.length;
 
       $("#maincontent").html(ich.checkerboard_summary({
-        overall_checkerboard_percent: overallCheckerboardPercent,
-        num_checkerboards: numCheckerboards,
-        num_frames: checkerboardPercents.length
+        checkerboardAreaDuration: checkerboardSummary.areaDuration,
+        numCheckerboards: checkerboardSummary.numCheckerboards,
+        numFrames: checkerboardSummary.numFrames
       }));
 
       //var frameDiffGroup = getFrameDiffGroups(captureSummary, frameDiffs, 2500, 0)[0];

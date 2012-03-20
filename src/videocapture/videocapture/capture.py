@@ -44,11 +44,6 @@ import numpy
 import tempfile
 import cPickle as pickle
 
-class CaptureDimensions(object):
-    def __init__(self, bbox):
-        self.bbox = bbox
-        self.size = (self.bbox[2] - self.bbox[0], self.bbox[3] - self.bbox[1])
-
 class CaptureException(Exception):
     def __init__(self, msg):
         self.msg = msg
@@ -70,6 +65,9 @@ class Capture(object):
 
         self.num_frames = max(0, len(filter(lambda s: s[0:7] == "images/" and len(s) > 8,
                                             self.archive.namelist())) - 2)
+        if self.num_frames > 0:
+            im = self.get_frame_image(0)
+            self.dimensions = im.size
 
         # Name of capture filename (in case we need to modify it)
         self.filename = filename

@@ -202,22 +202,18 @@
     <script id="checkerboard_summary" type="text/html">
       <div class="row">
         <div class="span8" id="checkerboard-analysis-results">
-          <h2>Overall checkerboarding percent: {{overall_checkerboard_percent}}</h2>
-          <p>Frames with checkerboarding: {{num_checkerboards}}/{{num_frames}}</p>
+          <h2>Overall checkerboarding area/duration: {{checkerboardAreaDuration}}</h2>
+          <p>Frames with checkerboarding: {{numCheckerboards}}/{{numFrames}}</p>
         </div>
         <div class="span6" id="checkerboard-description">
           <p>
-            Checkerboard analysis attempts to automatically detect parts of the image
-            that have a canonical checkerboard pattern.
+            Overall metric is a sum of checkerboard areas in each frame. Lower numbers
+            are better.
           </p>
         </div>
       </div>
       <div id="checkerboard-viz">
       </div>
-    </script>
-
-    <script id="checkerboard_analysis_results" type="text/html">
-      <p>Minimum FPS: {{minfps}}<p>
     </script>
 
     <script id="checkerboard_viz" type="text/html">
