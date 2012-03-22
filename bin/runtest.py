@@ -74,7 +74,7 @@ class CaptureServer(object):
         # open up a monkeyrunner process on startup, wait for it to give a
         # line so we don't have to wait
         # for it later (note that not all tests use monkeyrunner)
-        args = ['monkeyrunner', os.path.join(BINDIR, 'devicecontroller.py')]
+        args = ['python', os.path.join(BINDIR, 'devicecontroller.py')]
         self.monkey_proc = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
         line = self.monkey_proc.stdout.readline()
 
