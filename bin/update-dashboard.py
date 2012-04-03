@@ -46,6 +46,11 @@ default_tests = [
         'name': 'taskjs',
         'path': 'src/tests/scrolling/taskjs.org/index.html',
         'measure': 'checkerboard'
+    },
+    {
+        'name': 'nightly',
+        'path': 'src/tests/zooming/nightly.mozilla.org/index.html',
+        'measure': 'checkerboard'
     }
 ]
 

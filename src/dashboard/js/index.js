@@ -92,15 +92,27 @@ function drawGraph(rawdata, measure, ylabel) {
 
 $(function() {
   var router = Router({
-    '/checkerboarding': {
+    '/scrolling': {
       on: function() {
         $('#functions').children('li').removeClass("active");
-        $('#functions').children('#checkerboard-li').addClass("active");
+        $('#functions').children('#scrolling-li').addClass("active");
 
-        $('#content').html(ich.graph({'title': 'Checkerboarding',
+        $('#content').html(ich.graph({'title': 'Checkerboarding during scrolling',
                                       'description': 'The measure is the sum of the percentages of frames that are checkerboarded over the entire capture. Lower values are better.'}));
         $.getJSON('data.json', function(rawdata) {
           drawGraph(rawdata['taskjs'], "checkerboard", "Checkerboard");
+        });
+      }
+    },
+    '/zooming': {
+      on: function() {
+        $('#functions').children('li').removeClass("active");
+        $('#functions').children('#zooming-li').addClass("active");
+
+        $('#content').html(ich.graph({'title': 'Checkerboarding during zooming',
+                                      'description': 'The measure is the sum of the percentages of frames that are checkerboarded over the entire capture. Lower values are better.'}));
+        $.getJSON('data.json', function(rawdata) {
+          drawGraph(rawdata['nightly'], "checkerboard", "Checkerboard");
         });
       }
     },
