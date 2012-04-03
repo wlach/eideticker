@@ -72,11 +72,13 @@ class CaptureServer(object):
         self.controller = controller
 
         # open up a monkeyrunner process on startup, wait for it to give a
-        # line so we don't have to wait
-        # for it later (note that not all tests use monkeyrunner)
+        # line so we don't have to wait for it later
         args = ['python', os.path.join(BINDIR, 'devicecontroller.py')]
         self.monkey_proc = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
         line = self.monkey_proc.stdout.readline()
+        # Hack: this gets rid of the "finished charging" modal dialog that the
+        # LG G2X sometimes brings up
+        self.monkey_proc.stdin.write('tap 240 617\n')
 
     @mozhttpd.handlers.json_response
     def start_capture(self, request):
