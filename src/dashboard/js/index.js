@@ -97,9 +97,10 @@ $(function() {
         $('#functions').children('li').removeClass("active");
         $('#functions').children('#checkerboard-li').addClass("active");
 
-        $('#content').html(ich.graph({'title': 'Checkerboarding percents'}));
+        $('#content').html(ich.graph({'title': 'Checkerboarding',
+                                      'description': 'The measure is the sum of the percentages of frames that are checkerboarded over the entire capture. Lower values are better.'}));
         $.getJSON('data.json', function(rawdata) {
-          drawGraph(rawdata['taskjs'], "checkerboard", "Checkerboard area/duration");
+          drawGraph(rawdata['taskjs'], "checkerboard", "Checkerboard");
         });
       }
     },
