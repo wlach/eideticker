@@ -6,10 +6,13 @@
 # part of the tools provided with the Android SDK (see:
 # http://developer.android.com/guide/developing/tools/monkeyrunner_concepts.html)
 
+import StringIO
+import os
 import select
 import socket
 import subprocess
 import sys
+import tempfile
 import time
 
 import mozdevice
@@ -18,8 +21,8 @@ class MonkeyConnection(object):
 
     def __init__(self, port=9999):
         # kill any existing instances of the monkey process
-        droid = mozdevice.DroidADB()
-        droid.killProcess('app_process')
+        self._droid = mozdevice.DroidADB()
+        self._droid.killProcess('app_process')
 
         subprocess.check_call(["adb", "forward", "tcp:%s" % port, "tcp:%s" % port])
         p = subprocess.Popen(["adb", "shell", "monkey", "--port", str(port)])
@@ -71,6 +74,30 @@ class MonkeyConnection(object):
             time.sleep(duration/num_steps)
         self._send_cmd("touch up %s %s" % touch_end)
 
+    def tap(self, x, y):
+        self._send_cmd("touch down %s %s" % (x, y))
+        self._send_cmd("touch up %s %s" % (x, y))
+
+    def double_tap(self, x, y):
+        # HACK: monkeyrunner doesn't set downTime correctly when in network
+        # mode, which Android's gesture recognizer needs to detect a double
+        # tap properly. as a workaround, use monkey's script functionality
+        f = tempfile.NamedTemporaryFile()
+        f.write("type= raw events\ncount= 4\nspeed= 1.0\nstart data >>\n")
+        for i in range(0,2):
+            f.write("createDispatchPointer(0,0,0,%s,%s,1.0,1.0,0,0.0,0.0,-1,"
+                    "0)\n" % (x,y))
+            f.write("createDispatchPointer(0,0,1,%s,%s,1.0,1.0,0,0.0,0.0,-1,"
+                    "0)\n" % (x,y))
+        f.flush()
+        remotefilename = '%s/%s' % (self._droid.getDeviceRoot(),
+                                    os.path.basename(f.name))
+        self._droid.pushFile(f.name, remotefilename)
+        buf = StringIO.StringIO()
+        self._droid.shell(["monkey", "-f", remotefilename, "1"], buf)
+        print remotefilename
+        print "RESULT: %s" % buf.read()
+
     def scroll_down(self):
         x = int(self.dimensions[0] / 2)
         ybottom = self.dimensions[1] - 100
@@ -102,6 +129,10 @@ while 1:
         break
     elif cmd == "scroll_down":
         connection.scroll_down()
+    elif cmd == "tap":
+        connection.tap(*params)
+    elif cmd == "double_tap":
+        connection.double_tap(*params)
     elif cmd == "sleep":
         sleeptime = 1
         if len(params) > 0:
