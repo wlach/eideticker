@@ -96,6 +96,8 @@ class CaptureThread(threading.Thread):
                 '13',
                 '-p',
                 '0',
+                '-n',
+                '6000',
                 '-f',
                 self.output_raw_filename)
 
