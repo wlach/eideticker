@@ -80,6 +80,11 @@ class CaptureServer(object):
         # LG G2X sometimes brings up
         self.monkey_proc.stdin.write('tap 240 617\n')
 
+    def terminate_capture(self):
+        self.controller.terminate_capture()
+        if self.monkey_proc and not self.monkey_proc.poll():
+            self.monkey_proc.kill()
+
     @mozhttpd.handlers.json_response
     def start_capture(self, request):
         self.controller.start_capture(self.capture_file, self.capture_metadata)
@@ -89,9 +94,7 @@ class CaptureServer(object):
     @mozhttpd.handlers.json_response
     def end_capture(self, request):
         self.finished = True
-        self.controller.terminate_capture()
-        if self.monkey_proc and not self.monkey_proc.poll():
-            self.monkey_proc.kill()
+        self.terminate_capture()
         return (200, {'capturing': False})
 
     @mozhttpd.handlers.json_response
@@ -248,6 +251,7 @@ def main(args=sys.argv[1:]):
 
     if not capture_server.finished:
         print "Did not finish test! Error!"
+        capture_server.terminate()
         sys.exit(1)
 
     print "Converting capture..."
