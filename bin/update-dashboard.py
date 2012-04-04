@@ -122,15 +122,15 @@ def main(args=sys.argv[1:]):
             f.write(dl.read())
             f.close()
 
+        dm = mozdevice.DroidADB(packageName=product['appname'])
+
         if product.get('url'):
+            dm.updateApp(fname)
             appinfo = get_appinfo(fname)
             capture_name = "%s %s" % (product['name'], appinfo['date'])
         else:
             appinfo = { }
             capture_name = "%s (taken on %s)" % (product['name'], current_date)
-
-        dm = mozdevice.DroidADB(packageName=product['appname'])
-        dm.updateApp(fname)
 
         for test in tests:
             # Kill any existing instances of the processes
