@@ -251,7 +251,7 @@ def main(args=sys.argv[1:]):
 
     if not capture_server.finished:
         print "Did not finish test! Error!"
-        capture_server.terminate()
+        capture_server.terminate_capture()
         sys.exit(1)
 
     print "Converting capture..."
