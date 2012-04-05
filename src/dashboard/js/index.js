@@ -104,6 +104,18 @@ $(function() {
         });
       }
     },
+    '/nytimes-scrolling': {
+      on: function() {
+        $('#functions').children('li').removeClass("active");
+        $('#functions').children('#nytimes-scrolling-li').addClass("active");
+
+        $('#content').html(ich.graph({'title': 'Checkerboarding during scrolling',
+                                      'description': 'The measure is the sum of the percentages of frames that are checkerboarded over the entire capture. Lower values are better.'}));
+        $.getJSON('data.json', function(rawdata) {
+          drawGraph(rawdata['nytimes-scroll'], "checkerboard", "Checkerboard");
+        });
+      }
+    },
     '/zooming': {
       on: function() {
         $('#functions').children('li').removeClass("active");
@@ -113,6 +125,18 @@ $(function() {
                                       'description': 'The measure is the sum of the percentages of frames that are checkerboarded over the entire capture. Lower values are better.'}));
         $.getJSON('data.json', function(rawdata) {
           drawGraph(rawdata['nightly'], "checkerboard", "Checkerboard");
+        });
+      }
+    },
+    '/nytimes-zooming': {
+      on: function() {
+        $('#functions').children('li').removeClass("active");
+        $('#functions').children('#nytimes-zooming-li').addClass("active");
+
+        $('#content').html(ich.graph({'title': 'Checkerboarding during zooming',
+                                      'description': 'The measure is the sum of the percentages of frames that are checkerboarded over the entire capture. Lower values are better.'}));
+        $.getJSON('data.json', function(rawdata) {
+          drawGraph(rawdata['nytimes-zoom'], "checkerboard", "Checkerboard");
         });
       }
     },

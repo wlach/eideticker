@@ -51,7 +51,17 @@ default_tests = [
         'name': 'nightly',
         'path': 'src/tests/zooming/nightly.mozilla.org/index.html',
         'measure': 'checkerboard'
-    }
+    },
+    {
+        'name': 'nytimes-scroll',
+        'path': 'src/tests/scrolling/nytimes/nytimes.com/nytimes-scroll.html',
+        'measure': 'checkerboard'
+    },
+    {
+        'name': 'nytimes-zoom',
+        'path': 'src/tests/scrolling/nytimes/nytimes.com/nytimes-zoom.html',
+        'measure': 'checkerboard'
+    },
 ]
 
 DOWNLOAD_DIR = os.path.join(os.path.dirname(__file__), "../downloads")
