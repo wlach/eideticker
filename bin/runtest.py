@@ -181,6 +181,12 @@ def main(args=sys.argv[1:]):
         print "Test must be relative to %s" % TEST_DIR
         sys.exit(1)
 
+    if not os.path.exists(EIDETICKER_TEMP_DIR):
+        os.mkdir(EIDETICKER_TEMP_DIR)
+    if not os.path.isdir(EIDETICKER_TEMP_DIR):
+        print "Could not open eideticker temporary directory"
+        sys.exit(1)
+
     capture_name = options.capture_name
     if not capture_name:
         capture_name = testpath
