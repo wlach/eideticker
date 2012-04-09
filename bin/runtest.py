@@ -56,8 +56,9 @@ import StringIO
 BINDIR = os.path.dirname(__file__)
 CAPTURE_DIR = os.path.abspath(os.path.join(BINDIR, "../captures"))
 TEST_DIR = os.path.abspath(os.path.join(BINDIR, "../src/tests"))
+EIDETICKER_TEMP_DIR = "/tmp/eideticker"
 
-capture_controller = videocapture.CaptureController()
+capture_controller = videocapture.CaptureController(custom_tempdir=EIDETICKER_TEMP_DIR)
 
 class CaptureServer(object):
     finished = False

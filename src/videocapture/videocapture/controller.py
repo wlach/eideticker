@@ -65,10 +65,11 @@ class CaptureThread(threading.Thread):
     capture_proc = None
     debug = False
 
-    def __init__(self, output_raw_filename, debug=False):
+    def __init__(self, output_raw_filename, custom_tempdir=None, debug=False):
         threading.Thread.__init__(self)
         self.output_raw_filename = output_raw_filename
         self.debug = debug
+        self.custom_tempdir = custom_tempdir
 
     def stop(self):
         self.finished = True
@@ -116,7 +117,7 @@ class CaptureThread(threading.Thread):
 
 class CaptureController(object):
 
-    def __init__(self):
+    def __init__(self, custom_tempdir=None):
         self.capture_thread = None
         self.null_read = file('/dev/null', 'r')
         self.null_write = file('/dev/null', 'w')
@@ -124,16 +125,18 @@ class CaptureController(object):
         self.output_raw_file = None
         self.capture_time = None
         self.capture_name = None
+        self.custom_tempdir = custom_tempdir
 
     def start_capture(self, output_filename, capture_metadata = {}, debug=False):
         # should not call this more than once
         assert not self.capture_thread
 
-        self.output_raw_file = tempfile.NamedTemporaryFile()
+        self.output_raw_file = tempfile.NamedTemporaryFile(dir=self.custom_tempdir)
         self.output_filename = output_filename
         self.capture_time = datetime.datetime.now()
         self.capture_metadata = capture_metadata
-        self.capture_thread = CaptureThread(self.output_raw_file.name, debug=debug)
+        self.capture_thread = CaptureThread(self.output_raw_file.name, debug=debug,
+                                            custom_tempdir=self.custom_tempdir)
         self.capture_thread.start()
 
     def capture_framenum(self):
@@ -149,14 +152,14 @@ class CaptureController(object):
         self.capture_thread = None
 
     def convert_capture(self, start_frame, end_frame):
-        tempdir = tempfile.mkdtemp()
+        imagedir = tempfile.mkdtemp(dir=self.custom_tempdir)
 
         subprocess.Popen((os.path.join(DECKLINK_DIR, 'decklink-convert.sh'),
-                          self.output_raw_file.name, tempdir),
+                          self.output_raw_file.name, imagedir),
                          close_fds=True).wait()
 
         print "Cropping to start/end of capture..."
-        imagefiles = [os.path.join(tempdir, path) for path in sorted(os.listdir(tempdir),
+        imagefiles = [os.path.join(imagedir, path) for path in sorted(os.listdir(imagedir),
                                                                      key=_natural_key)]
         num_frames = len(imagefiles)
 
@@ -197,7 +200,7 @@ class CaptureController(object):
                     break
 
         print "Rewriting images ..."
-        imagedir = tempfile.mkdtemp()
+        rewritten_imagedir = tempfile.mkdtemp(dir=self.custom_tempdir)
 
         def _rewrite_frame(framenum, dirname, imagefilename):
             im = Image.open(imagefilename)
@@ -207,7 +210,7 @@ class CaptureController(object):
 
         # map the frame before the start frame to the zeroth frame (if possible)
         if start_frame > 1:
-            _rewrite_frame(0, imagedir, imagefiles[start_frame-1])
+            _rewrite_frame(0, rewritten_imagedir, imagefiles[start_frame-1])
 
         # last frame is the first red frame, or the very last frame in the
         # sequence (for the edge case where there is no red frame)
@@ -215,12 +218,13 @@ class CaptureController(object):
 
         # copy the remaining frames into numeric order starting from 1
         for (i,j) in enumerate(range(start_frame, last_frame)):
-            _rewrite_frame((i+1), imagedir, imagefiles[j])
+            _rewrite_frame((i+1), rewritten_imagedir, imagefiles[j])
 
         print "Creating movie ..."
-        moviefile = tempfile.NamedTemporaryFile(suffix=".webm")
+        moviefile = tempfile.NamedTemporaryFile(dir=self.custom_tempdir,
+                                                suffix=".webm")
         subprocess.Popen(('ffmpeg', '-y', '-r', '60', '-i',
-                          os.path.join(imagedir, '%d.png'),
+                          os.path.join(rewritten_imagedir, '%d.png'),
                           moviefile.name), close_fds=True).wait()
 
         print "Writing final capture..."
@@ -234,9 +238,10 @@ class CaptureController(object):
 
         zipfile.writestr('movie.webm', moviefile.read())
 
-        for imagefilename in os.listdir(imagedir):
+        for imagefilename in os.listdir(rewritten_imagedir):
             zipfile.writestr("images/%s" % imagefilename,
-                             open(os.path.join(imagedir, imagefilename)).read())
+                             open(os.path.join(rewritten_imagedir,
+                                               imagefilename)).read())
 
         zipfile.close()
 
