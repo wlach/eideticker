@@ -48,6 +48,7 @@ import capture
 from square import get_biggest_square
 import re
 import threading
+import shutil
 
 from PIL import Image
 import numpy
@@ -244,6 +245,9 @@ class CaptureController(object):
                                                imagefilename)).read())
 
         zipfile.close()
+
+        shutil.rmtree(imagedir)
+        shutil.rmtree(rewritten_imagedir)
 
         self.output_filename = None
         self.output_raw_file = None
