@@ -39,28 +39,23 @@ default_products = [
 default_tests = [
     {
         'name': 'clock',
-        'path': 'src/tests/canvas/clock.html',
-        'measure': 'fps'
+        'path': 'src/tests/canvas/clock.html'
     },
     {
         'name': 'taskjs',
-        'path': 'src/tests/scrolling/taskjs.org/index.html',
-        'measure': 'checkerboard'
+        'path': 'src/tests/scrolling/taskjs.org/index.html'
     },
     {
         'name': 'nightly',
-        'path': 'src/tests/zooming/nightly.mozilla.org/index.html',
-        'measure': 'checkerboard'
+        'path': 'src/tests/zooming/nightly.mozilla.org/index.html'
     },
     {
         'name': 'nytimes-scroll',
-        'path': 'src/tests/scrolling/nytimes/nytimes.com/nytimes-scroll.html',
-        'measure': 'checkerboard'
+        'path': 'src/tests/scrolling/nytimes/nytimes.com/nytimes-scroll.html'
     },
     {
         'name': 'nytimes-zoom',
-        'path': 'src/tests/scrolling/nytimes/nytimes.com/nytimes-zoom.html',
-        'measure': 'checkerboard'
+        'path': 'src/tests/scrolling/nytimes/nytimes.com/nytimes-zoom.html'
     },
 ]
 
@@ -168,15 +163,13 @@ def main(args=sys.argv[1:]):
         video_file = os.path.join(outputdir, video_path)
         open(video_file, 'w').write(capture.get_video().read())
 
-        if test['measure'] == 'fps':
-            framediff_sums = videocapture.get_framediff_sums(capture)
-            num_different_frames = 1 + len([framediff for framediff in framediff_sums if framediff > 250])
-            measure = num_different_frames / capture.length
-        elif test['measure'] == 'checkerboard':
-            measure = videocapture.get_checkerboarding_area_duration(capture)
-        else:
-            print "ERROR: Unknown measure '%s'" % test['measure']
-            sys.exit(1)
+        # frames-per-second
+        framediff_sums = videocapture.get_framediff_sums(capture)
+        num_different_frames = 1 + len([framediff for framediff in framediff_sums if framediff > 250])
+        fps = num_different_frames / capture.length
+
+        # checkerboarding
+        checkerboard = videocapture.get_checkerboarding_area_duration(capture)
 
         # need to initialize dict for product if not there already
         if not data[test['name']].get(product['name']):
@@ -184,7 +177,8 @@ def main(args=sys.argv[1:]):
 
         if not data[test['name']][product['name']].get(current_date):
             data[test['name']][product['name']][current_date] = []
-        datapoint = { test['measure']: measure,
+        datapoint = { 'fps': fps,
+                      'checkerboard': checkerboard,
                       'video': video_path,
                       'appdate': appinfo.get('date'),
                       'buildid': appinfo.get('buildid'),

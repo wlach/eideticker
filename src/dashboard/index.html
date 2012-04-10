@@ -46,15 +46,17 @@
         <div class="span2">
           <div class="well sidebar-nav">
             <ul class="nav nav-list" id="functions">
-              <li class="nav-header">Tests</li>
-              <li id="scrolling-li"><a href="#/scrolling">Scrolling</a></li>
-              <li id="zooming-li"><a href="#/zooming">Zooming</a></li>
-              <li id="nytimes-scrolling-li"><a href="#/nytimes-scrolling">NYTimes Scrolling</a></li>
-              <li id="nytimes-zooming-li"><a href="#/nytimes-zooming">NYTimes Zooming</a></li>
-              <li id="canvas-li"><a href="#/canvas">Canvas</a></li>
+              <li class="nav-header">Test</li>
+              <li id="taskjs-scrolling-li"><a href="#/taskjs-scrolling/checkerboard">task.js scrolling</a></li>
+              <li id="nightly-zooming-li"><a href="#/nightly-zooming/checkerboard">Nightly zooming</a></li>
+              <li id="nytimes-scrolling-li"><a href="#/nytimes-scrolling/checkerboard">NYTimes scrolling</a></li>
+              <li id="nytimes-zooming-li"><a href="#/nytimes-zooming/checkerboard">NYTimes zooming</a></li>
+              <li id="canvas-clock-li"><a href="#/canvas-clock/fps">Canvas clock</a></li>
             </ul>
           </div><!--/.well -->
+
         </div><!--/span-->
+
         <div class="span10">
           <div id="content">
           </div>
@@ -92,7 +94,17 @@
       <div class="span8">
         <p></p>
         <div id="graph-container"></div>
-        <p>{{description}}</p>
+        <div id="measure-form">
+          <form>
+            <select id="measure" type="text">
+              <option id="measure-fps" value="fps">Frames Per Second</option>
+              <option id="measure-checkerboard" value="checkerboard">Checkerboard</option>
+            </select>
+            <span class="help-inline">
+              {{measureDescription}}
+            </span>
+          </form>
+        </div>
         <p><b>Hint</b>: <i>Click on the datapoints to see a video of the testrun!</i></p>
       </div>
       <div id="datapoint-info">

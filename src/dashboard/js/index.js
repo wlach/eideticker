@@ -9,7 +9,26 @@ function parseDate(datestr) {
   return Date.UTC(year, month, day);
 }
 
-function drawGraph(rawdata, measure, ylabel) {
+function updateContent(graphTitle, testName, measure) {
+
+  var measureDescription;
+  if (measure === "checkerboard") {
+    measureDescription = 'The measure is the sum of the percentages of frames that are checkerboarded over the entire capture. Lower values are better.';
+  } else {
+    measureDescription = 'The measure is a calculation of the average number of UNIQUE frames per second of capture. The theoretical maximum is 60 fps (which is what we are capturing), but note that if there periods where the page being captured is unchanging this number may be aritifically low.';
+  }
+
+  $('#content').html(ich.graph({'title': graphTitle,
+                                'measureDescription': measureDescription
+                               }));
+  $('#measure-'+measure).attr("selected", "true");
+  $('#measure').change(function() {
+    var newMeasure = $(this).val();
+    window.location.hash = '/' + [ testName, newMeasure ].join('/');
+  });
+}
+
+function updateGraph(rawdata, measure) {
   // show individual data points
   var graphdata = [];
   var color = 0;
@@ -58,13 +77,20 @@ function drawGraph(rawdata, measure, ylabel) {
     seriesIndex += 2;
   });
 
+  var axisLabel;
+  if (measure == "checkerboard") {
+    axisLabel = "Checkerboard";
+  } else {
+    axisLabel = "Frames per second";
+  }
+
   var plot = $.plot($("#graph-container"), graphdata, {
     xaxis: {
       mode: "time",
       timeformat: "%0m-%0d"
     },
     yaxis: {
-      axisLabel: ylabel,
+      axisLabel: axisLabel,
       min: 0
     },
     grid: { clickable: true, hoverable: true },
@@ -93,65 +119,47 @@ function drawGraph(rawdata, measure, ylabel) {
 }
 
 $(function() {
+  var testInfoDict = {
+    'taskjs-scrolling': {
+      'key': 'taskjs',
+      'graphTitle': 'Scrolling on taskjs.org'
+    },
+    'nightly-zooming': {
+      'key': 'nightly',
+      'graphTitle': 'Mozilla Nightly Zooming Test'
+    },
+    'nytimes-scrolling': {
+      'key': 'nytimes-scroll',
+      'graphTitle': 'New York Times Scrolling Test'
+    },
+    'nytimes-zooming': {
+      'key': 'nytimes-zoom',
+      'graphTitle': 'New York Times Zooming Test'
+    },
+    'canvas-clock': {
+      'key': 'clock',
+      'graphTitle': 'Canvas Clock Test'
+    }
+  }
+
+
+  // FIXME: it would be nice to generate the toplevel argument from the above
   var router = Router({
-    '/scrolling': {
-      on: function() {
-        $('#functions').children('li').removeClass("active");
-        $('#functions').children('#scrolling-li').addClass("active");
+    '/(taskjs-scrolling|nytimes-scrolling|nightly-zooming|nytimes-zooming|canvas-clock)': {
+      '/(checkerboard|fps)': {
+        on: function(test, measure) {
+          $('#functions').children('li').removeClass("active");
+          $('#functions').children('#'+test+'-li').addClass("active");
 
-        $('#content').html(ich.graph({'title': 'Checkerboarding during scrolling',
-                                      'description': 'The measure is the sum of the percentages of frames that are checkerboarded over the entire capture. Lower values are better.'}));
-        $.getJSON('data.json', function(rawdata) {
-          drawGraph(rawdata['taskjs'], "checkerboard", "Checkerboard");
-        });
-      }
-    },
-    '/nytimes-scrolling': {
-      on: function() {
-        $('#functions').children('li').removeClass("active");
-        $('#functions').children('#nytimes-scrolling-li').addClass("active");
+          var testInfo = testInfoDict[test];
+          updateContent(testInfo.graphTitle, test, measure);
 
-        $('#content').html(ich.graph({'title': 'Checkerboarding during scrolling',
-                                      'description': 'The measure is the sum of the percentages of frames that are checkerboarded over the entire capture. Lower values are better.'}));
-        $.getJSON('data.json', function(rawdata) {
-          drawGraph(rawdata['nytimes-scroll'], "checkerboard", "Checkerboard");
-        });
-      }
-    },
-    '/zooming': {
-      on: function() {
-        $('#functions').children('li').removeClass("active");
-        $('#functions').children('#zooming-li').addClass("active");
-
-        $('#content').html(ich.graph({'title': 'Checkerboarding during zooming',
-                                      'description': 'The measure is the sum of the percentages of frames that are checkerboarded over the entire capture. Lower values are better.'}));
-        $.getJSON('data.json', function(rawdata) {
-          drawGraph(rawdata['nightly'], "checkerboard", "Checkerboard");
-        });
-      }
-    },
-    '/nytimes-zooming': {
-      on: function() {
-        $('#functions').children('li').removeClass("active");
-        $('#functions').children('#nytimes-zooming-li').addClass("active");
-
-        $('#content').html(ich.graph({'title': 'Checkerboarding during zooming',
-                                      'description': 'The measure is the sum of the percentages of frames that are checkerboarded over the entire capture. Lower values are better.'}));
-        $.getJSON('data.json', function(rawdata) {
-          drawGraph(rawdata['nytimes-zoom'], "checkerboard", "Checkerboard");
-        });
-      }
-    },
-    '/canvas': {
-      on: function() {
-        $('#functions').children('li').removeClass("active");
-        $('#functions').children('#canvas-li').addClass("active");
-
-        $('#content').html(ich.graph({'title': 'Canvas Framerate'}));
-        $.getJSON('data.json', function(rawdata) {
-          drawGraph(rawdata['clock'], "fps", "Frames per second");
-        });
+          $.getJSON('data.json', function(rawData) {
+            updateGraph(rawData[testInfo.key], measure);
+          });
+        }
       }
     }
-  }).init('/checkerboarding');
+  }).init('/taskjs-scrolling/checkerboard');
+
 });
