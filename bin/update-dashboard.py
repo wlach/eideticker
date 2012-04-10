@@ -72,8 +72,11 @@ def get_appinfo(fname):
     config = ConfigParser.ConfigParser()
     config.readfp(archive.open('application.ini'))
     buildid = config.get('App', 'BuildID')
+    revision = config.get('App', 'SourceStamp')
     (year, month, day) = (buildid[0:4], buildid[4:6], buildid[6:8])
-    return { 'date':  "%s-%s-%s" % (year, month, day) }
+    return { 'date':  "%s-%s-%s" % (year, month, day),
+             'buildid': buildid,
+             'revision': revision }
 
 def kill_app(dm, appname):
     procs = dm.getProcessList()
@@ -181,9 +184,12 @@ def main(args=sys.argv[1:]):
 
         if not data[test['name']][product['name']].get(current_date):
             data[test['name']][product['name']][current_date] = []
-        data[test['name']][product['name']][current_date].append({ test['measure']: measure,
-                                                               'video': video_path,
-                                                               'appdate': appinfo.get('date') })
+        datapoint = { test['measure']: measure,
+                      'video': video_path,
+                      'appdate': appinfo.get('date'),
+                      'buildid': appinfo.get('buildid'),
+                      'revision': appinfo.get('revision') }
+        data[test['name']][product['name']][current_date].append(datapoint)
 
     # Write the data to disk
     open(datafile, 'w').write(json.dumps(data))

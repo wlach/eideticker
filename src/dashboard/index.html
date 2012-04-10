@@ -110,6 +110,14 @@
         <dt>Build Date</dt>
         <dd>{{appDate}}</dd>
         {{/appDate}}
+        {{#revision}}
+        <dt>Revision</dt>
+        <dd><a href="http://hg.mozilla.org/mozilla-central/rev/{{revision}}">{{revision}}</a></dd>
+        {{/revision}}
+        {{#buildId}}
+        <dt>Build Id</dt>
+        <dd>{{buildId}}</dd>
+        {{/buildId}}
         <dt>{{measureName}}</dt>
         <dd>{{measureValue}}</dd>
       </dl>
