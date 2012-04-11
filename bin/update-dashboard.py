@@ -163,10 +163,10 @@ def main(args=sys.argv[1:]):
         video_file = os.path.join(outputdir, video_path)
         open(video_file, 'w').write(capture.get_video().read())
 
-        # frames-per-second
+        # frames-per-second / num unique frames
         framediff_sums = videocapture.get_framediff_sums(capture)
-        num_different_frames = 1 + len([framediff for framediff in framediff_sums if framediff > 250])
-        fps = num_different_frames / capture.length
+        num_unique_frames = 1 + len([framediff for framediff in framediff_sums if framediff > 0])
+        fps = num_unique_frames / capture.length
 
         # checkerboarding
         checkerboard = videocapture.get_checkerboarding_area_duration(capture)
@@ -179,6 +179,7 @@ def main(args=sys.argv[1:]):
             data[test['name']][product['name']][current_date] = []
         datapoint = { 'fps': fps,
                       'checkerboard': checkerboard,
+                      'uniqueframes': num_unique_frames,
                       'video': video_path,
                       'appdate': appinfo.get('date'),
                       'buildid': appinfo.get('buildid'),

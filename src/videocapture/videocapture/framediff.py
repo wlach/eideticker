@@ -38,10 +38,25 @@
 from capture import *
 import numpy
 
+# Note: we consider frame differences to be the number of pixels with an rgb
+# component > 5 components (out of 255) different from the previous frame.
+# this probably doesn't catch all cases, but works well in the common case
+# of eliminating frame differences due to "noise" in the HDMI capture
+PIXEL_DIFF_THRESHOLD = 5.0
+
 def get_framediff_image(capture, framenum1, framenum2, cropped=False):
     frame1 = capture.get_frame(framenum1, cropped)
     frame2 = capture.get_frame(framenum2, cropped)
     framediff = numpy.abs(frame1.astype('float') - frame2.astype('float'))
+    thresh = 5.0
+    for row in framediff:
+        for px in row:
+            if px[0] >= PIXEL_DIFF_THRESHOLD or px[1] >= PIXEL_DIFF_THRESHOLD \
+                    or px[2] >= PIXEL_DIFF_THRESHOLD:
+                px[0] = 255.0
+                px[1] = 0.0
+                px[2] = 0.0
+
     return Image.fromarray(framediff.astype(numpy.uint8))
 
 def get_framediff_sums(capture):
@@ -60,7 +75,9 @@ def get_framediff_sums(capture):
         for i in range(1, capture.num_frames+1):
             frame = capture.get_frame(i, True).astype('float')
             if prevframe != None:
-                diffsums.append(numpy.linalg.norm(frame - prevframe))
+                framediff = (frame - prevframe)
+                framediff = framediff[framediff >= PIXEL_DIFF_THRESHOLD]
+                diffsums.append(len(framediff))
             prevframe = frame
         cache['diffsums'] = diffsums
         pickle.dump(cache, open(capture.cache_filename, 'w'))

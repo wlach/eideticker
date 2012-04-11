@@ -14,8 +14,10 @@ function updateContent(graphTitle, testName, measure) {
   var measureDescription;
   if (measure === "checkerboard") {
     measureDescription = 'The measure is the sum of the percentages of frames that are checkerboarded over the entire capture. Lower values are better.';
-  } else {
+  } else if (measure === "fps") {
     measureDescription = 'The measure is a calculation of the average number of UNIQUE frames per second of capture. The theoretical maximum is 60 fps (which is what we are capturing), but note that if there periods where the page being captured is unchanging this number may be aritifically low.';
+  } else {
+    measureDescription = 'The measure is a calculation of the total number of UNIQUE frames in the capture. Higher values generally indicate more fluid animations.';
   }
 
   $('#content').html(ich.graph({'title': graphTitle,
@@ -80,6 +82,8 @@ function updateGraph(rawdata, measure) {
   var axisLabel;
   if (measure == "checkerboard") {
     axisLabel = "Checkerboard";
+  } else if (measure === "uniqueframes") {
+    axisLabel = "Unique frames";
   } else {
     axisLabel = "Frames per second";
   }
@@ -146,7 +150,7 @@ $(function() {
   // FIXME: it would be nice to generate the toplevel argument from the above
   var router = Router({
     '/(taskjs-scrolling|nytimes-scrolling|nightly-zooming|nytimes-zooming|canvas-clock)': {
-      '/(checkerboard|fps)': {
+      '/(checkerboard|fps|uniqueframes)': {
         on: function(test, measure) {
           $('#functions').children('li').removeClass("active");
           $('#functions').children('#'+test+'-li').addClass("active");
