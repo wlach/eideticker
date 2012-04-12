@@ -97,6 +97,9 @@ function updateGraph(rawdata, measure) {
       axisLabel: axisLabel,
       min: 0
     },
+    legend: {
+      container: $("#legend"),
+    },
     grid: { clickable: true, hoverable: true },
   });
 
