@@ -69,9 +69,11 @@ def get_appinfo(fname):
     buildid = config.get('App', 'BuildID')
     revision = config.get('App', 'SourceStamp')
     (year, month, day) = (buildid[0:4], buildid[4:6], buildid[6:8])
+    appname = archive.open('package-name.txt').read().rstrip()
     return { 'date':  "%s-%s-%s" % (year, month, day),
              'buildid': buildid,
-             'revision': revision }
+             'revision': revision,
+             'appname': appname }
 
 def kill_app(dm, appname):
     procs = dm.getProcessList()
@@ -127,34 +129,36 @@ def main(args=sys.argv[1:]):
             f.write(dl.read())
             f.close()
 
-        dm = mozdevice.DroidADB(packageName=product['appname'])
+        dm = mozdevice.DroidADB(packageName=None)
 
         if product.get('url'):
             dm.updateApp(fname)
             appinfo = get_appinfo(fname)
+            appname = appinfo['appname']
             capture_name = "%s %s" % (product['name'], appinfo['date'])
         else:
             appinfo = { }
+            appname = product['appname']
             capture_name = "%s (taken on %s)" % (product['name'], current_date)
 
         # Kill any existing instances of the processes
-        kill_app(dm, product['appname'])
+        kill_app(dm, appname)
 
         # Now run the test
         capture_file = os.path.join(CAPTURE_DIR,
                                     "%s-%s-%s-%s.zip" % (test['name'],
-                                                         product['name'],
+                                                         appname,
                                                          appinfo.get('date'),
                                                          int(time.time())))
         retval = subprocess.call(["runtest.py", "--name",
                          capture_name,
                          "--capture-file", capture_file,
-                         product['appname'], test['path']])
+                         appname, test['path']])
         if retval != 0:
             raise Exception("Failed to run test %s for %s" % (test['name'], product['name']))
 
         # Kill app after test complete
-        kill_app(dm, product['appname'])
+        kill_app(dm, appname)
 
         capture = videocapture.Capture(capture_file)
 
