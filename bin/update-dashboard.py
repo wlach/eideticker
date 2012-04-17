@@ -57,6 +57,10 @@ default_tests = [
         'name': 'nytimes-zoom',
         'path': 'src/tests/scrolling/nytimes/nytimes.com/nytimes-zoom.html'
     },
+    {
+        'name': 'cnn',
+        'path': 'src/tests/cnn/cnn.com/index.html'
+    }
 ]
 
 DOWNLOAD_DIR = os.path.join(os.path.dirname(__file__), "../downloads")

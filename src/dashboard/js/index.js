@@ -143,6 +143,10 @@ $(function() {
       'key': 'nytimes-zoom',
       'graphTitle': 'New York Times Zooming Test'
     },
+    'cnn': {
+      'key': 'cnn',
+      'graphTitle': 'CNN.com Test'
+    },
     'canvas-clock': {
       'key': 'clock',
       'graphTitle': 'Canvas Clock Test'
@@ -152,7 +156,7 @@ $(function() {
 
   // FIXME: it would be nice to generate the toplevel argument from the above
   var router = Router({
-    '/(taskjs-scrolling|nytimes-scrolling|nightly-zooming|nytimes-zooming|canvas-clock)': {
+    '/(taskjs-scrolling|nytimes-scrolling|nightly-zooming|nytimes-zooming|cnn|canvas-clock)': {
       '/(checkerboard|fps|uniqueframes)': {
         on: function(test, measure) {
           $('#functions').children('li').removeClass("active");
