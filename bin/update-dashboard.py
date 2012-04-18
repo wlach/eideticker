@@ -73,7 +73,10 @@ def get_appinfo(fname):
     buildid = config.get('App', 'BuildID')
     revision = config.get('App', 'SourceStamp')
     (year, month, day) = (buildid[0:4], buildid[4:6], buildid[6:8])
-    appname = archive.open('package-name.txt').read().rstrip()
+    if 'package-name.txt' in archive.namelist():
+        appname = archive.open('package-name.txt').read().rstrip()
+    else:
+        appname = None
     return { 'date':  "%s-%s-%s" % (year, month, day),
              'buildid': buildid,
              'revision': revision,
@@ -144,6 +147,11 @@ def main(args=sys.argv[1:]):
             appinfo = { }
             appname = product['appname']
             capture_name = "%s (taken on %s)" % (product['name'], current_date)
+
+        if appinfo.get('appname'):
+            appname = appinfo['appname']
+        else:
+            appname = product['appname']
 
         # Kill any existing instances of the processes
         kill_app(dm, appname)
