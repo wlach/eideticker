@@ -4,7 +4,7 @@ import json
 import web
 import videocapture
 
-from zipfile import ZipFile
+import zipfile
 from PIL import Image
 import tempfile
 
@@ -19,12 +19,16 @@ class CapturesHandler:
             if fname == ".gitignore" or os.path.splitext(fname)[1] <> '.zip':
                 continue
 
-            capture = videocapture.Capture(os.path.join(CAPTURE_DIR, fname))
-            if capture.num_frames > 0:
-                captures.append(dict({ "id": fname,
-                                       "length": capture.num_frames/60.0,
-                                       "numFrames": capture.num_frames },
-                                     **capture.metadata))
+            try:
+                capture = videocapture.Capture(os.path.join(CAPTURE_DIR, fname))
+                if capture.num_frames > 0:
+                    captures.append(dict({ "id": fname,
+                                           "length": capture.num_frames/60.0,
+                                           "numFrames": capture.num_frames },
+                                         **capture.metadata))
+            except videocapture.BadCapture:
+                # just ignore files that aren't readable as captures
+                pass
 
         return captures
 

@@ -38,7 +38,7 @@
 from PIL import Image
 import StringIO
 import os
-from zipfile import ZipFile
+from zipfile import ZipFile, BadZipfile
 import json
 import numpy
 import tempfile
@@ -50,17 +50,23 @@ class CaptureException(Exception):
     def __str__(self):
         return repr(self.msg)
 
+class BadCapture(CaptureException):
+    pass
+
 class Capture(object):
     def __init__(self, filename):
         if not os.path.exists(filename):
             raise CaptureException("Capture file '%s' does not exist!" %
                                    filename)
-        self.archive = ZipFile(filename, 'r')
+        try:
+            self.archive = ZipFile(filename, 'r')
+        except BadZipfile:
+            raise BadCapture("Capture file '%s' not a .zip file")
         self.metadata = json.loads(self.archive.open('metadata.json').read())
         # A cache file for storing hard-to-generate data about the capture
         self.cache_filename = filename + '.cache'
         if not self.metadata or not self.metadata['version']:
-            raise CaptureException("Capture file '%s' does not appear to be an "
+            raise BadCapture("Capture file '%s' does not appear to be an "
                                    "Eideticker capture file" % filename)
 
         self.num_frames = max(0, len(filter(lambda s: s[0:7] == "images/" and len(s) > 8,
@@ -83,7 +89,15 @@ class Capture(object):
         return buf
 
     def get_frame_image(self, framenum, grayscale=False):
-        return self._get_frame_image('images/%s.png' % framenum, grayscale)
+        if framenum > self.num_frames:
+            raise CaptureException("Frame number '%s' is greater than the number of frames "
+                                   "(%s)" % framenum, self.num_frames)
+
+        filename = 'images/%s.png' % framenum
+        if filename not in self.archive.namelist():
+            raise BadCapture("Frame image '%s' not in capture" % filename)
+
+        return self._get_frame_image(filename, grayscale)
 
     def _get_frame_image(self, filename, grayscale=False):
         buf = StringIO.StringIO()
