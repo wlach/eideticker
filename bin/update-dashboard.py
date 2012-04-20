@@ -88,6 +88,55 @@ def kill_app(dm, appname):
       if name == appname:
         dm.runCmd(["shell", "echo kill %s | su" % pid])
 
+def runtest(dm, product, current_date, appname, appinfo, test, capture_name,
+            outputdir, datafile, data):
+    capture_file = os.path.join(CAPTURE_DIR,
+                                "%s-%s-%s-%s.zip" % (test['name'],
+                                                     appname,
+                                                     appinfo.get('date'),
+                                                     int(time.time())))
+    retval = subprocess.call(["runtest.py", "--name",
+                              capture_name,
+                              "--capture-file", capture_file,
+                              appname, test['path']])
+    if retval != 0:
+        raise Exception("Failed to run test %s for %s" % (test['name'], product['name']))
+
+
+    capture = videocapture.Capture(capture_file)
+
+    # video file
+    video_path = os.path.join('videos', 'video-%s.webm' % time.time())
+    video_file = os.path.join(outputdir, video_path)
+    open(video_file, 'w').write(capture.get_video().read())
+
+    # frames-per-second / num unique frames
+    framediff_sums = videocapture.get_framediff_sums(capture)
+    num_unique_frames = 1 + len([framediff for framediff in framediff_sums if framediff > 0])
+    fps = num_unique_frames / capture.length
+
+    # checkerboarding
+    checkerboard = videocapture.get_checkerboarding_area_duration(capture)
+
+    # need to initialize dict for product if not there already
+    if not data[test['name']].get(product['name']):
+        data[test['name']][product['name']] = {}
+
+    if not data[test['name']][product['name']].get(current_date):
+        data[test['name']][product['name']][current_date] = []
+    datapoint = { 'fps': fps,
+                  'checkerboard': checkerboard,
+                  'uniqueframes': num_unique_frames,
+                  'video': video_path,
+                  'appdate': appinfo.get('date'),
+                  'buildid': appinfo.get('buildid'),
+                  'revision': appinfo.get('revision') }
+    data[test['name']][product['name']][current_date].append(datapoint)
+
+    # Write the data to disk immediately (so we don't lose it if we fail later)
+    with open(datafile, 'w') as f:
+        f.write(json.dumps(data))
+
 def main(args=sys.argv[1:]):
     usage = "usage: %prog [options] <test> <output dir>"
     parser = optparse.OptionParser(usage)
@@ -98,12 +147,18 @@ def main(args=sys.argv[1:]):
                       action="store", dest="product",
                       help = "Restrict testing to product (options: %s)" %
                       ", ".join([product["name"] for product in default_products]))
+    parser.add_option("--num-runs", action="store",
+                      type = "int", dest = "num_runs",
+                      help = "number of runs (default: 1)")
     options, args = parser.parse_args()
 
     if len(args) != 2:
         parser.error("incorrect number of arguments")
 
     (testname, outputdir) = args
+    num_runs = 1
+    if options.num_runs:
+        num_runs = options.num_runs
 
     testnames = [test["name"] for test in default_tests]
     if testname not in testnames:
@@ -126,21 +181,20 @@ def main(args=sys.argv[1:]):
     if os.path.isfile(datafile):
         data.update(json.loads(open(datafile).read()))
 
+    dm = mozdevice.DroidADB(packageName=None)
+
     for product in products:
-        fname = os.path.join(DOWNLOAD_DIR, "%s.apk" % product['name'])
+        product_fname = os.path.join(DOWNLOAD_DIR, "%s.apk" % product['name'])
 
         if not options.no_download and product.get('url'):
             print "Downloading %s" % product['name']
             dl = urllib2.urlopen(product['url'])
-            f = open(fname, 'w')
-            f.write(dl.read())
-            f.close()
-
-        dm = mozdevice.DroidADB(packageName=None)
+            with open(product_fname, 'w') as f:
+                f.write(dl.read())
 
         if product.get('url'):
-            dm.updateApp(fname)
-            appinfo = get_appinfo(fname)
+            dm.updateApp(product_fname)
+            appinfo = get_appinfo(product_fname)
             appname = appinfo['appname']
             capture_name = "%s %s" % (product['name'], appinfo['date'])
         else:
@@ -153,56 +207,16 @@ def main(args=sys.argv[1:]):
         else:
             appname = product['appname']
 
-        # Kill any existing instances of the processes
-        kill_app(dm, appname)
+        # Run the test the specified number of times
+        for i in range(num_runs):
+            # Kill any existing instances of the processes
+            kill_app(dm, appname)
 
-        # Now run the test
-        capture_file = os.path.join(CAPTURE_DIR,
-                                    "%s-%s-%s-%s.zip" % (test['name'],
-                                                         appname,
-                                                         appinfo.get('date'),
-                                                         int(time.time())))
-        retval = subprocess.call(["runtest.py", "--name",
-                         capture_name,
-                         "--capture-file", capture_file,
-                         appname, test['path']])
-        if retval != 0:
-            raise Exception("Failed to run test %s for %s" % (test['name'], product['name']))
+            # Now run the test
+            runtest(dm, product, current_date, appname, appinfo, test,
+                    capture_name + " #%s" % i, outputdir, datafile, data)
 
-        # Kill app after test complete
-        kill_app(dm, appname)
-
-        capture = videocapture.Capture(capture_file)
-
-        # video file
-        video_path = os.path.join('videos', 'video-%s.webm' % time.time())
-        video_file = os.path.join(outputdir, video_path)
-        open(video_file, 'w').write(capture.get_video().read())
-
-        # frames-per-second / num unique frames
-        framediff_sums = videocapture.get_framediff_sums(capture)
-        num_unique_frames = 1 + len([framediff for framediff in framediff_sums if framediff > 0])
-        fps = num_unique_frames / capture.length
-
-        # checkerboarding
-        checkerboard = videocapture.get_checkerboarding_area_duration(capture)
-
-        # need to initialize dict for product if not there already
-        if not data[test['name']].get(product['name']):
-            data[test['name']][product['name']] = {}
-
-        if not data[test['name']][product['name']].get(current_date):
-            data[test['name']][product['name']][current_date] = []
-        datapoint = { 'fps': fps,
-                      'checkerboard': checkerboard,
-                      'uniqueframes': num_unique_frames,
-                      'video': video_path,
-                      'appdate': appinfo.get('date'),
-                      'buildid': appinfo.get('buildid'),
-                      'revision': appinfo.get('revision') }
-        data[test['name']][product['name']][current_date].append(datapoint)
-
-    # Write the data to disk
-    open(datafile, 'w').write(json.dumps(data))
+            # Kill app after test complete
+            kill_app(dm, appname)
 
 main()
