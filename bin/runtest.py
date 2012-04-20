@@ -82,13 +82,15 @@ class CaptureServer(object):
         self.monkey_proc.stdin.write('tap 240 617\n')
 
     def terminate_capture(self):
-        self.controller.terminate_capture()
+        if self.capture_file:
+            self.controller.terminate_capture()
         if self.monkey_proc and not self.monkey_proc.poll():
             self.monkey_proc.kill()
 
     @mozhttpd.handlers.json_response
     def start_capture(self, request):
-        self.controller.start_capture(self.capture_file, self.capture_metadata)
+        if self.capture_file:
+            self.controller.start_capture(self.capture_file, self.capture_metadata)
 
         return (200, {'capturing': True})
 
@@ -101,15 +103,19 @@ class CaptureServer(object):
     @mozhttpd.handlers.json_response
     def input(self, request):
         commands = urlparse.parse_qs(request.body)['commands[]']
-        print commands
-        self.start_frame = self.controller.capture_framenum()
+        print "Got commands: %s" % commands
+
+        if self.capture_file:
+            self.start_frame = self.controller.capture_framenum()
+
         #print "GOT COMMANDS. Framenum: %s" % self.start_frame
-        print commands
         for command in commands:
             self.monkey_proc.stdin.write('%s\n' % command)
         self.monkey_proc.stdin.write('quit\n')
         self.monkey_proc.wait()
-        self.end_frame = self.controller.capture_framenum()
+
+        if self.capture_file:
+            self.end_frame = self.controller.capture_framenum()
         #print "DONE COMMANDS. Framenum: %s" % self.end_frame
 
         return (200, {})
@@ -170,6 +176,10 @@ def main(args=sys.argv[1:]):
     parser.add_option("--capture-file", action="store",
                       type = "string", dest = "capture_file",
                       help = "name to give to capture file")
+    parser.add_option("--no-capture", action="store_true",
+                      dest = "no_capture",
+                      help = "run through the test, but don't actually "
+                      "capture anything (for testing)")
 
     options, args = parser.parse_args()
     if len(args) != 2:
@@ -191,7 +201,7 @@ def main(args=sys.argv[1:]):
     if not capture_name:
         capture_name = testpath
     capture_file = options.capture_file
-    if not capture_file:
+    if not capture_file and not options.no_capture:
         capture_file = os.path.join(CAPTURE_DIR, "capture-%s.zip" %
                                          datetime.datetime.now().isoformat())
 
@@ -261,7 +271,8 @@ def main(args=sys.argv[1:]):
         capture_server.terminate_capture()
         sys.exit(1)
 
-    print "Converting capture..."
-    capture_controller.convert_capture(capture_server.start_frame, capture_server.end_frame)
+    if capture_file:
+        print "Converting capture..."
+        capture_controller.convert_capture(capture_server.start_frame, capture_server.end_frame)
 
 main()
