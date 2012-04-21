@@ -150,27 +150,38 @@ $(function() {
     'canvas-clock': {
       'key': 'clock',
       'graphTitle': 'Canvas Clock Test'
+    },
+    'reddit': {
+      'key': 'reddit',
+      'graphTitle': 'Reddit test'
+    },
+    'imgur': {
+      'key': 'imgur',
+      'graphTitle': 'imgur test'
+    },
+    'wikipedia': {
+      'key': 'wikipedia',
+      'graphTitle': 'wikipedia test'
     }
   }
 
+  var baseRoute = "/(" + Object.keys(testInfoDict).join("|") + ")";
+  var tmp = {};
+  tmp[baseRoute] = {
+    '/(checkerboard|fps|uniqueframes)': {
+      on: function(test, measure) {
+        $('#functions').children('li').removeClass("active");
+        $('#functions').children('#'+test+'-li').addClass("active");
 
-  // FIXME: it would be nice to generate the toplevel argument from the above
-  var router = Router({
-    '/(taskjs-scrolling|nytimes-scrolling|nightly-zooming|nytimes-zooming|cnn|canvas-clock)': {
-      '/(checkerboard|fps|uniqueframes)': {
-        on: function(test, measure) {
-          $('#functions').children('li').removeClass("active");
-          $('#functions').children('#'+test+'-li').addClass("active");
+        var testInfo = testInfoDict[test];
+        updateContent(testInfo.graphTitle, test, measure);
 
-          var testInfo = testInfoDict[test];
-          updateContent(testInfo.graphTitle, test, measure);
-
-          $.getJSON('data.json', function(rawData) {
-            updateGraph(rawData[testInfo.key], measure);
-          });
-        }
+        $.getJSON('data.json', function(rawData) {
+          updateGraph(rawData[testInfo.key], measure);
+        });
       }
     }
-  }).init('/taskjs-scrolling/checkerboard');
+  };
+  var router = Router(tmp).init('/taskjs-scrolling/checkerboard');
 
 });

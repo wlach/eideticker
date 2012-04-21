@@ -60,6 +60,18 @@ default_tests = [
     {
         'name': 'cnn',
         'path': 'src/tests/cnn/cnn.com/index.html'
+    },
+    {
+        'name': 'reddit',
+        'path': 'src/tests/ep1/reddit.com/www.reddit.com/index.html'
+    },
+    {
+        'name': 'imgur',
+        'path': 'src/tests/ep1/imgur.com/imgur.com/gallery/index.html'
+    },
+    {
+        'name': 'wikipedia',
+        'path': 'src/tests/ep1/en.wikipedia.org/en.wikipedia.org/wiki/Rorschach_test.html'
     }
 ]
 
