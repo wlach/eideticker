@@ -25,6 +25,9 @@ def main(args=sys.argv[1:]):
     parser.add_option("--num-runs", action="store",
                       type = "int", dest = "num_runs",
                       help = "number of runs (default: 1)")
+    parser.add_option("--output-file", action="store",
+                      type="string", dest="output_file",
+                      help="output results to json file")
 
     options, args = parser.parse_args()
 
@@ -84,5 +87,9 @@ def main(args=sys.argv[1:]):
     print
 
     print "Capture files: %s" % map(lambda c: c['capture_file'], captures)
+
+    if options.output_file:
+        with open(options.output_file, 'w') as f:
+            f.write(json.dumps(captures))
 
 main()
