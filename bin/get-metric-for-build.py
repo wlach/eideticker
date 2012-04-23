@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import json
 import mozdevice
 import optparse
 import os
@@ -19,7 +20,7 @@ def kill_app(dm, appname):
         dm.runCmd(["shell", "echo kill %s | su" % pid])
 
 def main(args=sys.argv[1:]):
-    usage = "usage: %prog <apk of build> <test> <metric>"
+    usage = "usage: %prog <apk of build> <test>"
     parser = optparse.OptionParser(usage)
     parser.add_option("--num-runs", action="store",
                       type = "int", dest = "num_runs",
@@ -27,14 +28,10 @@ def main(args=sys.argv[1:]):
 
     options, args = parser.parse_args()
 
-    if len(args) != 3:
+    if len(args) != 2:
         parser.error("incorrect number of arguments")
 
-    (apk, test, metric) = args
-
-    valid_metrics = ['fps', 'checkerboard']
-    if metric not in valid_metrics:
-        parser.error("bad metric '%s' (valid metrics: %s)" % (metric, ",".join(valid_metrics)))
+    (apk, test) = args
 
     num_runs = 1
     if options.num_runs:
@@ -70,22 +67,22 @@ def main(args=sys.argv[1:]):
 
         capture = videocapture.Capture(capture_file)
 
-        if metric == 'unique_frames':
-            framediff_sums = videocapture.get_framediff_sums(capture)
-            num_unique_frames = 1 + len([framediff for framediff in framediff_sums if framediff > 0])
-            metric = num_unique_frames
-        elif metric == 'checkerboard':
-            metric = videocapture.get_checkerboarding_area_duration(capture)
+        framediff_sums = videocapture.get_framediff_sums(capture)
+        num_unique_frames = 1 + len([framediff for framediff in framediff_sums if framediff > 0])
 
-        captures.append({'capture_file': capture_file, 'metric': metric})
+        checkerboard = videocapture.get_checkerboarding_area_duration(capture)
 
-    if metric == 'unique_frames':
-        print "=== Number of unique frames ==="
-    elif metric == 'checkerboard':
-        print "=== Checkerboard area/duration (sum of percents NOT percentage) ==="
+        captures.append({'capture_file': capture_file, 'checkerboard': checkerboard,
+                         'uniqueframes': num_unique_frames})
 
-    print "Results: %s" % map(lambda c: c['metric'], captures)
+    print "=== Number of unique frames ==="
+    print "%s" % map(lambda c: c['uniqueframes'], captures)
+    print
+
+    print "=== Checkerboard area/duration (sum of percents NOT percentage) ==="
+    print "%s" % map(lambda c: c['checkerboard'], captures)
+    print
+
     print "Capture files: %s" % map(lambda c: c['capture_file'], captures)
-
 
 main()
