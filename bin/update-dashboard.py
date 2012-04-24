@@ -26,7 +26,7 @@ default_products = [
     },
     {
         "name": "xul",
-        "url": "http://ftp.mozilla.org/pub/mobile/releases/latest/android/en-US/fennec-10.0.3esr.en-US.android-arm.apk",
+        "url": "http://ftp.mozilla.org/pub/mozilla.org/mobile/releases/latest/android/en-US/fennec-10.0.4esr.en-US.android-arm.apk",
         "appname": "org.mozilla.firefox"
     },
     {
