@@ -98,22 +98,22 @@ def main(args=sys.argv[1:]):
         if retval != 0:
             raise Exception("Failed to run test %s for %s" % (test, appname))
 
-        capture = {}
+        capture_result = {}
         if not options.no_capture:
-            capture['file'] = capture_file
+            capture_result['file'] = capture_file
 
             capture = videocapture.Capture(capture_file)
 
             framediff_sums = videocapture.get_framediff_sums(capture)
-            capture['uniqueframes'] = 1 + len([framediff for framediff in framediff_sums if framediff > 0])
+            capture_result['uniqueframes'] = 1 + len([framediff for framediff in framediff_sums if framediff > 0])
 
-            capture['checkerboard'] = videocapture.get_checkerboarding_area_duration(capture)
+            capture_result['checkerboard'] = videocapture.get_checkerboarding_area_duration(capture)
 
         if options.get_internal_checkerboard_stats:
             internal_checkerboard_totals = parse_checkerboard_log(checkerboard_logfile.name)
-            capture['internalcheckerboard'] = internal_checkerboard_totals
+            capture_result['internalcheckerboard'] = internal_checkerboard_totals
 
-        captures.append(capture)
+        captures.append(capture_result)
 
     if not options.no_capture:
         print "=== Number of unique frames ==="
