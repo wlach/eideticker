@@ -42,7 +42,7 @@ BASEDIR=$PWD
 
 which virtualenv > /dev/null
 if [ $? != 0 ]; then
-    echo "Please install virtualenv ('sudo apt-get install -y virtualenv' on Ubuntu)"
+    echo "Please install virtualenv ('sudo apt-get install -y python-virtualenv' on Ubuntu)"
     exit 1
 fi
 
