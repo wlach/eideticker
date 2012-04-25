@@ -67,9 +67,10 @@ class CaptureServer(object):
     start_frame = None
     end_frame = None
 
-    def __init__(self, capture_metadata, capture_file, controller):
+    def __init__(self, capture_metadata, capture_file, checkerboard_log_file, controller):
         self.capture_metadata = capture_metadata
         self.capture_file = capture_file
+        self.checkerboard_log_file = checkerboard_log_file
         self.controller = controller
 
         # open up a monkeyrunner process on startup, wait for it to give a
@@ -108,6 +109,13 @@ class CaptureServer(object):
         if self.capture_file:
             self.start_frame = self.controller.capture_framenum()
 
+        if self.checkerboard_log_file:
+            subprocess.Popen(["adb", "logcat", "-c"]).communicate()
+            logcat_proc = subprocess.Popen(["adb", "logcat",
+                                            "GeckoLayerRendererProf:D",
+                                            "*:S"], stdout=subprocess.PIPE)
+
+
         #print "GOT COMMANDS. Framenum: %s" % self.start_frame
         for command in commands:
             self.monkey_proc.stdin.write('%s\n' % command)
@@ -117,6 +125,12 @@ class CaptureServer(object):
         if self.capture_file:
             self.end_frame = self.controller.capture_framenum()
         #print "DONE COMMANDS. Framenum: %s" % self.end_frame
+
+        if self.checkerboard_log_file:
+            logcat_proc.kill()
+            with open(self.checkerboard_log_file, 'w') as f:
+                f.write(logcat_proc.stdout.read())
+        print "DONE"
 
         return (200, {})
 
@@ -179,7 +193,10 @@ def main(args=sys.argv[1:]):
     parser.add_option("--no-capture", action="store_true",
                       dest = "no_capture",
                       help = "run through the test, but don't actually "
-                      "capture anything (for testing)")
+                      "capture anything")
+    parser.add_option("--checkerboard-log-file", action="store",
+                      type = "string", dest = "checkerboard_log_file",
+                      help = "name to give checkerboarding stats file")
 
     options, args = parser.parse_args()
     if len(args) != 2:
@@ -219,6 +236,7 @@ def main(args=sys.argv[1:]):
         'device': _shell_check_output(dm, ["getprop", "ro.product.model"]).strip()
         }
     capture_server = CaptureServer(capture_metadata, capture_file,
+                                   options.checkerboard_log_file,
                                    capture_controller)
     host = mozhttpd.iface.get_lan_ip()
     http = mozhttpd.MozHttpd(docroot=TEST_DIR,
