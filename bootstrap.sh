@@ -46,6 +46,11 @@ if [ $? != 0 ]; then
     exit 1
 fi
 
+if [ ! -e /usr/include/python2.7/Python.h ]; then
+    echo "Please install Python 2.7 development files ('sudo apt-get install -y python2.7-dev' on Ubuntu)"
+    exit 1
+fi
+
 set -e
 
 # Check out git submodules
