@@ -69,9 +69,7 @@ any kind of specialized hardware. Second, it's much faster (since there's no
 video encoding/decoding/analysis step). For this you want to pass in
 "--no-capture" and "--get-internal-checkerboard-stats", like so:
 
-    ./bin/get-metric-for-build.py --no-capture \
-      --get-internal-checkerboard-stats nightly.apk \
-      src/tests/scrolling/taskjs.org/index.html
+    ./bin/get-metric-for-build.py --no-capture --get-internal-checkerboard-stats nightly.apk src/tests/scrolling/taskjs.org/index.html
 
 Note that for this to work Fennec performance logging will need to be enabled,
 which it isn't by default. Make it so by running:
