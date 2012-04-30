@@ -16,6 +16,7 @@ cd $EIDETICKER
 
 # Reboot phone and wait for watcher to come up (this ensures phone is in a good
 # state)
+./bin/reboot-device.py
 
 for TEST in $TESTS; do
   echo "Running $TEST"
