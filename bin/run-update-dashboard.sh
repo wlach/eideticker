@@ -13,6 +13,10 @@ export PATH=$PATH:$HOME/tools/android-sdk-linux/tools:$HOME/tools/android-sdk-li
 
 cd $EIDETICKER
 . bin/activate
+
+# Reboot phone and wait for watcher to come up (this ensures phone is in a good
+# state)
+
 for TEST in $TESTS; do
   echo "Running $TEST"
   ./bin/update-dashboard.py -p xul $TEST src/dashboard
