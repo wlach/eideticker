@@ -136,8 +136,8 @@ class CaptureController(object):
         self.output_filename = output_filename
         self.capture_time = datetime.datetime.now()
         self.capture_metadata = capture_metadata
-        self.frame_counter = multiprocessing.Value('i', 0)
-        self.finished_semaphore = multiprocessing.Value('b', False)
+        self.frame_counter = multiprocessing.RawValue('i', 0)
+        self.finished_semaphore = multiprocessing.RawValue('b', False)
         self.capture_process = CaptureProcess(self.output_raw_file.name,
                                               self.frame_counter,
                                               self.finished_semaphore,
