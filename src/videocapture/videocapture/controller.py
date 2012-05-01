@@ -97,7 +97,6 @@ class CaptureProcess(multiprocessing.Process):
                 break
 
             self.frame_counter.value=int(line.rstrip())
-            print "Read: %s" % self.frame_counter.value
 
         self.capture_proc.terminate()
         for i in range(2):
