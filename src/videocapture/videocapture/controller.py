@@ -47,7 +47,7 @@ import os
 import capture
 from square import get_biggest_square
 import re
-import threading
+import multiprocessing
 import shutil
 
 from PIL import Image
@@ -60,20 +60,45 @@ def _natural_key(str):
     """See http://www.codinghorror.com/blog/archives/001018.html"""
     return [int(s) if s.isdigit() else s for s in re.split(r'(\d+)', str)]
 
-class CaptureThread(threading.Thread):
-    framenum = 0
-    finished = False
-    capture_proc = None
-    debug = False
+class CaptureProcess(multiprocessing.Process):
 
-    def __init__(self, output_raw_filename, custom_tempdir=None, debug=False):
-        threading.Thread.__init__(self)
+    def __init__(self, output_raw_filename, frame_counter, finished_semaphore, custom_tempdir=None):
+        multiprocessing.Process.__init__(self, args=(frame_counter,finished_semaphore,))
+        self.frame_counter = frame_counter
         self.output_raw_filename = output_raw_filename
-        self.debug = debug
         self.custom_tempdir = custom_tempdir
+        self.finished_semaphore = finished_semaphore
 
     def stop(self):
-        self.finished = True
+        self.finished_semaphore.value = True
+
+    def run(self):
+        args = (os.path.join(DECKLINK_DIR, 'decklink-capture'),
+                '-o',
+                '-m',
+                '13',
+                '-p',
+                '0',
+                '-n',
+                '6000',
+                '-f',
+                self.output_raw_filename)
+
+        self.capture_proc = subprocess.Popen(args, stdout=subprocess.PIPE)
+        print "Opening!"
+
+        while not self.finished_semaphore.value:
+            try:
+                line = self.capture_proc.stdout.readline()
+            except KeyboardInterrupt:
+                break
+
+            if not line:
+                break
+
+            self.frame_counter.value=int(line.rstrip())
+            print "Read: %s" % self.frame_counter.value
+
         self.capture_proc.terminate()
         for i in range(2):
             rc = self.capture_proc.poll()
@@ -91,35 +116,11 @@ class CaptureThread(threading.Thread):
             pass
         self.capture_proc.wait()  # or poll and error out if still running?
 
-    def run(self):
-        args = (os.path.join(DECKLINK_DIR, 'decklink-capture'),
-                '-o',
-                '-m',
-                '13',
-                '-p',
-                '0',
-                '-n',
-                '6000',
-                '-f',
-                self.output_raw_filename)
-
-        self.capture_proc = subprocess.Popen(args, stdout=subprocess.PIPE)
-        print "Opening!"
-        while not self.finished:
-            try:
-                line = self.capture_proc.stdout.readline()
-            except KeyboardInterrupt:
-                break
-
-            if not line:
-                break
-
-            self.framenum=int(line.rstrip())
 
 class CaptureController(object):
 
     def __init__(self, custom_tempdir=None):
-        self.capture_thread = None
+        self.capture_process = None
         self.null_read = file('/dev/null', 'r')
         self.null_write = file('/dev/null', 'w')
         self.output_filename = None
@@ -130,27 +131,31 @@ class CaptureController(object):
 
     def start_capture(self, output_filename, capture_metadata = {}, debug=False):
         # should not call this more than once
-        assert not self.capture_thread
+        assert not self.capture_process
 
         self.output_raw_file = tempfile.NamedTemporaryFile(dir=self.custom_tempdir)
         self.output_filename = output_filename
         self.capture_time = datetime.datetime.now()
         self.capture_metadata = capture_metadata
-        self.capture_thread = CaptureThread(self.output_raw_file.name, debug=debug,
-                                            custom_tempdir=self.custom_tempdir)
-        self.capture_thread.start()
+        self.frame_counter = multiprocessing.Value('i', 0)
+        self.finished_semaphore = multiprocessing.Value('b', False)
+        self.capture_process = CaptureProcess(self.output_raw_file.name,
+                                              self.frame_counter,
+                                              self.finished_semaphore,
+                                              custom_tempdir=self.custom_tempdir)
+        self.capture_process.start()
 
     def capture_framenum(self):
-        assert self.capture_thread
-        return self.capture_thread.framenum
+        assert self.capture_process
+        return self.frame_counter.value
 
     def terminate_capture(self):
         # should not call this when no capture is ongoing
-        assert self.capture_thread
+        assert self.capture_process
 
-        self.capture_thread.stop()
-        self.capture_thread.join()
-        self.capture_thread = None
+        self.capture_process.stop()
+        self.capture_process.join()
+        self.capture_process = None
 
     def convert_capture(self, start_frame, end_frame):
         imagedir = tempfile.mkdtemp(dir=self.custom_tempdir)
