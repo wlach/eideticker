@@ -222,8 +222,16 @@ class CaptureController(object):
         last_frame = min(num_frames-1, end_frame+2)
 
         # copy the remaining frames into numeric order starting from 1
+        # (use multiprocessing to speed this up: there's probably a more
+        # elegant way of doing this, but I'm not sure what it is)
+        multiprocesses = []
         for (i,j) in enumerate(range(start_frame, last_frame)):
-            _rewrite_frame((i+1), rewritten_imagedir, imagefiles[j])
+            p = multiprocessing.Process(target=_rewrite_frame, args=((i+1), rewritten_imagedir, imagefiles[j]))
+            p.start()
+            multiprocesses.append(p)
+           # _rewrite_frame((i+1), rewritten_imagedir, imagefiles[j])
+        for p in multiprocesses:
+            p.join()
 
         print "Creating movie ..."
         moviefile = tempfile.NamedTemporaryFile(dir=self.custom_tempdir,
