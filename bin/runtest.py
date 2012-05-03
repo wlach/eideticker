@@ -91,7 +91,13 @@ class CaptureServer(object):
     @mozhttpd.handlers.json_response
     def start_capture(self, request):
         if self.capture_file:
-            self.controller.start_capture(self.capture_file, self.capture_metadata)
+           if self.capture_metadata['device'] == 'LG-P999':
+                mode = "1080p"
+           else:
+                mode = "720p"
+           print "Starting capture on device '%s' with mode: '%s'" % (self.capture_metadata['device'], mode)
+           self.controller.start_capture(self.capture_file, mode,
+                                         self.capture_metadata)
 
         return (200, {'capturing': True})
 
@@ -178,8 +184,7 @@ class BrowserRunner(object):
 def _shell_check_output(dm, args):
     buf = StringIO.StringIO()
     dm.shell(args, buf)
-    return buf.getvalue()
-
+    return str(buf.getvalue()[0:-1]).rstrip()
 
 def main(args=sys.argv[1:]):
     usage = "usage: %prog [options] <appname> <test path>"
@@ -228,12 +233,14 @@ def main(args=sys.argv[1:]):
         print "An instance of %s is running. Please stop it before running Eideticker." % appname
         sys.exit(1)
 
+    device = _shell_check_output(dm, ["getprop", "ro.product.model"])
+
     print "Creating webserver..."
     capture_metadata = {
         'name': capture_name,
         'testpath': testpath,
         'app': appname,
-        'device': _shell_check_output(dm, ["getprop", "ro.product.model"]).strip()
+        'device': device
         }
     capture_server = CaptureServer(capture_metadata, capture_file,
                                    options.checkerboard_log_file,

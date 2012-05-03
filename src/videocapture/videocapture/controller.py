@@ -62,10 +62,11 @@ def _natural_key(str):
 
 class CaptureProcess(multiprocessing.Process):
 
-    def __init__(self, output_raw_filename, frame_counter, finished_semaphore, custom_tempdir=None):
+    def __init__(self, output_raw_filename, video_format, frame_counter, finished_semaphore, custom_tempdir=None):
         multiprocessing.Process.__init__(self, args=(frame_counter,finished_semaphore,))
         self.frame_counter = frame_counter
         self.output_raw_filename = output_raw_filename
+        self.video_format = video_format
         self.custom_tempdir = custom_tempdir
         self.finished_semaphore = finished_semaphore
 
@@ -73,10 +74,15 @@ class CaptureProcess(multiprocessing.Process):
         self.finished_semaphore.value = True
 
     def run(self):
+        if self.video_format == "1080p":
+            mode = 13
+        else:
+            mode = 16
+
         args = (os.path.join(DECKLINK_DIR, 'decklink-capture'),
                 '-o',
                 '-m',
-                '13',
+                '%s' % mode,
                 '-p',
                 '0',
                 '-n',
@@ -128,17 +134,19 @@ class CaptureController(object):
         self.capture_name = None
         self.custom_tempdir = custom_tempdir
 
-    def start_capture(self, output_filename, capture_metadata = {}, debug=False):
+    def start_capture(self, output_filename, mode, capture_metadata = {}, debug=False):
         # should not call this more than once
         assert not self.capture_process
 
         self.output_raw_file = tempfile.NamedTemporaryFile(dir=self.custom_tempdir)
+        self.mode = mode
         self.output_filename = output_filename
         self.capture_time = datetime.datetime.now()
         self.capture_metadata = capture_metadata
         self.frame_counter = multiprocessing.RawValue('i', 0)
         self.finished_semaphore = multiprocessing.RawValue('b', False)
         self.capture_process = CaptureProcess(self.output_raw_file.name,
+                                              mode,
                                               self.frame_counter,
                                               self.finished_semaphore,
                                               custom_tempdir=self.custom_tempdir)
@@ -160,7 +168,7 @@ class CaptureController(object):
         imagedir = tempfile.mkdtemp(dir=self.custom_tempdir)
 
         subprocess.Popen((os.path.join(DECKLINK_DIR, 'decklink-convert.sh'),
-                          self.output_raw_file.name, imagedir),
+                          self.output_raw_file.name, imagedir, self.mode),
                          close_fds=True).wait()
 
         print "Cropping to start/end of capture..."
