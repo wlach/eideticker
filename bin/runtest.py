@@ -149,7 +149,8 @@ class BrowserRunner(object):
         self.intent = "android.intent.action.VIEW"
 
         activity_mappings = {
-            'com.android.browser': 'BrowserActivity'
+            'com.android.browser': 'BrowserActivity',
+            'com.google.android.browser': 'com.android.browser.BrowserActivity'
             }
 
         # use activity mapping if not mozilla
