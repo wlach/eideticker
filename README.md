@@ -7,10 +7,10 @@ other platforms is planned).
 
 ### Requirements
 
-* Linux system with zip, ffmpeg, and virtualenv installed. On Ubuntu, you can
-  get this setup by running:
+* Linux system with zip, ffmpeg, g++, python 2.7 development and virtualenv
+  installed. On Ubuntu, you can get this setup by running:
 
-    `sudo apt-get install -y ffmpeg zip python-virtualenv`
+    `sudo apt-get install -y zip ffmpeg g++ python2.7-dev python-virtualenv`
 
 * Blackmagic Design DeckLink HD Extreme 3D card and the appropriate drivers if
   you want to actually capture video (it is possible to use the Eideticker
