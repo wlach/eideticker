@@ -58,6 +58,22 @@ CAPTURE_DIR = os.path.abspath(os.path.join(BINDIR, "../captures"))
 TEST_DIR = os.path.abspath(os.path.join(BINDIR, "../src/tests"))
 EIDETICKER_TEMP_DIR = "/tmp/eideticker"
 
+# I know specifying resolution manually like this is ugly, but as far as I
+# can tell there is no good, device-independant way of getting this
+# information via ADB
+DEVICE_PROPERTIES = {
+    "Galaxy Nexus": {
+        "hdmi_resolution": "720p",
+        "display_width": 720,
+        "display_height": 1180
+    },
+    "LG-P999": {
+        "hdmi_resolution": "1080p",
+        "display_width": 480,
+        "display_height": 800
+    },
+}
+
 capture_controller = videocapture.CaptureController(custom_tempdir=EIDETICKER_TEMP_DIR)
 
 class CaptureServer(object):
@@ -67,15 +83,18 @@ class CaptureServer(object):
     start_frame = None
     end_frame = None
 
-    def __init__(self, capture_metadata, capture_file, checkerboard_log_file, controller):
+    def __init__(self, capture_metadata, device_properties, capture_file, checkerboard_log_file, controller):
         self.capture_metadata = capture_metadata
         self.capture_file = capture_file
         self.checkerboard_log_file = checkerboard_log_file
         self.controller = controller
+        self.device_properties = device_properties
 
         # open up a monkeyrunner process on startup, wait for it to give a
         # line so we don't have to wait for it later
-        args = ['python', os.path.join(BINDIR, 'devicecontroller.py')]
+        args = ['python', os.path.join(BINDIR, 'devicecontroller.py'),
+                str(self.device_properties['display_width']),
+                str(self.device_properties['display_height'])]
         self.monkey_proc = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
         line = self.monkey_proc.stdout.readline()
         # Hack: this gets rid of the "finished charging" modal dialog that the
@@ -91,13 +110,10 @@ class CaptureServer(object):
     @mozhttpd.handlers.json_response
     def start_capture(self, request):
         if self.capture_file:
-           if self.capture_metadata['device'] == 'LG-P999':
-                mode = "1080p"
-           else:
-                mode = "720p"
-           print "Starting capture on device '%s' with mode: '%s'" % (self.capture_metadata['device'], mode)
-           self.controller.start_capture(self.capture_file, mode,
-                                         self.capture_metadata)
+            mode = self.device_properties['hdmi_resolution']
+            print "Starting capture on device '%s' with mode: '%s'" % (self.capture_metadata['device'], mode)
+            self.controller.start_capture(self.capture_file, mode,
+                                          self.capture_metadata)
 
         return (200, {'capturing': True})
 
@@ -235,6 +251,7 @@ def main(args=sys.argv[1:]):
         sys.exit(1)
 
     device = _shell_check_output(dm, ["getprop", "ro.product.model"])
+    device_properties = DEVICE_PROPERTIES[device]
 
     print "Creating webserver..."
     capture_metadata = {
@@ -243,7 +260,8 @@ def main(args=sys.argv[1:]):
         'app': appname,
         'device': device
         }
-    capture_server = CaptureServer(capture_metadata, capture_file,
+    capture_server = CaptureServer(capture_metadata, device_properties,
+                                   capture_file,
                                    options.checkerboard_log_file,
                                    capture_controller)
     host = mozhttpd.iface.get_lan_ip()
