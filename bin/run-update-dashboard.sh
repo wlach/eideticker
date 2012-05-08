@@ -16,7 +16,9 @@ cd $EIDETICKER
 
 # Reboot phone and wait for watcher to come up (this ensures phone is in a good
 # state)
-./bin/reboot-device.py
+# FIXME: temporarily disabled because we're using adb-over-tcp now and
+# I don't know how to make things come back with that enabled by default
+#./bin/reboot-device.py
 
 for TEST in $TESTS; do
   echo "Running $TEST"
