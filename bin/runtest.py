@@ -38,20 +38,18 @@
 # ***** END LICENSE BLOCK *****
 
 import datetime
-import json
 import mozdevice
 import mozhttpd
 import mozprofile
 import optparse
 import os
-import signal
 import subprocess
 import sys
 import time
-import urllib
 import urlparse
 import videocapture
 import StringIO
+from devicecontroller import DeviceController
 
 BINDIR = os.path.dirname(__file__)
 CAPTURE_DIR = os.path.abspath(os.path.join(BINDIR, "../captures"))
@@ -64,11 +62,11 @@ EIDETICKER_TEMP_DIR = "/tmp/eideticker"
 DEVICE_PROPERTIES = {
     "Galaxy Nexus": {
         "hdmi_resolution": "720p",
-        "display_width": 720,
-        "display_height": 1180
+        "display_width": 1180,
+        "display_height": 720
     },
     "LG-P999": {
-        "hdmi_resolution": "1080p",
+        "hdmi_resolution": "720p",
         "display_width": 480,
         "display_height": 800
     },
@@ -79,40 +77,33 @@ capture_controller = videocapture.CaptureController(custom_tempdir=EIDETICKER_TE
 class CaptureServer(object):
     finished = False
     controller_finishing = False
-    monkey_proc = None
     start_frame = None
     end_frame = None
 
-    def __init__(self, capture_metadata, device_properties, capture_file, checkerboard_log_file, controller):
+    def __init__(self, capture_metadata, device_properties, capture_file,
+                 checkerboard_log_file, capture_controller, droid):
         self.capture_metadata = capture_metadata
         self.capture_file = capture_file
         self.checkerboard_log_file = checkerboard_log_file
-        self.controller = controller
+        self.capture_controller = capture_controller
         self.device_properties = device_properties
-
-        # open up a monkeyrunner process on startup, wait for it to give a
-        # line so we don't have to wait for it later
-        args = ['python', os.path.join(BINDIR, 'devicecontroller.py'),
-                str(self.device_properties['display_width']),
-                str(self.device_properties['display_height'])]
-        self.monkey_proc = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-        line = self.monkey_proc.stdout.readline()
+        self.device_controller = DeviceController(droid,
+                                                  self.device_properties['display_width'],
+                                                  self.device_properties['display_height'])
         # Hack: this gets rid of the "finished charging" modal dialog that the
         # LG G2X sometimes brings up
-        self.monkey_proc.stdin.write('tap 240 617\n')
+        self.device_controller.tap(240, 617)
 
     def terminate_capture(self):
         if self.capture_file:
-            self.controller.terminate_capture()
-        if self.monkey_proc and not self.monkey_proc.poll():
-            self.monkey_proc.kill()
+            self.capture_controller.terminate_capture()
 
     @mozhttpd.handlers.json_response
     def start_capture(self, request):
         if self.capture_file:
             mode = self.device_properties['hdmi_resolution']
             print "Starting capture on device '%s' with mode: '%s'" % (self.capture_metadata['device'], mode)
-            self.controller.start_capture(self.capture_file, mode,
+            self.capture_controller.start_capture(self.capture_file, mode,
                                           self.capture_metadata)
 
         return (200, {'capturing': True})
@@ -129,7 +120,7 @@ class CaptureServer(object):
         print "Got commands: %s" % commands
 
         if self.capture_file:
-            self.start_frame = self.controller.capture_framenum()
+            self.start_frame = self.capture_controller.capture_framenum()
 
         if self.checkerboard_log_file:
             subprocess.Popen(["adb", "logcat", "-c"]).communicate()
@@ -138,15 +129,14 @@ class CaptureServer(object):
                                             "*:S"], stdout=subprocess.PIPE)
 
 
-        #print "GOT COMMANDS. Framenum: %s" % self.start_frame
+        print "%s GOT COMMANDS. Framenum: %s" % (time.time(), self.start_frame)
         for command in commands:
-            self.monkey_proc.stdin.write('%s\n' % command)
-        self.monkey_proc.stdin.write('quit\n')
-        self.monkey_proc.wait()
+            cmdtokens = command.split()
+            self.device_controller.execute_command(cmdtokens[0], cmdtokens[1:])
 
         if self.capture_file:
-            self.end_frame = self.controller.capture_framenum()
-        #print "DONE COMMANDS. Framenum: %s" % self.end_frame
+            self.end_frame = self.capture_controller.capture_framenum()
+        print "%s DONE COMMANDS. Framenum: %s" % (time.time(), self.end_frame)
 
         if self.checkerboard_log_file:
             logcat_proc.kill()
@@ -165,22 +155,24 @@ class BrowserRunner(object):
         self.intent = "android.intent.action.VIEW"
 
         activity_mappings = {
-            'com.android.browser': 'BrowserActivity',
+            'com.android.browser': '.BrowserActivity',
             'com.google.android.browser': 'com.android.browser.BrowserActivity'
             }
 
         # use activity mapping if not mozilla
         if self.appname.startswith('org.mozilla'):
-            self.activity = 'App'
+            self.activity = '.App'
             self.intent = None
         else:
             self.activity = activity_mappings[self.appname]
 
     def start(self):
+        print "Starting %s... " % self.appname
+
         # for fennec only, we create and use a profile
-        args = []
-        profile = None
         if self.appname.startswith('org.mozilla'):
+            args = []
+            profile = None
             profile = mozprofile.Profile(preferences = { 'gfx.show_checkerboard_pattern': False })
             remote_profile_dir = "/".join([self.dm.getDeviceRoot(),
                                        os.path.basename(profile.profile)])
@@ -189,10 +181,10 @@ class BrowserRunner(object):
 
             args.extend(["-profile", remote_profile_dir])
 
-        print "Starting %s... " % self.appname
-        self.dm.launchApplication(self.appname, intent=self.intent,
-                                  activity=self.activity,
-                                  url=self.url, extra_args=args)
+            self.dm.launchFennec(self.appname, url=self.url, extraArgs=args)
+        else:
+            self.dm.launchApplication(self.appname, self.activity, self.intent,
+                                      url=self.url)
 
     def stop(self):
         self.dm.killProcess(self.appname)
@@ -202,6 +194,20 @@ def _shell_check_output(dm, args):
     buf = StringIO.StringIO()
     dm.shell(args, buf)
     return str(buf.getvalue()[0:-1]).rstrip()
+
+def get_droid(type, host, port):
+    if type == "adb":
+        if host and not port:
+            port = 5555
+        return mozdevice.DroidADB(host=host, port=port)
+    elif type == "sut":
+        if not host:
+            raise Exception("Must specify host with SUT!")
+        if not port:
+            port = 20701
+        return mozdevice.DroidSUT(host=host, port=port)
+    else:
+        raise Exception("Unknown device manager type: %s" % type)
 
 def main(args=sys.argv[1:]):
     usage = "usage: %prog [options] <appname> <test path>"
@@ -219,6 +225,17 @@ def main(args=sys.argv[1:]):
     parser.add_option("--checkerboard-log-file", action="store",
                       type = "string", dest = "checkerboard_log_file",
                       help = "name to give checkerboarding stats file")
+    parser.add_option("--host", action="store",
+                      type = "string", dest = "host",
+                      help = "Device hostname (only if using TCP/IP)", default=None)
+    parser.add_option("-p", "--port", action="store",
+                      type = "int", dest = "port",
+                      help = "Custom device port (if using SUTAgent or "
+                      "adb-over-tcp)", default=None)
+    parser.add_option("-m", "--dm-type", action="store",
+                      type = "string", dest = "dmtype",
+                      help = "DeviceManager type (adb or sut, defaults to adb)")
+    # ^^^ the actual logic to set the default for this one is below
 
     options, args = parser.parse_args()
     if len(args) != 2:
@@ -244,14 +261,21 @@ def main(args=sys.argv[1:]):
         capture_file = os.path.join(CAPTURE_DIR, "capture-%s.zip" %
                                          datetime.datetime.now().isoformat())
 
-    dm = mozdevice.DroidADB(packageName=appname)
+    # Create a droid object to interface with the phone
+    if not options.dmtype:
+        options.dmtype = os.environ.get('DM_TRANS', 'adb')
+    if not options.host and options.dmtype == "sut":
+        options.host = os.environ.get('TEST_DEVICE')
+    print "Using %s interface (host: %s, port: %s)" % (options.dmtype,
+                                                       options.host,
+                                                       options.port)
+    droid = get_droid(options.dmtype, options.host, options.port)
+    device = _shell_check_output(droid, ["getprop", "ro.product.model"])
+    device_properties = DEVICE_PROPERTIES[device]
 
-    if dm.processExist(appname):
+    if droid.processExist(appname):
         print "An instance of %s is running. Please stop it before running Eideticker." % appname
         sys.exit(1)
-
-    device = _shell_check_output(dm, ["getprop", "ro.product.model"])
-    device_properties = DEVICE_PROPERTIES[device]
 
     print "Creating webserver..."
     capture_metadata = {
@@ -263,7 +287,7 @@ def main(args=sys.argv[1:]):
     capture_server = CaptureServer(capture_metadata, device_properties,
                                    capture_file,
                                    options.checkerboard_log_file,
-                                   capture_controller)
+                                   capture_controller, droid)
     host = mozhttpd.iface.get_lan_ip()
     http = mozhttpd.MozHttpd(docroot=TEST_DIR,
                              host=host, port=0,
@@ -287,7 +311,7 @@ def main(args=sys.argv[1:]):
         try:
             s.connect((host, http.httpd.server_port))
             connected = True
-        except Exception, e:
+        except Exception:
             print "Can't connect to %s:%s, retrying..." % (host, http.httpd.server_port)
 
     if not connected:
@@ -298,7 +322,7 @@ def main(args=sys.argv[1:]):
                                                    http.httpd.server_port,
                                                    testpath)
     print "Test URL is: %s" % url
-    runner = BrowserRunner(dm, appname, url)
+    runner = BrowserRunner(droid, appname, url)
     runner.start()
 
     timeout = 100
