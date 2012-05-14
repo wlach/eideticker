@@ -38,7 +38,6 @@
 # ***** END LICENSE BLOCK *****
 
 import datetime
-import mozdevice
 import mozhttpd
 import mozprofile
 import optparse
@@ -49,28 +48,12 @@ import time
 import urlparse
 import videocapture
 import StringIO
-from devicecontroller import DeviceController
+import eideticker.device
 
 BINDIR = os.path.dirname(__file__)
 CAPTURE_DIR = os.path.abspath(os.path.join(BINDIR, "../captures"))
 TEST_DIR = os.path.abspath(os.path.join(BINDIR, "../src/tests"))
 EIDETICKER_TEMP_DIR = "/tmp/eideticker"
-
-# I know specifying resolution manually like this is ugly, but as far as I
-# can tell there is no good, device-independant way of getting this
-# information via ADB
-DEVICE_PROPERTIES = {
-    "Galaxy Nexus": {
-        "hdmi_resolution": "720p",
-        "display_width": 1180,
-        "display_height": 720
-    },
-    "LG-P999": {
-        "hdmi_resolution": "720p",
-        "display_width": 480,
-        "display_height": 800
-    },
-}
 
 capture_controller = videocapture.CaptureController(custom_tempdir=EIDETICKER_TEMP_DIR)
 
@@ -80,19 +63,13 @@ class CaptureServer(object):
     start_frame = None
     end_frame = None
 
-    def __init__(self, capture_metadata, device_properties, capture_file,
+    def __init__(self, capture_metadata, device, capture_file,
                  checkerboard_log_file, capture_controller, droid):
         self.capture_metadata = capture_metadata
         self.capture_file = capture_file
         self.checkerboard_log_file = checkerboard_log_file
         self.capture_controller = capture_controller
-        self.device_properties = device_properties
-        self.device_controller = DeviceController(droid,
-                                                  self.device_properties['display_width'],
-                                                  self.device_properties['display_height'])
-        # Hack: this gets rid of the "finished charging" modal dialog that the
-        # LG G2X sometimes brings up
-        self.device_controller.tap(240, 617)
+        self.device = device
 
     def terminate_capture(self):
         if self.capture_file:
@@ -101,10 +78,11 @@ class CaptureServer(object):
     @mozhttpd.handlers.json_response
     def start_capture(self, request):
         if self.capture_file:
-            mode = self.device_properties['hdmi_resolution']
-            print "Starting capture on device '%s' with mode: '%s'" % (self.capture_metadata['device'], mode)
-            self.capture_controller.start_capture(self.capture_file, mode,
-                                          self.capture_metadata)
+            print "Starting capture on device '%s' with mode: '%s'" % (self.capture_metadata['device'],
+                                                                       self.device.hdmiResolution)
+            self.capture_controller.start_capture(self.capture_file,
+                                                  self.device.hdmiResolution,
+                                                  self.capture_metadata)
 
         return (200, {'capturing': True})
 
@@ -132,7 +110,7 @@ class CaptureServer(object):
         print "%s GOT COMMANDS. Framenum: %s" % (time.time(), self.start_frame)
         for command in commands:
             cmdtokens = command.split()
-            self.device_controller.execute_command(cmdtokens[0], cmdtokens[1:])
+            self.device.executeCommand(cmdtokens[0], cmdtokens[1:])
 
         if self.capture_file:
             self.end_frame = self.capture_controller.capture_framenum()
@@ -188,26 +166,6 @@ class BrowserRunner(object):
 
     def stop(self):
         self.dm.killProcess(self.appname)
-
-# FIXME: make this part of devicemanager
-def _shell_check_output(dm, args):
-    buf = StringIO.StringIO()
-    dm.shell(args, buf)
-    return str(buf.getvalue()[0:-1]).rstrip()
-
-def get_droid(type, host, port):
-    if type == "adb":
-        if host and not port:
-            port = 5555
-        return mozdevice.DroidADB(host=host, port=port)
-    elif type == "sut":
-        if not host:
-            raise Exception("Must specify host with SUT!")
-        if not port:
-            port = 20701
-        return mozdevice.DroidSUT(host=host, port=port)
-    else:
-        raise Exception("Unknown device manager type: %s" % type)
 
 def main(args=sys.argv[1:]):
     usage = "usage: %prog [options] <appname> <test path>"
@@ -269,11 +227,9 @@ def main(args=sys.argv[1:]):
     print "Using %s interface (host: %s, port: %s)" % (options.dmtype,
                                                        options.host,
                                                        options.port)
-    droid = get_droid(options.dmtype, options.host, options.port)
-    device = _shell_check_output(droid, ["getprop", "ro.product.model"])
-    device_properties = DEVICE_PROPERTIES[device]
+    device = eideticker.device.getDevice(options.dmtype, options.host, options.port)
 
-    if droid.processExist(appname):
+    if device.processExist(appname):
         print "An instance of %s is running. Please stop it before running Eideticker." % appname
         sys.exit(1)
 
@@ -282,12 +238,12 @@ def main(args=sys.argv[1:]):
         'name': capture_name,
         'testpath': testpath,
         'app': appname,
-        'device': device
+        'device': device.model
         }
-    capture_server = CaptureServer(capture_metadata, device_properties,
+    capture_server = CaptureServer(capture_metadata, device,
                                    capture_file,
                                    options.checkerboard_log_file,
-                                   capture_controller, droid)
+                                   capture_controller, device)
     host = mozhttpd.iface.get_lan_ip()
     http = mozhttpd.MozHttpd(docroot=TEST_DIR,
                              host=host, port=0,
@@ -322,7 +278,7 @@ def main(args=sys.argv[1:]):
                                                    http.httpd.server_port,
                                                    testpath)
     print "Test URL is: %s" % url
-    runner = BrowserRunner(droid, appname, url)
+    runner = BrowserRunner(device, appname, url)
     runner.start()
 
     timeout = 100
