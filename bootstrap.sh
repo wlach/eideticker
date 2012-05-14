@@ -64,6 +64,7 @@ virtualenv .
 make -C src/videocapture/videocapture/decklink
 
 # Install videocapture and jsbridge python eggs (and their deps)
+./bin/pip install -e src/eideticker
 ./bin/pip install -e src/videocapture
 ./bin/pip install -e src/mozbase/mozhttpd
 ./bin/pip install -e src/mozbase/mozrunner
