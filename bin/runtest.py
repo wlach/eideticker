@@ -210,7 +210,7 @@ def main(args=sys.argv[1:]):
                                          datetime.datetime.now().isoformat())
 
     # Create a droid object to interface with the phone
-    deviceParams = eideticker.device.getDeviceOptions(options)
+    deviceParams = eideticker.device.getDeviceParams(options)
     device = eideticker.device.getDevice(**deviceParams)
 
     if device.processExist(appname):
