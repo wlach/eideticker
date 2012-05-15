@@ -183,17 +183,7 @@ def main(args=sys.argv[1:]):
     parser.add_option("--checkerboard-log-file", action="store",
                       type = "string", dest = "checkerboard_log_file",
                       help = "name to give checkerboarding stats file")
-    parser.add_option("--host", action="store",
-                      type = "string", dest = "host",
-                      help = "Device hostname (only if using TCP/IP)", default=None)
-    parser.add_option("-p", "--port", action="store",
-                      type = "int", dest = "port",
-                      help = "Custom device port (if using SUTAgent or "
-                      "adb-over-tcp)", default=None)
-    parser.add_option("-m", "--dm-type", action="store",
-                      type = "string", dest = "dmtype",
-                      help = "DeviceManager type (adb or sut, defaults to adb)")
-    # ^^^ the actual logic to set the default for this one is below
+    eideticker.device.addDeviceOptionsToParser(parser)
 
     options, args = parser.parse_args()
     if len(args) != 2:
@@ -220,14 +210,8 @@ def main(args=sys.argv[1:]):
                                          datetime.datetime.now().isoformat())
 
     # Create a droid object to interface with the phone
-    if not options.dmtype:
-        options.dmtype = os.environ.get('DM_TRANS', 'adb')
-    if not options.host and options.dmtype == "sut":
-        options.host = os.environ.get('TEST_DEVICE')
-    print "Using %s interface (host: %s, port: %s)" % (options.dmtype,
-                                                       options.host,
-                                                       options.port)
-    device = eideticker.device.getDevice(options.dmtype, options.host, options.port)
+    deviceParams = eideticker.device.getDeviceOptions(options)
+    device = eideticker.device.getDevice(**deviceParams)
 
     if device.processExist(appname):
         print "An instance of %s is running. Please stop it before running Eideticker." % appname

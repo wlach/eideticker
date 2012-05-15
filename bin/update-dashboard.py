@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import ConfigParser
+import eideticker.device
 import json
 import mozdevice
 import optparse
@@ -155,15 +156,16 @@ def main(args=sys.argv[1:]):
     parser.add_option("--no-download",
                       action="store_true", dest = "no_download",
                       help = "Don't download new versions of the app")
-    parser.add_option("--product", "-p",
+    parser.add_option("--product",
                       action="store", dest="product",
                       help = "Restrict testing to product (options: %s)" %
                       ", ".join([product["name"] for product in default_products]))
     parser.add_option("--num-runs", action="store",
                       type = "int", dest = "num_runs",
                       help = "number of runs (default: 1)")
-    options, args = parser.parse_args()
+    eideticker.device.addDeviceOptionsToParser(parser)
 
+    options, args = parser.parse_args()
     if len(args) != 2:
         parser.error("incorrect number of arguments")
 
@@ -193,7 +195,8 @@ def main(args=sys.argv[1:]):
     if os.path.isfile(datafile):
         data.update(json.loads(open(datafile).read()))
 
-    dm = mozdevice.DroidADB(packageName=None)
+    deviceParams = eideticker.device.getDeviceParams(options)
+    device = eideticker.device.getDevice(**deviceParams)
 
     for product in products:
         product_fname = os.path.join(DOWNLOAD_DIR, "%s.apk" % product['name'])
@@ -205,7 +208,7 @@ def main(args=sys.argv[1:]):
                 f.write(dl.read())
 
         if product.get('url'):
-            dm.updateApp(product_fname)
+            device.updateApp(product_fname)
             appinfo = get_appinfo(product_fname)
             appname = appinfo['appname']
             capture_name = "%s %s" % (product['name'], appinfo['date'])
@@ -222,13 +225,13 @@ def main(args=sys.argv[1:]):
         # Run the test the specified number of times
         for i in range(num_runs):
             # Kill any existing instances of the processes
-            kill_app(dm, appname)
+            device.killProcess(appname)
 
             # Now run the test
-            runtest(dm, product, current_date, appname, appinfo, test,
+            runtest(device, product, current_date, appname, appinfo, test,
                     capture_name + " #%s" % i, outputdir, datafile, data)
 
             # Kill app after test complete
-            kill_app(dm, appname)
+            device.killProcess(appname)
 
 main()

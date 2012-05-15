@@ -146,12 +146,52 @@ class DroidSUT(mozdevice.DroidSUT, EidetickerMixin):
         self. cached_dimensions = (int(m.group(1)), int(m.group(2)))
         return self.cached_dimensions
 
-def getDevice(type, host, port):
-    if type == "adb":
+    def updateApp(self, appBundlePath, processName=None, destPath=None, ipAddr=None, port=30000):
+        '''Replacement for SUT version of updateApp which operates more like the ADB version'''
+        '''(FIXME: TOTAL HACK ETC ETC)'''
+        basename = os.path.basename(appBundlePath)
+        pathOnDevice = os.path.join(self.getDeviceRoot(), basename)
+        self.pushFile(appBundlePath, pathOnDevice)
+        self.installApp(pathOnDevice)
+        self.removeFile(pathOnDevice)
+
+def addDeviceOptionsToParser(parser):
+    parser.add_option("--host", action="store",
+                      type = "string", dest = "host",
+                      help = "Device hostname (only if using TCP/IP)", default=None)
+    parser.add_option("-p", "--port", action="store",
+                      type = "int", dest = "port",
+                      help = "Custom device port (if using SUTAgent or "
+                      "adb-over-tcp)", default=None)
+    parser.add_option("-m", "--dm-type", action="store",
+                      type = "string", dest = "dmtype",
+                      help = "DeviceManager type (adb or sut, defaults to adb)")
+
+
+def getDeviceParams(options):
+    ''' Convert command line options and environment variables into
+        parameters for getDevice()'''
+    params = {}
+
+    if options.dmtype:
+        params['dmtype'] = options.dmtype
+    else:
+        params['dmtype'] = os.environ.get('DM_TRANS', 'adb')
+
+    params['host']=options.host
+    if not params['host'] and params['dmtype'] == "sut":
+        params['host'] = os.environ.get('TEST_DEVICE')
+
+    return params
+
+def getDevice(dmtype="adb", host=None, port=None):
+    '''Gets an eideticker device according to parameters'''
+    print "Using %s interface (host: %s, port: %s)" % (dmtype, host, port)
+    if dmtype == "adb":
         if host and not port:
             port = 5555
         return DroidADB(host=host, port=port)
-    elif type == "sut":
+    elif dmtype == "sut":
         if not host:
             raise Exception("Must specify host with SUT!")
         if not port:
