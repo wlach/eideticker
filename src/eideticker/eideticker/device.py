@@ -19,7 +19,7 @@ DEVICE_PROPERTIES = {
         "dimensions": (1180, 720)
     },
     "LG-P999": {
-        "hdmiResolution": "720p",
+        "hdmiResolution": "1080p",
         "dimensions": (480, 800)
     },
 }
