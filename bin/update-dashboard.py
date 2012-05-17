@@ -40,27 +40,27 @@ default_products = [
 default_tests = [
     {
         'name': 'clock',
-        'path': 'src/tests/canvas/clock.html'
+        'path': 'src/tests/ep1/clock/index.html'
     },
     {
         'name': 'taskjs',
-        'path': 'src/tests/scrolling/taskjs.org/index.html'
+        'path': 'src/tests/ep1/taskjs.org/index.html'
     },
     {
         'name': 'nightly',
-        'path': 'src/tests/zooming/nightly.mozilla.org/index.html'
+        'path': 'src/tests/ep1/nightly.mozilla.org/index.html'
     },
     {
         'name': 'nytimes-scroll',
-        'path': 'src/tests/scrolling/nytimes/nytimes.com/nytimes-scroll.html'
+        'path': 'src/tests/ep1/nytimes/nytimes.com/nytimes-scroll.html'
     },
     {
         'name': 'nytimes-zoom',
-        'path': 'src/tests/scrolling/nytimes/nytimes.com/nytimes-zoom.html'
+        'path': 'src/tests/ep1/nytimes/nytimes.com/nytimes-zoom.html'
     },
     {
         'name': 'cnn',
-        'path': 'src/tests/cnn/cnn.com/index.html'
+        'path': 'src/tests/ep1/cnn/cnn.com/index.html'
     },
     {
         'name': 'reddit',

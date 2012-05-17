@@ -13,3 +13,6 @@
 [submodule "src/mozbase"]
 	path = src/mozbase
 	url = git://github.com/wlach/mozbase.git
+[submodule "src/tests/ep1"]
+	path = src/tests/ep1
+	url = git://wrla.ch/ep1.git
