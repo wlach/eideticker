@@ -38,6 +38,7 @@
 # ***** END LICENSE BLOCK *****
 
 import datetime
+import json
 import mozhttpd
 import mozprofile
 import optparse
@@ -45,6 +46,7 @@ import os
 import subprocess
 import sys
 import time
+import urllib
 import urlparse
 import videocapture
 import StringIO
@@ -63,13 +65,14 @@ class CaptureServer(object):
     start_frame = None
     end_frame = None
 
-    def __init__(self, capture_metadata, device, capture_file,
-                 checkerboard_log_file, capture_controller, droid):
+    def __init__(self, capture_metadata, capture_file,
+                 checkerboard_log_file, capture_controller, device, actions):
         self.capture_metadata = capture_metadata
         self.capture_file = capture_file
         self.checkerboard_log_file = checkerboard_log_file
         self.capture_controller = capture_controller
         self.device = device
+        self.actions = actions
 
     def terminate_capture(self):
         if self.capture_file:
@@ -94,9 +97,7 @@ class CaptureServer(object):
 
     @mozhttpd.handlers.json_response
     def input(self, request):
-        commands = urlparse.parse_qs(request.body)['commands[]']
-        print "Got commands: %s" % commands
-
+        commandset = urlparse.parse_qs(request.body)['commands'][0]
         if self.capture_file:
             self.start_frame = self.capture_controller.capture_framenum()
 
@@ -105,22 +106,27 @@ class CaptureServer(object):
             logcat_proc = subprocess.Popen(["adb", "logcat",
                                             "GeckoLayerRendererProf:D",
                                             "*:S"], stdout=subprocess.PIPE)
+        if not self.actions.get(commandset) or not \
+                self.actions[commandset].get(self.device.model):
+            print "Could not get actions for commandset '%s', model " \
+                "'%s'" % (commandset, self.device.model)
+            sys.exit(1)
 
-
-        print "%s GOT COMMANDS. Framenum: %s" % (time.time(), self.start_frame)
-        for command in commands:
-            cmdtokens = command.split()
+        print "Executing commands '%s' for device '%s'" \
+            " (time: %s, framenum: %s)" % (commandset, self.device.model,
+                                           time.time(), self.start_frame)
+        for cmdtokens in self.actions[commandset][self.device.model]:
             self.device.executeCommand(cmdtokens[0], cmdtokens[1:])
 
         if self.capture_file:
             self.end_frame = self.capture_controller.capture_framenum()
-        print "%s DONE COMMANDS. Framenum: %s" % (time.time(), self.end_frame)
+        print "Finished commands (time: %s, framenum: %s)" % (time.time(),
+                                                              self.end_frame)
 
         if self.checkerboard_log_file:
             logcat_proc.kill()
             with open(self.checkerboard_log_file, 'w') as f:
                 f.write(logcat_proc.stdout.read())
-        print "DONE"
 
         return (200, {})
 
@@ -170,6 +176,9 @@ class BrowserRunner(object):
 def main(args=sys.argv[1:]):
     usage = "usage: %prog [options] <appname> <test path>"
     parser = optparse.OptionParser(usage)
+    parser.add_option("--url-params", action="store",
+                      dest="url_params",
+                      help="additional url parameters for test")
     parser.add_option("--name", action="store",
                       type = "string", dest = "capture_name",
                       help = "name to give capture")
@@ -188,11 +197,19 @@ def main(args=sys.argv[1:]):
     options, args = parser.parse_args()
     if len(args) != 2:
         parser.error("incorrect number of arguments")
-    appname = args[0]
+    (appname, testpath) = args
     try:
-        testpath = os.path.abspath(args[1]).split(TEST_DIR)[1][1:]
+        testpath_rel = os.path.abspath(testpath).split(TEST_DIR)[1][1:]
     except:
         print "Test must be relative to %s" % TEST_DIR
+        sys.exit(1)
+
+    actions_path = os.path.join(os.path.dirname(testpath), "actions.json")
+    try:
+        with open(actions_path) as f:
+            actions = json.loads(f.read())
+    except EnvironmentError:
+        print "Couldn't open actions file '%s'" % actions_path
         sys.exit(1)
 
     if not os.path.exists(EIDETICKER_TEMP_DIR):
@@ -203,7 +220,7 @@ def main(args=sys.argv[1:]):
 
     capture_name = options.capture_name
     if not capture_name:
-        capture_name = testpath
+        capture_name = testpath_rel
     capture_file = options.capture_file
     if not capture_file and not options.no_capture:
         capture_file = os.path.join(CAPTURE_DIR, "capture-%s.zip" %
@@ -220,14 +237,14 @@ def main(args=sys.argv[1:]):
     print "Creating webserver..."
     capture_metadata = {
         'name': capture_name,
-        'testpath': testpath,
+        'testpath': testpath_rel,
         'app': appname,
         'device': device.model
         }
-    capture_server = CaptureServer(capture_metadata, device,
+    capture_server = CaptureServer(capture_metadata,
                                    capture_file,
                                    options.checkerboard_log_file,
-                                   capture_controller, device)
+                                   capture_controller, device, actions)
     host = mozhttpd.iface.get_lan_ip()
     http = mozhttpd.MozHttpd(docroot=TEST_DIR,
                              host=host, port=0,
@@ -258,9 +275,12 @@ def main(args=sys.argv[1:]):
         print "Could not open webserver. Error!"
         sys.exit(1)
 
+    if options.url_params:
+        testpath_rel += "?%s" % urllib.quote_plus(options.url_params)
+
     url = "http://%s:%s/start.html?testpath=%s" % (host,
                                                    http.httpd.server_port,
-                                                   testpath)
+                                                   testpath_rel)
     print "Test URL is: %s" % url
     runner = BrowserRunner(device, appname, url)
     runner.start()

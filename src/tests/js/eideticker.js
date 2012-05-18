@@ -2,6 +2,11 @@ var Eideticker = function () {
   var startTime;
 
   return {
+    getParameterByName: function(name) {
+      var match = RegExp('[?&]' + name + '=([^&]*)').exec(window.location.search);
+
+      return match && decodeURIComponent(match[1].replace(/\+/g, ' '));
+    },
     loadTest: function(testurl) {
       setTimeout(function() {
         window.location.href = testurl;
@@ -19,3 +24,4 @@ var Eideticker = function () {
     }
   }
 }();
+

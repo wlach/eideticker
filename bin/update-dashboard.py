@@ -52,11 +52,13 @@ default_tests = [
     },
     {
         'name': 'nytimes-scroll',
-        'path': 'src/tests/ep1/nytimes/nytimes.com/nytimes-scroll.html'
+        'path': 'src/tests/ep1/nytimes/nytimes.com/index.html',
+        'urlparams': 'testtype=scroll'
     },
     {
         'name': 'nytimes-zoom',
-        'path': 'src/tests/ep1/nytimes/nytimes.com/nytimes-zoom.html'
+        'path': 'src/tests/ep1/nytimes/nytimes.com/index.html',
+        'urlparams': 'testtype=zoom'
     },
     {
         'name': 'cnn',
@@ -108,8 +110,9 @@ def runtest(dm, product, current_date, appname, appinfo, test, capture_name,
                                                      appname,
                                                      appinfo.get('date'),
                                                      int(time.time())))
-    retval = subprocess.call(["runtest.py", "--name",
-                              capture_name,
+    urlparams = test.get('urlparams', '\"\"')
+    retval = subprocess.call(["runtest.py", "--url-params", urlparams,
+                              "--name", capture_name,
                               "--capture-file", capture_file,
                               appname, test['path']])
     if retval != 0:
