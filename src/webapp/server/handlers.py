@@ -90,7 +90,7 @@ class CaptureImageHandler:
         params, body = templeton.handlers.get_request_parms()
         (width, height) = (params.get('width'), params.get('height'))
         capture = videocapture.Capture(os.path.join(CAPTURE_DIR, name))
-        im = capture.get_frame_image(num)
+        im = capture.get_frame_image(int(num))
         if width and height:
             im.thumbnail((int(width[0]), int(height[0])), Image.ANTIALIAS)
 

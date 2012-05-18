@@ -89,9 +89,9 @@ class Capture(object):
         return buf
 
     def get_frame_image(self, framenum, grayscale=False):
-        if framenum > self.num_frames:
-            raise CaptureException("Frame number '%s' is greater than the number of frames "
-                                   "(%s)" % framenum, self.num_frames)
+        if int(framenum) > self.num_frames:
+            raise CaptureException("Frame number '%s' is greater than the number of frames " \
+                                   "(%s)" % (framenum, self.num_frames))
 
         filename = 'images/%s.png' % framenum
         if filename not in self.archive.namelist():
