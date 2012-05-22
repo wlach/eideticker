@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import datetime
 import json
 import mozdevice
 from mozregression.runnightly import FennecNightly
@@ -60,11 +61,99 @@ def get_build_for_date(date):
 
     return fname
 
+def run_test(device, apk, outputfile, test, url_params, num_runs, no_capture,
+             get_internal_checkerboard_stats):
+    with zipfile.ZipFile(apk) as zip:
+        try:
+            appname = zip.read('package-name.txt').rstrip()
+        except KeyError:
+            print "No file named 'package-name.txt' in archive. Are you sure "
+            "this is a fennec apk?"
+            sys.exit(1)
+        print "appname is '%s'" % appname
+
+
+    device.updateApp(apk)
+
+    captures = []
+
+    for i in range(num_runs):
+        # Kill any existing instances of the processes
+        kill_app(device, appname)
+
+        # Now run the test
+        capture_file = os.path.join(CAPTURE_DIR,
+                                    "metric-test-%s-%s.zip" % (appname,
+                                                               int(time.time())))
+        args = ["runtest.py", "--url-params", url_params, appname, test]
+        if get_internal_checkerboard_stats:
+            checkerboard_logfile = tempfile.NamedTemporaryFile()
+            args.extend(["--checkerboard-log-file", checkerboard_logfile.name])
+        if no_capture:
+            args.extend(["--no-capture"])
+        else:
+            args.extend(["--capture-file", capture_file])
+        print args
+        retval = subprocess.call(args)
+        if retval != 0:
+            raise Exception("Failed to run test %s for %s" % (test, appname))
+
+        capture_result = {}
+        if not no_capture:
+            capture_result['file'] = capture_file
+
+            capture = videocapture.Capture(capture_file)
+
+            framediff_sums = videocapture.get_framediff_sums(capture)
+            capture_result['uniqueframes'] = 1 + len([framediff for framediff in framediff_sums if framediff > 0])
+
+            capture_result['checkerboard'] = videocapture.get_checkerboarding_area_duration(capture)
+
+        if get_internal_checkerboard_stats:
+            internal_checkerboard_totals = parse_checkerboard_log(checkerboard_logfile.name)
+            capture_result['internalcheckerboard'] = internal_checkerboard_totals
+
+        captures.append(capture_result)
+
+    apkname = os.path.basename(apk)
+    print "=== Results for %s ===" % apkname
+
+    if not no_capture:
+        print "  Number of unique frames:"
+        print "  %s" % map(lambda c: c['uniqueframes'], captures)
+        print
+
+        print "  Checkerboard area/duration (sum of percents NOT percentage):"
+        print "  %s" % map(lambda c: c['checkerboard'], captures)
+        print
+
+        print "  Capture files (for further reference):"
+        print "  Capture files: %s" % map(lambda c: c['file'], captures)
+        print
+
+    if get_internal_checkerboard_stats:
+        print "  Internal Checkerboard Stats (sum of percents, not percentage):"
+        print "  %s" % map(lambda c: c['internalcheckerboard'], captures)
+        print
+
+    if outputfile:
+        data = {}
+        if os.path.isfile(outputfile):
+            data.update(json.loads(open(outputfile).read()))
+
+        if not data.get(apkname):
+            data[apkname] = []
+        data[apkname].extend(captures)
+
+        with open(outputfile, 'w') as f:
+            f.write(json.dumps(data))
+
 def main(args=sys.argv[1:]):
     usage = "usage: %prog <test> [apk of build]"
     parser = optparse.OptionParser(usage)
     parser.add_option("--num-runs", action="store",
                       type = "int", dest = "num_runs",
+                      default=1,
                       help = "number of runs (default: 1)")
     parser.add_option("--output-file", action="store",
                       type="string", dest="output_file",
@@ -78,109 +167,49 @@ def main(args=sys.argv[1:]):
                       dest="get_internal_checkerboard_stats",
                       help="get and calculate internal checkerboard stats")
     parser.add_option("--url-params", action="store",
-                      dest="url_params", default="\"\"",
+                      dest="url_params", default="",
                       help="additional url parameters for test")
     parser.add_option("--date", action="store", dest="date",
                       metavar="YYYY-MM-DD",
                       help="get and test nightly build for date")
+    parser.add_option("--start-date", action="store", dest="start_date",
+                      metavar="YYYY-MM-DD",
+                      help="start date for range of nightlies to test")
+    parser.add_option("--end-date", action="store", dest="end_date",
+                      metavar="YYYY-MM-DD",
+                      help="end date for range of nightlies to test")
 
     options, args = parser.parse_args()
 
-    if options.date and len(args) == 1:
+    dates = []
+    apk = None
+    if options.start_date and options.end_date and len(args) == 1:
         test = args[0]
-        date = get_date(options.date)
-        apk = get_build_for_date(date)
+        start_date = get_date(options.start_date)
+        end_date = get_date(options.end_date)
+        days=(end_date-start_date).days
+        for numdays in range(days+1):
+            dates.append(start_date+datetime.timedelta(days=numdays))
+    elif options.date and len(args) == 1:
+        test = args[0]
+        dates = [get_date(options.date)]
     elif not options.date and len(args) == 2:
         (apk, test) = args
-    elif not options.date:
-        parser.error("Must specify date or a (single) apk file")
+    elif not options.date or (not options.start_date and not options.end_date):
+        parser.error("Must specify date, date range, or a (single) apk file")
 
-    num_runs = 1
-    if options.num_runs:
-        num_runs = options.num_runs
+    device = mozdevice.DroidADB(packageName=None)
+    if apk:
+        run_test(device, apk, options.output_file, test, options.url_params,
+                 options.num_runs, options.no_capture,
+                 options.get_internal_checkerboard_stats)
+    else:
+        for date in dates:
+            apk = get_build_for_date(date)
+            run_test(device, apk, options.output_file, test,
+                     options.url_params, options.num_runs,
+                     options.no_capture,
+                     options.get_internal_checkerboard_stats)
 
-    with zipfile.ZipFile(apk) as zip:
-        try:
-            appname = zip.read('package-name.txt').rstrip()
-        except KeyError:
-            print "No file named 'package-name.txt' in archive. Are you sure "
-            "this is a fennec apk?"
-            sys.exit(1)
-        print "appname is '%s'" % appname
-
-    droid = mozdevice.DroidADB(packageName=appname)
-    droid.updateApp(apk)
-
-    captures = []
-
-    for i in range(num_runs):
-        # Kill any existing instances of the processes
-        kill_app(droid, appname)
-
-        # Now run the test
-        capture_file = os.path.join(CAPTURE_DIR,
-                                    "metric-test-%s-%s.zip" % (appname,
-                                                               int(time.time())))
-        args = ["runtest.py", "--url-params", options.url_params, appname, test]
-        if options.get_internal_checkerboard_stats:
-            checkerboard_logfile = tempfile.NamedTemporaryFile()
-            args.extend(["--checkerboard-log-file", checkerboard_logfile.name])
-        if options.no_capture:
-            args.extend(["--no-capture"])
-        else:
-            args.extend(["--capture-file", capture_file])
-        print args
-        retval = subprocess.call(args)
-        if retval != 0:
-            raise Exception("Failed to run test %s for %s" % (test, appname))
-
-        capture_result = {}
-        if not options.no_capture:
-            capture_result['file'] = capture_file
-
-            capture = videocapture.Capture(capture_file)
-
-            framediff_sums = videocapture.get_framediff_sums(capture)
-            capture_result['uniqueframes'] = 1 + len([framediff for framediff in framediff_sums if framediff > 0])
-
-            capture_result['checkerboard'] = videocapture.get_checkerboarding_area_duration(capture)
-
-        if options.get_internal_checkerboard_stats:
-            internal_checkerboard_totals = parse_checkerboard_log(checkerboard_logfile.name)
-            capture_result['internalcheckerboard'] = internal_checkerboard_totals
-
-        captures.append(capture_result)
-
-    if not options.no_capture:
-        print "=== Number of unique frames ==="
-        print "%s" % map(lambda c: c['uniqueframes'], captures)
-        print
-
-        print "=== Checkerboard area/duration (sum of percents NOT percentage) ==="
-        print "%s" % map(lambda c: c['checkerboard'], captures)
-        print
-
-        print "=== Capture files (for further reference) ==="
-        print "Capture files: %s" % map(lambda c: c['file'], captures)
-        print
-
-    if options.get_internal_checkerboard_stats:
-        print "=== Internal Checkerboard Stats (sum of percents, not percentage) ==="
-        print "%s" % map(lambda c: c['internalcheckerboard'], captures)
-        print
-
-    outputfile = options.output_file
-    if outputfile:
-        data = {}
-        if os.path.isfile(outputfile):
-            data.update(json.loads(open(outputfile).read()))
-
-        key = os.path.basename(apk)
-        if not data.get(key):
-            data[key] = []
-        data[key].extend(captures)
-
-        with open(outputfile, 'w') as f:
-            f.write(json.dumps(data))
 
 main()
