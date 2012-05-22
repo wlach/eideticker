@@ -2,6 +2,8 @@
 
 import json
 import mozdevice
+from mozregression.runnightly import FennecNightly
+from mozregression.utils import get_date
 import optparse
 import os
 import re
@@ -9,10 +11,12 @@ import subprocess
 import sys
 import tempfile
 import time
+import urllib2
 import videocapture
 import zipfile
 
 CAPTURE_DIR = os.path.join(os.path.dirname(__file__), "../captures")
+DOWNLOAD_DIR = os.path.join(os.path.dirname(__file__), "../downloads")
 CHECKERBOARD_REGEX = re.compile('.*GeckoLayerRendererProf.*1000ms:.*\ '
                                 '([0-9]+\.[0-9]+)\/([0-9]+).*')
 
@@ -34,8 +38,30 @@ def parse_checkerboard_log(fname):
 
     return checkerboarding_percent_totals
 
+def get_build_for_date(date):
+    fname = os.path.join(DOWNLOAD_DIR,
+                         "nightly-%s-%s-%s.apk" % (date.year,
+                                                   date.month,
+                                                   date.day))
+    if os.path.exists(fname):
+        print "Build already exists for %s. Skipping download." % date
+        return fname
+
+    fennec = FennecNightly()
+    build_url = fennec.getBuildUrl(date)
+    if not build_url:
+        print "ERROR: Couldn't get build url for date %s" % date
+        return None
+
+    print "Downloading %s" % build_url
+    dl = urllib2.urlopen(build_url)
+    with open(fname, 'w') as f:
+        f.write(dl.read())
+
+    return fname
+
 def main(args=sys.argv[1:]):
-    usage = "usage: %prog <apk of build> <test>"
+    usage = "usage: %prog <test> [apk of build]"
     parser = optparse.OptionParser(usage)
     parser.add_option("--num-runs", action="store",
                       type = "int", dest = "num_runs",
@@ -51,13 +77,23 @@ def main(args=sys.argv[1:]):
                       action="store_true",
                       dest="get_internal_checkerboard_stats",
                       help="get and calculate internal checkerboard stats")
+    parser.add_option("--url-params", action="store",
+                      dest="url_params", default="\"\"",
+                      help="additional url parameters for test")
+    parser.add_option("--date", action="store", dest="date",
+                      metavar="YYYY-MM-DD",
+                      help="get and test nightly build for date")
 
     options, args = parser.parse_args()
 
-    if len(args) != 2:
-        parser.error("incorrect number of arguments")
-
-    (apk, test) = args
+    if options.date and len(args) == 1:
+        test = args[0]
+        date = get_date(options.date)
+        apk = get_build_for_date(date)
+    elif not options.date and len(args) == 2:
+        (apk, test) = args
+    elif not options.date:
+        parser.error("Must specify date or a (single) apk file")
 
     num_runs = 1
     if options.num_runs:
@@ -85,7 +121,7 @@ def main(args=sys.argv[1:]):
         capture_file = os.path.join(CAPTURE_DIR,
                                     "metric-test-%s-%s.zip" % (appname,
                                                                int(time.time())))
-        args = ["runtest.py", appname, test]
+        args = ["runtest.py", "--url-params", options.url_params, appname, test]
         if options.get_internal_checkerboard_stats:
             checkerboard_logfile = tempfile.NamedTemporaryFile()
             args.extend(["--checkerboard-log-file", checkerboard_logfile.name])

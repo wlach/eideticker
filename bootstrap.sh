@@ -70,3 +70,4 @@ make -C src/videocapture/videocapture/decklink
 ./bin/pip install -e src/mozbase/mozrunner
 ./bin/pip install -e src/mozbase/mozdevice
 ./bin/pip install -e src/templeton
+./bin/pip install -e src/mozregression

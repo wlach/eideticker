@@ -33,16 +33,18 @@ class EidetickerMixin(object):
         return DEVICE_PROPERTIES[self.model]['hdmiResolution']
 
     def _init(self):
-        self.model = self._shellCheckOutput(["getprop", "ro.product.model"])
+        self.model = self.getprop("ro.product.model")
 
         # Hack: this gets rid of the "finished charging" modal dialog that the
         # LG G2X sometimes brings up
         self.tap(240, 617)
 
     # FIXME: make this part of devicemanager
-    def _shellCheckOutput(dm, args):
+    def _shellCheckOutput(self, args):
         buf = StringIO.StringIO()
-        dm.shell(args, buf)
+        retval = self.shell(args, buf)
+        if int(retval) != 0: # int() necessary because of bug 757546
+            raise Exception("Non-zero return code for command: %s" % args)
         return str(buf.getvalue()[0:-1]).rstrip()
 
     def _executeScript(self, script):
@@ -54,8 +56,20 @@ class EidetickerMixin(object):
         remotefilename = os.path.join(self.getDeviceRoot(),
                                       os.path.basename(f.name))
         self.pushFile(f.name, remotefilename)
-        buf = StringIO.StringIO()
-        self.shell(["su", "-c", "LD_LIBRARY_PATH=/vendor/lib:/system/lib monkey -f %s 1" % remotefilename], buf)
+        self._shellCheckOutput(["su", "-c",
+                                "LD_LIBRARY_PATH=/vendor/lib:/system/lib monkey -f %s 1" % remotefilename])
+
+    def getprop(self, prop):
+        return self._shellCheckOutput(["getprop", str(prop)])
+
+    def setprop(self, prop, value):
+        self._shellCheckOutput(["setprop", str(prop), str(value)])
+
+    def clear_logcat(self):
+        self._shellCheckOutput(["logcat", "-c"])
+
+    def get_logcat(self, args):
+        return self._shellCheckOutput(["logcat", "-d"] + args)
 
     def drag(self, touch_start, touch_end, duration=1.0, num_steps=5):
         script = ""

@@ -102,10 +102,8 @@ class CaptureServer(object):
             self.start_frame = self.capture_controller.capture_framenum()
 
         if self.checkerboard_log_file:
-            subprocess.Popen(["adb", "logcat", "-c"]).communicate()
-            logcat_proc = subprocess.Popen(["adb", "logcat",
-                                            "GeckoLayerRendererProf:D",
-                                            "*:S"], stdout=subprocess.PIPE)
+            self.device.clear_logcat()
+
         if not self.actions.get(commandset) or not \
                 self.actions[commandset].get(self.device.model):
             print "Could not get actions for commandset '%s', model " \
@@ -124,11 +122,16 @@ class CaptureServer(object):
                                                               self.end_frame)
 
         if self.checkerboard_log_file:
-            logcat_proc.kill()
+            # sleep a bit to make sure we get all the checkerboard stats from
+            # test
+            time.sleep(1)
             with open(self.checkerboard_log_file, 'w') as f:
-                f.write(logcat_proc.stdout.read())
+                output = self.device.get_logcat(["GeckoLayerRendererProf:D",
+                                                 "*:S"])
+                f.write(output)
 
         return (200, {})
+
 
 class BrowserRunner(object):
 
@@ -234,6 +237,14 @@ def main(args=sys.argv[1:]):
         print "An instance of %s is running. Please stop it before running Eideticker." % appname
         sys.exit(1)
 
+    # If we're logging checkerboard stats, set that up here (seems like it
+    # takes a second or so to accept the new setting, so let's do that here --
+    # ideally we would detect when that's working, but I'm not sure how to do
+    # so trivially)
+    if options.checkerboard_log_file:
+        old_log_val = device.getprop("log.tag.GeckoLayerRendererProf")
+        device.setprop("log.tag.GeckoLayerRendererProf", "DEBUG")
+
     print "Creating webserver..."
     capture_metadata = {
         'name': capture_name,
@@ -302,5 +313,10 @@ def main(args=sys.argv[1:]):
     if capture_file:
         print "Converting capture..."
         capture_controller.convert_capture(capture_server.start_frame, capture_server.end_frame)
+
+    # Clean up checkerboard logging preferences
+    if options.checkerboard_log_file:
+        device.setprop("log.tag.GeckoLayerRendererProf", old_log_val)
+
 
 main()

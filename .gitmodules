@@ -16,3 +16,6 @@
 [submodule "src/tests/ep1"]
 	path = src/tests/ep1
 	url = git://wrla.ch/ep1.git
+[submodule "src/mozregression"]
+	path = src/mozregression
+	url = git://github.com/wlach/mozregression.git
