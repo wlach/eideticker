@@ -110,7 +110,7 @@ def runtest(dm, product, current_date, appname, appinfo, test, capture_name,
                                                      appname,
                                                      appinfo.get('date'),
                                                      int(time.time())))
-    urlparams = test.get('urlparams', '\"\"')
+    urlparams = test.get('urlparams', '')
     retval = subprocess.call(["runtest.py", "--url-params", urlparams,
                               "--name", capture_name,
                               "--capture-file", capture_file,
