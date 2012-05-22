@@ -169,8 +169,18 @@ def main(args=sys.argv[1:]):
         print "%s" % map(lambda c: c['internalcheckerboard'], captures)
         print
 
-    if options.output_file:
-        with open(options.output_file, 'w') as f:
-            f.write(json.dumps(captures))
+    outputfile = options.output_file
+    if outputfile:
+        data = {}
+        if os.path.isfile(outputfile):
+            data.update(json.loads(open(outputfile).read()))
+
+        key = os.path.basename(apk)
+        if not data.get(key):
+            data[key] = []
+        data[key].extend(captures)
+
+        with open(outputfile, 'w') as f:
+            f.write(json.dumps(data))
 
 main()
