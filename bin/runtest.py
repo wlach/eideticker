@@ -110,11 +110,10 @@ class CaptureServer(object):
                 "'%s'" % (commandset, self.device.model)
             sys.exit(1)
 
-        print "Executing commands '%s' for device '%s'" \
-            " (time: %s, framenum: %s)" % (commandset, self.device.model,
-                                           time.time(), self.start_frame)
-        for cmdtokens in self.actions[commandset][self.device.model]:
-            self.device.executeCommand(cmdtokens[0], cmdtokens[1:])
+        print "Executing commands '%s' for device '%s' (time: %s, framenum: %s)" % (
+            commandset, self.device.model, time.time(), self.start_frame)
+
+        self.device.executeCommands(self.actions[commandset][self.device.model])
 
         if self.capture_file:
             self.end_frame = self.capture_controller.capture_framenum()

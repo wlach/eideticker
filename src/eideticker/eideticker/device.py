@@ -37,7 +37,7 @@ class EidetickerMixin(object):
 
         # Hack: this gets rid of the "finished charging" modal dialog that the
         # LG G2X sometimes brings up
-        self.tap(240, 617)
+        self.executeCommand("tap", [240, 617])
 
     # FIXME: make this part of devicemanager
     def _shellCheckOutput(self, args):
@@ -47,11 +47,11 @@ class EidetickerMixin(object):
             raise Exception("Non-zero return code for command: %s" % args)
         return str(buf.getvalue()[0:-1]).rstrip()
 
-    def _executeScript(self, script):
+    def _executeScript(self, events):
         '''Executes a set of monkey commands on the device'''
         f = tempfile.NamedTemporaryFile()
-        f.write("type= raw events\ncount= %s\nspeed= 0.0\nstart data >>\n" % len(script.split('\n')))
-        f.write(script)
+        f.write("type= raw events\ncount= %s\nspeed= 1.0\nstart data >>\n" % len(events))
+        f.write("\n".join(events) + "\n")
         f.flush()
         remotefilename = os.path.join(self.getDeviceRoot(),
                                       os.path.basename(f.name))
@@ -71,66 +71,78 @@ class EidetickerMixin(object):
     def get_logcat(self, args):
         return self._shellCheckOutput(["logcat", "-d"] + args)
 
-    def drag(self, touch_start, touch_end, duration=1.0, num_steps=5):
-        script = ""
-        script += ("createDispatchPointer(0,0,0,%s,%s,1.0,1.0,0,0.0,0.0,-1,"
-                   "0)\n" % touch_start)
+    def _getDragEvents(self, touch_start, touch_end, duration=1.0, num_steps=5):
+        events = []
+        events.append("createDispatchPointer(0,0,0,%s,%s,1.0,1.0,0,0.0,0.0,-1,"
+                      "0)" % touch_start)
+
         delta = ((touch_end[0] - touch_start[0]) / num_steps,
                  (touch_end[1] - touch_start[1]) / num_steps)
         for i in range(num_steps):
             current = (touch_start[0] + delta[0]*i,
                        touch_start[1] + delta[1]*i)
-            script += ("createDispatchPointer(0,0,2,%s,%s,1.0,1.0,0,0.0,0.0,-1,"
-                       "0)\n" % current)
-            script += ("UserWait(%s)\n" % int((duration / num_steps) * 1000.0))
-        script += ("createDispatchPointer(0,0,1,%s,%s,1.0,1.0,0,0.0,0.0,-1,"
-                   "0)\n" % touch_end)
-        self._executeScript(script)
+            events.append("createDispatchPointer(0,0,2,%s,%s,1.0,1.0,0,0.0,0.0,-1,"
+                          "0)" % current)
+            events.append("UserWait(%s)" % int((duration / num_steps) * 1000.0))
+        events.append("createDispatchPointer(0,0,1,%s,%s,1.0,1.0,0,0.0,0.0,-1,"
+                      "0)" % touch_end)
+        events.append("UserWait(250)")
+        return events
 
-    def tap(self, x, y, times=1):
-        script = ""
+    def _getSleepEvent(self, duration=1.0):
+        return "UserWait(%s)" % int(float(duration) * 1000.0)
+
+    def _getTapEvents(self, x, y, times=1):
+        events = []
         for i in range(0, times):
-            script += ("createDispatchPointer(0,0,0,%s,%s,1.0,1.0,0,0.0,0.0,-1,"
-                          "0)\n" % (x,y))
-            script += ("createDispatchPointer(0,0,1,%s,%s,1.0,1.0,0,0.0,0.0,-1,"
-                       "0)\n" % (x,y))
-        self._executeScript(script)
+            events.append("createDispatchPointer(0,0,0,%s,%s,1.0,1.0,0,0.0,0.0,-1,"
+                          "0)" % (x,y))
+            events.append("createDispatchPointer(0,0,1,%s,%s,1.0,1.0,0,0.0,0.0,-1,"
+                          "0)" % (x,y))
+        return events
 
-    def scrollDown(self):
+    def _getScrollDownEvents(self):
         x = int(self.dimensions[0] / 2)
         ybottom = self.dimensions[1] - 100
         ytop = 200
-        self.drag((x,ybottom), (x,ytop), 0.1, 10)
+        return self._getDragEvents((x,ybottom), (x,ytop), 0.1, 10)
 
-    def scrollUp(self):
+    def _getScrollUpEvents(self):
         x = int(self.dimensions[0] / 2)
         ybottom = self.dimensions[1] - 100
         ytop = 200
-        self.drag((x,ytop), (x,ybottom), 0.1, 10)
+        return self._getDragEvents((x,ytop), (x,ybottom), 0.1, 10)
 
-    def executeCommand(self, cmd, args):
-        if cmd == "quit":
-            pass # for backwards compatibility only
-        elif cmd == "scroll_down":
-            self.scrollDown()
+    def _getCmdEvents(self, cmd, args):
+        if cmd == "scroll_down":
+            cmdevents = self._getScrollDownEvents()
         elif cmd == "scroll_up":
-            self.scrollUp()
+            cmdevents = self._getScrollUpEvents()
         elif cmd == "tap":
-            self.tap(*args)
+            cmdevents = self._getTapEvents(*args)
         elif cmd == "double_tap":
-            self.tap(*args, times=2)
+            cmdevents = self._getTapEvents(*args, times=2)
         elif cmd == "sleep":
-            sleeptime = 1
-            if len(args) > 0:
-                sleeptime = int(args[0])
-            time.sleep(sleeptime)
+            if len(args):
+                cmdevents = [self._getSleepEvent(duration=args[0])]
+            else:
+                cmdevents = [self._getSleepEvent()]
         else:
             raise Exception("Unknown command")
 
+        return cmdevents
+
+    def executeCommand(self, cmd, args):
+        cmdevents = self._getCmdEvents(cmd, args)
+        if cmdevents:
+            self._executeScript(cmdevents)
+
     def executeCommands(self, cmds):
+        cmdevents = []
         for cmd in cmds:
             (cmd, args) = (cmd[0], cmd[1:])
-            self.executeCommand(cmd, args)
+            cmdevents.extend(self._getCmdEvents(cmd, args))
+        self._executeScript(cmdevents)
 
 
 class DroidADB(mozdevice.DroidADB, EidetickerMixin):
