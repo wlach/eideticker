@@ -15,7 +15,7 @@ import eideticker.device
 
 def main(args=sys.argv[1:]):
 
-    usage = "usage: %prog <device width> <device height>"
+    usage = "usage: %prog"
     parser = optparse.OptionParser(usage)
     parser.add_option("--host", action="store",
                       type = "string", dest = "host",
