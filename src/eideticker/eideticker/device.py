@@ -101,23 +101,31 @@ class EidetickerMixin(object):
                           "0)" % (x,y))
         return events
 
-    def _getScrollDownEvents(self):
+    def _getScrollDownEvents(self, numtimes=1, numsteps=10):
+        events = []
         x = int(self.dimensions[0] / 2)
         ybottom = self.dimensions[1] - 100
         ytop = 200
-        return self._getDragEvents((x,ybottom), (x,ytop), 0.1, 10)
+        for i in range(numtimes):
+            events.extend(self._getDragEvents((x,ybottom), (x,ytop), 0.1,
+                                              numsteps))
+        return events
 
-    def _getScrollUpEvents(self):
+    def _getScrollUpEvents(self, numtimes=1, numsteps=10):
+        events = []
         x = int(self.dimensions[0] / 2)
         ybottom = self.dimensions[1] - 100
         ytop = 200
-        return self._getDragEvents((x,ytop), (x,ybottom), 0.1, 10)
+        for i in range(numtimes):
+            events.extend(self._getDragEvents((x,ytop), (x,ybottom), 0.1,
+                                              numsteps))
+        return events
 
     def _getCmdEvents(self, cmd, args):
         if cmd == "scroll_down":
-            cmdevents = self._getScrollDownEvents()
+            cmdevents = self._getScrollDownEvents(*args)
         elif cmd == "scroll_up":
-            cmdevents = self._getScrollUpEvents()
+            cmdevents = self._getScrollUpEvents(*args)
         elif cmd == "tap":
             cmdevents = self._getTapEvents(*args)
         elif cmd == "double_tap":
