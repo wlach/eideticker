@@ -218,13 +218,13 @@ def getDeviceParams(options):
 
     return params
 
-def getDevice(dmtype="adb", host=None, port=None):
+def getDevice(dmtype="adb", host=None, port=None, packageName=None):
     '''Gets an eideticker device according to parameters'''
     print "Using %s interface (host: %s, port: %s)" % (dmtype, host, port)
     if dmtype == "adb":
         if host and not port:
             port = 5555
-        return DroidADB(host=host, port=port)
+        return DroidADB(packageName=packageName, host=host, port=port)
     elif dmtype == "sut":
         if not host:
             raise Exception("Must specify host with SUT!")
