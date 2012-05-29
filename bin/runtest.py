@@ -167,7 +167,12 @@ class BrowserRunner(object):
 
             args.extend(["-profile", remote_profile_dir])
 
-            self.dm.launchFennec(self.appname, url=self.url, extraArgs=args)
+            # sometimes fennec fails to start, so we'll try three times...
+            for i in range(3):
+                print "Launching fennec (try %s of 3)" % (i+1)
+                if self.dm.launchFennec(self.appname, url=self.url, extraArgs=args):
+                    return
+            raise Exception("Failed to start Fennec after three tries")
         else:
             self.dm.launchApplication(self.appname, self.activity, self.intent,
                                       url=self.url)
