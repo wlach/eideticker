@@ -2,8 +2,8 @@ Project Eideticker
 ==================
 
 Project Eideticker is an automated test harness that captures and analyzes
-browser output via HDMI (currently only on Fennec on Android, but support for
-other platforms is planned).
+browser output via HDMI. It currently only supports various browsers (Fennec,
+Stock) on Android, but support for other platforms is planned.
 
 ### Requirements
 
@@ -20,16 +20,17 @@ other platforms is planned).
 * Installed Android SDK with the tools in your path. Please follow the
   instructions at https://wiki.mozilla.org/Mobile/Fennec/Android#Setup_a_Build_Environment
 
+* A supported mobile phone running Android. Eideticker's tests are
+  specifically tuned for specific screen dimensions. Currently only the LG
+  G2X (running in portrait mode) and the Galaxy Nexus (running in landscape)
+  are supported. Your device must also be rooted and, if using SUTAgent, you
+  must configure the su binary to automatically allow SUTAgent to run commands
+  as root in silent mode (so that notifications don't pop up while running
+  tests).
+
 ### Installation
 
 Run `bootstrap.sh` in the root directory to set everything up.
-
-Eideticker comes with a default suite of non-copyrighted tests. If you want
-to run tests against copyrighted sites, you'll want to download and extract
-the ep1 pageset into `src/tests`:
-
-    wget <ep1 url>
-    cd src/tests && tar jxf ../../ep1.tar.bz2
 
 ### Usage
 
@@ -53,14 +54,22 @@ and out will pop several results.
 For example, to run the canvas clock example against Fennec nightly, try
 this:
 
-    ./bin/get-metric-for-build.py nightly.apk src/tests/canvas/clock.html
+    ./bin/get-metric-for-build.py nightly.apk src/tests/ep1/clock.html
+
+Typically, you want to run Eideticker more than once on a particular test to
+get a range of results as tests are not 100% deterministic (partly due to the
+way we run tests, partly due to Android itself). You can do this with the
+`--num-runs` option. For example:
+
+    ./bin/get-metric-for-build.py --num-runs 5 nightly.apk src/tests/ep1/clock.html
 
 If you want to know more about the results (where the numbers are coming from)
 you can open them up inside the Eideticker web interface. To open it, execute:
 
     ./bin/webapp.sh
 
-Then connect to http://localhost:8080
+Then connect to http://localhost:8080. You should see a list of captures, select
+the one you're interested in to dive into fine grained detail.
 
 In addition to supporting HDMI capture and analysis, it is also possible to run
 the Eideticker harness in a mode that simply "captures" the performance log
@@ -69,12 +78,7 @@ any kind of specialized hardware. Second, it's much faster (since there's no
 video encoding/decoding/analysis step). For this you want to pass in
 "--no-capture" and "--get-internal-checkerboard-stats", like so:
 
-    ./bin/get-metric-for-build.py --no-capture --get-internal-checkerboard-stats nightly.apk src/tests/scrolling/taskjs.org/index.html
-
-Note that for this to work Fennec performance logging will need to be enabled,
-which it isn't by default. Make it so by running:
-
-    adb shell setprop log.tag.GeckoLayerRendererProf DEBUG
+    ./bin/get-metric-for-build.py --no-capture --get-internal-checkerboard-stats nightly.apk src/tests/ep1/taskjs.org/index.html
 
 #### Dashboard Mode
 
