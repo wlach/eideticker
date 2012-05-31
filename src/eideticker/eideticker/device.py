@@ -37,7 +37,8 @@ class EidetickerMixin(object):
 
         # Hack: this gets rid of the "finished charging" modal dialog that the
         # LG G2X sometimes brings up
-        self.executeCommand("tap", [240, 617])
+        if self.model == 'LG-P999':
+            self.executeCommand("tap", [240, 617])
 
     # FIXME: make this part of devicemanager
     def _shellCheckOutput(self, args):
