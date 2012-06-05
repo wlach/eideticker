@@ -142,7 +142,8 @@ class BrowserRunner(object):
 
         activity_mappings = {
             'com.android.browser': '.BrowserActivity',
-            'com.google.android.browser': 'com.android.browser.BrowserActivity'
+            'com.google.android.browser': 'com.android.browser.BrowserActivity',
+            'com.android.chrome': '.Main'
             }
 
         # use activity mapping if not mozilla
