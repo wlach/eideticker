@@ -19,3 +19,6 @@
 [submodule "src/mozregression"]
 	path = src/mozregression
 	url = git://github.com/wlach/mozregression.git
+[submodule "src/orangutan"]
+	path = src/orangutan
+	url = git://github.com/wlach/orangutan.git
