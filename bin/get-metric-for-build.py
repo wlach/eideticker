@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import datetime
+import eideticker.device
 import json
 import mozdevice
 from mozregression.runnightly import FennecNightly
@@ -20,13 +21,6 @@ CAPTURE_DIR = os.path.join(os.path.dirname(__file__), "../captures")
 DOWNLOAD_DIR = os.path.join(os.path.dirname(__file__), "../downloads")
 CHECKERBOARD_REGEX = re.compile('.*GeckoLayerRendererProf.*1000ms:.*\ '
                                 '([0-9]+\.[0-9]+)\/([0-9]+).*')
-
-# FIXME: copypasted from update-dashboard
-def kill_app(dm, appname):
-    procs = dm.getProcessList()
-    for (pid, name, user) in procs:
-      if name == appname:
-        dm.runCmd(["shell", "echo kill %s | su" % pid])
 
 def parse_checkerboard_log(fname):
     checkerboarding_percent_totals = 0.0
@@ -61,25 +55,13 @@ def get_build_for_date(date):
 
     return fname
 
-def run_test(device, apk, outputfile, test, url_params, num_runs, no_capture,
-             get_internal_checkerboard_stats):
-    with zipfile.ZipFile(apk) as zip:
-        try:
-            appname = zip.read('package-name.txt').rstrip()
-        except KeyError:
-            print "No file named 'package-name.txt' in archive. Are you sure "
-            "this is a fennec apk?"
-            sys.exit(1)
-        print "appname is '%s'" % appname
-
-
-    device.updateApp(apk)
-
+def run_test(device, appname, appdate, outputfile, test, url_params, num_runs,
+             no_capture, get_internal_checkerboard_stats):
     captures = []
 
     for i in range(num_runs):
         # Kill any existing instances of the processes
-        kill_app(device, appname)
+        device.killProcess(appname)
 
         # Now run the test
         capture_file = os.path.join(CAPTURE_DIR,
@@ -115,8 +97,13 @@ def run_test(device, apk, outputfile, test, url_params, num_runs, no_capture,
 
         captures.append(capture_result)
 
-    apkname = os.path.basename(apk)
-    print "=== Results for %s ===" % apkname
+    appkey = appname
+    if appdate:
+        appkey = appdate.isoformat()
+    else:
+        appkey = appname
+
+    print "=== Results for %s ===" % appkey
 
     if not no_capture:
         print "  Number of unique frames:"
@@ -141,15 +128,15 @@ def run_test(device, apk, outputfile, test, url_params, num_runs, no_capture,
         if os.path.isfile(outputfile):
             data.update(json.loads(open(outputfile).read()))
 
-        if not data.get(apkname):
-            data[apkname] = []
-        data[apkname].extend(captures)
+        if not data.get(appkey):
+            data[appkey] = []
+        data[appkey].extend(captures)
 
         with open(outputfile, 'w') as f:
             f.write(json.dumps(data))
 
 def main(args=sys.argv[1:]):
-    usage = "usage: %prog <test> [apk of build]"
+    usage = "usage: %prog <test> [apk of build1] [apk of build2] ..."
     parser = optparse.OptionParser(usage)
     parser.add_option("--num-runs", action="store",
                       type = "int", dest = "num_runs",
@@ -178,11 +165,12 @@ def main(args=sys.argv[1:]):
     parser.add_option("--end-date", action="store", dest="end_date",
                       metavar="YYYY-MM-DD",
                       help="end date for range of nightlies to test")
+    eideticker.device.addDeviceOptionsToParser(parser)
 
     options, args = parser.parse_args()
 
     dates = []
-    apk = None
+    appnames = []
     if options.start_date and options.end_date and len(args) == 1:
         test = args[0]
         start_date = get_date(options.start_date)
@@ -193,20 +181,26 @@ def main(args=sys.argv[1:]):
     elif options.date and len(args) == 1:
         test = args[0]
         dates = [get_date(options.date)]
-    elif not options.date and len(args) == 2:
-        (apk, test) = args
+    elif not options.date and len(args) >= 2:
+        test = args[0]
+        appnames = args[1:]
     elif not options.date or (not options.start_date and not options.end_date):
-        parser.error("Must specify date, date range, or a (single) apk file")
+        parser.error("Must specify date, date range, or a set of appnames (e.g. org.mozilla.fennec)")
 
-    device = mozdevice.DroidADB(packageName=None)
-    if apk:
-        run_test(device, apk, options.output_file, test, options.url_params,
-                 options.num_runs, options.no_capture,
-                 options.get_internal_checkerboard_stats)
+    device_params = eideticker.device.getDeviceParams(options)
+    device = eideticker.device.getDevice(**device_params)
+
+    if appnames:
+        for appname in appnames:
+            run_test(device, appname, None, options.output_file, test,
+                     options.url_params,
+                     options.num_runs, options.no_capture,
+                     options.get_internal_checkerboard_stats)
     else:
         for date in dates:
             apk = get_build_for_date(date)
-            run_test(device, apk, options.output_file, test,
+            device.updateApp(apk)
+            run_test(device, "org.mozilla.fennec", date, options.output_file, test,
                      options.url_params, options.num_runs,
                      options.no_capture,
                      options.get_internal_checkerboard_stats)
