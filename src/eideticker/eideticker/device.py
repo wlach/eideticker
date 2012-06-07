@@ -19,6 +19,11 @@ DEVICE_PROPERTIES = {
         "inputDevice": "/dev/input/event1",
         "dimensions": (1180, 720)
     },
+    "Panda": {
+        "hdmiResolution": "720p",
+        "inputDevice": "/dev/input/event2",
+        "dimensions": (1280, 672)
+    },
     "LG-P999": {
         "hdmiResolution": "1080p",
         "dimensions": (480, 800)
