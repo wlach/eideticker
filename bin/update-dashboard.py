@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import ConfigParser
-import eideticker.device
+import eideticker
 import json
 import mozdevice
 import optparse
@@ -155,7 +155,7 @@ def runtest(dm, product, current_date, appname, appinfo, test, capture_name,
 
 def main(args=sys.argv[1:]):
     usage = "usage: %prog [options] <test> <output dir>"
-    parser = optparse.OptionParser(usage)
+    parser = eideticker.OptionParser(usage=usage)
     parser.add_option("--no-download",
                       action="store_true", dest = "no_download",
                       help = "Don't download new versions of the app")
@@ -166,7 +166,6 @@ def main(args=sys.argv[1:]):
     parser.add_option("--num-runs", action="store",
                       type = "int", dest = "num_runs",
                       help = "number of runs (default: 1)")
-    eideticker.device.addDeviceOptionsToParser(parser)
 
     options, args = parser.parse_args()
     if len(args) != 2:
@@ -198,8 +197,7 @@ def main(args=sys.argv[1:]):
     if os.path.isfile(datafile):
         data.update(json.loads(open(datafile).read()))
 
-    deviceParams = eideticker.device.getDeviceParams(options)
-    device = eideticker.device.getDevice(**deviceParams)
+    device = eideticker.getDevice(options)
 
     for product in products:
         product_fname = os.path.join(DOWNLOAD_DIR, "%s.apk" % product['name'])

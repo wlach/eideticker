@@ -50,7 +50,7 @@ import urllib
 import urlparse
 import videocapture
 import StringIO
-import eideticker.device
+import eideticker
 
 BINDIR = os.path.dirname(__file__)
 CAPTURE_DIR = os.path.abspath(os.path.join(BINDIR, "../captures"))
@@ -131,59 +131,9 @@ class CaptureServer(object):
 
         return (200, {})
 
-
-class BrowserRunner(object):
-
-    def __init__(self, dm, appname, url):
-        self.dm = dm
-        self.appname = appname
-        self.url = url
-        self.intent = "android.intent.action.VIEW"
-
-        activity_mappings = {
-            'com.android.browser': '.BrowserActivity',
-            'com.google.android.browser': 'com.android.browser.BrowserActivity',
-            'com.android.chrome': '.Main'
-            }
-
-        # use activity mapping if not mozilla
-        if self.appname.startswith('org.mozilla'):
-            self.activity = '.App'
-            self.intent = None
-        else:
-            self.activity = activity_mappings[self.appname]
-
-    def start(self):
-        print "Starting %s... " % self.appname
-
-        # for fennec only, we create and use a profile
-        if self.appname.startswith('org.mozilla'):
-            args = []
-            profile = None
-            profile = mozprofile.Profile(preferences = { 'gfx.show_checkerboard_pattern': False })
-            remote_profile_dir = "/".join([self.dm.getDeviceRoot(),
-                                       os.path.basename(profile.profile)])
-            if not self.dm.pushDir(profile.profile, remote_profile_dir):
-                raise Exception("Failed to copy profile to device")
-
-            args.extend(["-profile", remote_profile_dir])
-
-            # sometimes fennec fails to start, so we'll try three times...
-            for i in range(3):
-                print "Launching fennec (try %s of 3)" % (i+1)
-                if self.dm.launchFennec(self.appname, url=self.url, extraArgs=args):
-                    return
-            raise Exception("Failed to start Fennec after three tries")
-        else:
-            self.dm.launchApplication(self.appname, self.activity, self.intent,
-                                      url=self.url)
-
-    def stop(self):
-        self.dm.killProcess(self.appname)
-
 def main(args=sys.argv[1:]):
     usage = "usage: %prog [options] <appname> <test path>"
-    parser = optparse.OptionParser(usage)
+    parser = eideticker.OptionParser(usage=usage)
     parser.add_option("--url-params", action="store",
                       dest="url_params",
                       help="additional url parameters for test")
@@ -200,7 +150,6 @@ def main(args=sys.argv[1:]):
     parser.add_option("--checkerboard-log-file", action="store",
                       type = "string", dest = "checkerboard_log_file",
                       help = "name to give checkerboarding stats file")
-    eideticker.device.addDeviceOptionsToParser(parser)
 
     options, args = parser.parse_args()
     if len(args) != 2:
@@ -234,9 +183,8 @@ def main(args=sys.argv[1:]):
         capture_file = os.path.join(CAPTURE_DIR, "capture-%s.zip" %
                                          datetime.datetime.now().isoformat())
 
-    # Create a droid object to interface with the phone
-    deviceParams = eideticker.device.getDeviceParams(options)
-    device = eideticker.device.getDevice(**deviceParams)
+    # Create a device object to interface with the phone
+    device = eideticker.getDevice(options)
 
     if device.processExist(appname):
         print "An instance of %s is running. Please stop it before running Eideticker." % appname
@@ -298,7 +246,7 @@ def main(args=sys.argv[1:]):
                                                    http.httpd.server_port,
                                                    testpath_rel)
     print "Test URL is: %s" % url
-    runner = BrowserRunner(device, appname, url)
+    runner = eideticker.BrowserRunner(device, appname, url)
     runner.start()
 
     timeout = 100

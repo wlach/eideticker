@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import datetime
-import eideticker.device
+import eideticker
 import json
 import mozdevice
 from mozregression.runnightly import FennecNightly
@@ -137,7 +137,7 @@ def run_test(device, appname, appdate, outputfile, test, url_params, num_runs,
 
 def main(args=sys.argv[1:]):
     usage = "usage: %prog <test> [apk of build1] [apk of build2] ..."
-    parser = optparse.OptionParser(usage)
+    parser = eideticker.OptionParser(usage=usage)
     parser.add_option("--num-runs", action="store",
                       type = "int", dest = "num_runs",
                       default=1,
@@ -165,7 +165,6 @@ def main(args=sys.argv[1:]):
     parser.add_option("--end-date", action="store", dest="end_date",
                       metavar="YYYY-MM-DD",
                       help="end date for range of nightlies to test")
-    eideticker.device.addDeviceOptionsToParser(parser)
 
     options, args = parser.parse_args()
 
@@ -187,8 +186,7 @@ def main(args=sys.argv[1:]):
     elif not options.date or (not options.start_date and not options.end_date):
         parser.error("Must specify date, date range, or a set of appnames (e.g. org.mozilla.fennec)")
 
-    device_params = eideticker.device.getDeviceParams(options)
-    device = eideticker.device.getDevice(**device_params)
+    device = eideticker.getDevice(options)
 
     if appnames:
         for appname in appnames:

@@ -214,42 +214,24 @@ class DroidSUT(mozdevice.DroidSUT, EidetickerMixin):
         self.installApp(pathOnDevice)
         self.removeFile(pathOnDevice)
 
-def addDeviceOptionsToParser(parser):
-    parser.add_option("--host", action="store",
-                      type = "string", dest = "host",
-                      help = "Device hostname (only if using TCP/IP)", default=None)
-    parser.add_option("-p", "--port", action="store",
-                      type = "int", dest = "port",
-                      help = "Custom device port (if using SUTAgent or "
-                      "adb-over-tcp)", default=None)
-    parser.add_option("-m", "--dm-type", action="store",
-                      type = "string", dest = "dmtype",
-                      help = "DeviceManager type (adb or sut, defaults to adb)")
-
-
-def getDeviceParams(options):
-    ''' Convert command line options and environment variables into
-        parameters for getDevice()'''
-    params = {}
+def getDevice(options):
+    '''Gets an eideticker device according to parameters'''
 
     if options.dmtype:
-        params['dmtype'] = options.dmtype
+        dmtype = options.dmtype
     else:
-        params['dmtype'] = os.environ.get('DM_TRANS', 'adb')
+        dmtype = os.environ.get('DM_TRANS', 'adb')
 
-    params['host']=options.host
-    if not params['host'] and params['dmtype'] == "sut":
-        params['host'] = os.environ.get('TEST_DEVICE')
+    host = options.host
+    if not host and dmtype == "sut":
+        host = os.environ.get('TEST_DEVICE')
+    port = options.port
 
-    return params
-
-def getDevice(dmtype="adb", host=None, port=None, packageName=None):
-    '''Gets an eideticker device according to parameters'''
     print "Using %s interface (host: %s, port: %s)" % (dmtype, host, port)
     if dmtype == "adb":
         if host and not port:
             port = 5555
-        return DroidADB(packageName=packageName, host=host, port=port)
+        return DroidADB(packageName=None, host=host, port=port)
     elif dmtype == "sut":
         if not host:
             raise Exception("Must specify host with SUT!")
