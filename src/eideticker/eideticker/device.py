@@ -26,6 +26,7 @@ DEVICE_PROPERTIES = {
     },
     "LG-P999": {
         "hdmiResolution": "1080p",
+        "inputDevice": "/dev/input/event1",
         "dimensions": (480, 800)
     },
 }
