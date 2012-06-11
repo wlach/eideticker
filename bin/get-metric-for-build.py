@@ -87,8 +87,8 @@ def run_test(device, appname, appdate, outputfile, test, url_params, num_runs,
             capture = videocapture.Capture(capture_file)
 
             framediff_sums = videocapture.get_framediff_sums(capture)
-            capture_result['uniqueframes'] = 1 + len([framediff for framediff in framediff_sums if framediff > 0])
-
+            capture_result['uniqueframes'] = videocapture.get_num_unique_frames(capture)
+            capture_result['fps'] = videocapture.get_fps(capture)
             capture_result['checkerboard'] = videocapture.get_checkerboarding_area_duration(capture)
 
         if get_internal_checkerboard_stats:
@@ -108,6 +108,10 @@ def run_test(device, appname, appdate, outputfile, test, url_params, num_runs,
     if not no_capture:
         print "  Number of unique frames:"
         print "  %s" % map(lambda c: c['uniqueframes'], captures)
+        print
+
+        print "  Average number of unique frames per second:"
+        print "  %s" % map(lambda c: c['fps'], captures)
         print
 
         print "  Checkerboard area/duration (sum of percents NOT percentage):"

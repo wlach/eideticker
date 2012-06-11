@@ -127,9 +127,8 @@ def runtest(dm, product, current_date, appname, appinfo, test, capture_name,
     open(video_file, 'w').write(capture.get_video().read())
 
     # frames-per-second / num unique frames
-    framediff_sums = videocapture.get_framediff_sums(capture)
-    num_unique_frames = 1 + len([framediff for framediff in framediff_sums if framediff > 0])
-    fps = num_unique_frames / capture.length
+    num_unique_frames = videocapture.get_num_unique_frames(capture)
+    fps = videocapture.get_fps(capture)
 
     # checkerboarding
     checkerboard = videocapture.get_checkerboarding_area_duration(capture)
