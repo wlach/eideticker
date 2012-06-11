@@ -15,7 +15,9 @@ class BrowserRunner(object):
         activity_mappings = {
             'com.android.browser': '.BrowserActivity',
             'com.google.android.browser': 'com.android.browser.BrowserActivity',
-            'com.android.chrome': '.Main'
+            'com.android.chrome': '.Main',
+            'com.opera.browser': 'com.opera.Opera',
+            'mobi.mgeek.TunnyBrowser': '.BrowserActivity' # Dolphin
             }
 
         # use activity mapping if not mozilla
