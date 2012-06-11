@@ -58,7 +58,7 @@ class EidetickerMixin(object):
             raise Exception("Non-zero return code for command: %s" % args)
         return str(buf.getvalue()[0:-1]).rstrip()
 
-    def _executeScript(self, events):
+    def _executeScript(self, events, executeCallback=None):
         '''Executes a set of monkey commands on the device'''
         f = tempfile.NamedTemporaryFile()
         f.write("\n".join(events) + "\n")
@@ -66,6 +66,8 @@ class EidetickerMixin(object):
         remotefilename = os.path.join(self.getDeviceRoot(),
                                       os.path.basename(f.name))
         self.pushFile(f.name, remotefilename)
+        if executeCallback:
+            executeCallback()
         self._shellCheckOutput(["su", "-c",
                                 "LD_LIBRARY_PATH=/vendor/lib:/system/lib /system/xbin/orng %s %s" % (self.inputDevice, remotefilename)])
 
@@ -143,17 +145,17 @@ class EidetickerMixin(object):
 
         return cmdevents
 
-    def executeCommand(self, cmd, args):
+    def executeCommand(self, cmd, args, executeCallback=None):
         cmdevents = self._getCmdEvents(cmd, args)
         if cmdevents:
-            self._executeScript(cmdevents)
+            self._executeScript(cmdevents, executeCallback=executeCallback)
 
-    def executeCommands(self, cmds):
+    def executeCommands(self, cmds, executeCallback=None):
         cmdevents = []
         for cmd in cmds:
             (cmd, args) = (cmd[0], cmd[1:])
             cmdevents.extend(self._getCmdEvents(cmd, args))
-        self._executeScript(cmdevents)
+        self._executeScript(cmdevents, executeCallback=executeCallback)
 
 
 class DroidADB(mozdevice.DroidADB, EidetickerMixin):

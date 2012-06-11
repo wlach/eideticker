@@ -98,11 +98,6 @@ class CaptureServer(object):
     @mozhttpd.handlers.json_response
     def input(self, request):
         commandset = urlparse.parse_qs(request.body)['commands'][0]
-        if self.capture_file:
-            self.start_frame = self.capture_controller.capture_framenum()
-
-        if self.checkerboard_log_file:
-            self.device.clear_logcat()
 
         if not self.actions.get(commandset) or not \
                 self.actions[commandset].get(self.device.model):
@@ -110,10 +105,16 @@ class CaptureServer(object):
                 "'%s'" % (commandset, self.device.model)
             sys.exit(1)
 
-        print "Executing commands '%s' for device '%s' (time: %s, framenum: %s)" % (
-            commandset, self.device.model, time.time(), self.start_frame)
+        def executeCallback():
+            if self.checkerboard_log_file:
+                self.device.clear_logcat()
+            if self.capture_file:
+                self.start_frame = self.capture_controller.capture_framenum()
+            print "Executing commands '%s' for device '%s' (time: %s, framenum: %s)" % (
+                commandset, self.device.model, time.time(), self.start_frame)
 
-        self.device.executeCommands(self.actions[commandset][self.device.model])
+        self.device.executeCommands(self.actions[commandset][self.device.model],
+                                    executeCallback=executeCallback)
 
         if self.capture_file:
             self.end_frame = self.capture_controller.capture_framenum()
