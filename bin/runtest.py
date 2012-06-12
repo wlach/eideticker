@@ -97,29 +97,31 @@ class CaptureServer(object):
 
     @mozhttpd.handlers.json_response
     def input(self, request):
-        commandset = urlparse.parse_qs(request.body)['commands'][0]
+        if self.actions: # startup test currently indicated by no actions
+            commandset = urlparse.parse_qs(request.body)['commands'][0]
 
-        if not self.actions.get(commandset) or not \
-                self.actions[commandset].get(self.device.model):
-            print "Could not get actions for commandset '%s', model " \
-                "'%s'" % (commandset, self.device.model)
-            sys.exit(1)
+            if not self.actions.get(commandset) or not \
+                    self.actions[commandset].get(self.device.model):
+                print "Could not get actions for commandset '%s', model " \
+                    "'%s'" % (commandset, self.device.model)
+                sys.exit(1)
 
-        def executeCallback():
-            if self.checkerboard_log_file:
-                self.device.clear_logcat()
-            if self.capture_file:
-                self.start_frame = self.capture_controller.capture_framenum()
-            print "Executing commands '%s' for device '%s' (time: %s, framenum: %s)" % (
-                commandset, self.device.model, time.time(), self.start_frame)
+            def executeCallback():
+                if self.checkerboard_log_file:
+                    self.device.clear_logcat()
+                if self.capture_file:
+                    self.start_frame = self.capture_controller.capture_framenum()
+                print "Executing commands '%s' for device '%s' (time: %s, framenum: %s)" % (
+                    commandset, self.device.model, time.time(), self.start_frame)
 
-        self.device.executeCommands(self.actions[commandset][self.device.model],
-                                    executeCallback=executeCallback)
+            self.device.executeCommands(self.actions[commandset][self.device.model],
+                                        executeCallback=executeCallback)
+
+            print "Finished commands (time: %s, framenum: %s)" % (time.time(),
+                                                                  self.end_frame)
 
         if self.capture_file:
             self.end_frame = self.capture_controller.capture_framenum()
-        print "Finished commands (time: %s, framenum: %s)" % (time.time(),
-                                                              self.end_frame)
 
         if self.checkerboard_log_file:
             # sleep a bit to make sure we get all the checkerboard stats from
@@ -151,6 +153,9 @@ def main(args=sys.argv[1:]):
     parser.add_option("--checkerboard-log-file", action="store",
                       type = "string", dest = "checkerboard_log_file",
                       help = "name to give checkerboarding stats file")
+    parser.add_option("--startup-test", action="store_true",
+                      dest="startup_test",
+                      help="do a startup test: full capture, no actions")
 
     options, args = parser.parse_args()
     if len(args) != 2:
@@ -162,13 +167,15 @@ def main(args=sys.argv[1:]):
         print "Test must be relative to %s" % TEST_DIR
         sys.exit(1)
 
-    actions_path = os.path.join(os.path.dirname(testpath), "actions.json")
-    try:
-        with open(actions_path) as f:
-            actions = json.loads(f.read())
-    except EnvironmentError:
-        print "Couldn't open actions file '%s'" % actions_path
-        sys.exit(1)
+    actions = None
+    if not options.startup_test:
+        actions_path = os.path.join(os.path.dirname(testpath), "actions.json")
+        try:
+            with open(actions_path) as f:
+                actions = json.loads(f.read())
+        except EnvironmentError:
+            print "Couldn't open actions file '%s'" % actions_path
+            sys.exit(1)
 
     if not os.path.exists(EIDETICKER_TEMP_DIR):
         os.mkdir(EIDETICKER_TEMP_DIR)
@@ -204,7 +211,8 @@ def main(args=sys.argv[1:]):
         'name': capture_name,
         'testpath': testpath_rel,
         'app': appname,
-        'device': device.model
+        'device': device.model,
+        'startupTest': options.startup_test
         }
     capture_server = CaptureServer(capture_metadata,
                                    capture_file,
@@ -240,14 +248,24 @@ def main(args=sys.argv[1:]):
         print "Could not open webserver. Error!"
         sys.exit(1)
 
+    # note: url params for startup tests currently not supported
     if options.url_params:
         testpath_rel += "?%s" % urllib.quote_plus(options.url_params)
 
-    url = "http://%s:%s/start.html?testpath=%s" % (host,
-                                                   http.httpd.server_port,
-                                                   testpath_rel)
+    if options.startup_test:
+        url = "http://%s:%s/%s?startup_test=1" % (host, http.httpd.server_port, testpath_rel)
+    else:
+        url = "http://%s:%s/start.html?testpath=%s" % (host,
+                                                       http.httpd.server_port,
+                                                       testpath_rel)
     print "Test URL is: %s" % url
     runner = eideticker.BrowserRunner(device, appname, url)
+    # FIXME: currently start capture before launching app because we wait until app is
+    # launched -- would be better to make waiting optional and then start capture
+    # after triggering app launch to reduce latency?
+    if options.startup_test:
+        capture_controller.start_capture(capture_file, device.hdmiResolution,
+                                         capture_metadata)
     runner.start()
 
     timeout = 100

@@ -56,7 +56,7 @@ def get_build_for_date(date):
     return fname
 
 def run_test(device, appname, appdate, outputfile, test, url_params, num_runs,
-             no_capture, get_internal_checkerboard_stats):
+             startup_test, no_capture, get_internal_checkerboard_stats):
     captures = []
 
     for i in range(num_runs):
@@ -71,6 +71,8 @@ def run_test(device, appname, appdate, outputfile, test, url_params, num_runs,
         if get_internal_checkerboard_stats:
             checkerboard_logfile = tempfile.NamedTemporaryFile()
             args.extend(["--checkerboard-log-file", checkerboard_logfile.name])
+        if startup_test:
+            args.extend(["--startup-test"])
         if no_capture:
             args.extend(["--no-capture"])
         else:
@@ -87,9 +89,12 @@ def run_test(device, appname, appdate, outputfile, test, url_params, num_runs,
             capture = videocapture.Capture(capture_file)
 
             framediff_sums = videocapture.get_framediff_sums(capture)
-            capture_result['uniqueframes'] = videocapture.get_num_unique_frames(capture)
-            capture_result['fps'] = videocapture.get_fps(capture)
-            capture_result['checkerboard'] = videocapture.get_checkerboarding_area_duration(capture)
+            if startup_test:
+                capture_result['stableframe'] = videocapture.get_stable_frame(capture)
+            else:
+                capture_result['uniqueframes'] = videocapture.get_num_unique_frames(capture)
+                capture_result['fps'] = videocapture.get_fps(capture)
+                capture_result['checkerboard'] = videocapture.get_checkerboarding_area_duration(capture)
 
         if get_internal_checkerboard_stats:
             internal_checkerboard_totals = parse_checkerboard_log(checkerboard_logfile.name)
@@ -106,17 +111,22 @@ def run_test(device, appname, appdate, outputfile, test, url_params, num_runs,
     print "=== Results for %s ===" % appkey
 
     if not no_capture:
-        print "  Number of unique frames:"
-        print "  %s" % map(lambda c: c['uniqueframes'], captures)
-        print
+        if startup_test:
+            print "  First stable frames:"
+            print "  %s" % map(lambda c: c['stableframe'], captures)
+            print
+        else:
+            print "  Number of unique frames:"
+            print "  %s" % map(lambda c: c['uniqueframes'], captures)
+            print
 
-        print "  Average number of unique frames per second:"
-        print "  %s" % map(lambda c: c['fps'], captures)
-        print
+            print "  Average number of unique frames per second:"
+            print "  %s" % map(lambda c: c['fps'], captures)
+            print
 
-        print "  Checkerboard area/duration (sum of percents NOT percentage):"
-        print "  %s" % map(lambda c: c['checkerboard'], captures)
-        print
+            print "  Checkerboard area/duration (sum of percents NOT percentage):"
+            print "  %s" % map(lambda c: c['checkerboard'], captures)
+            print
 
         print "  Capture files (for further reference):"
         print "  Capture files: %s" % map(lambda c: c['file'], captures)
@@ -157,6 +167,10 @@ def main(args=sys.argv[1:]):
                       action="store_true",
                       dest="get_internal_checkerboard_stats",
                       help="get and calculate internal checkerboard stats")
+    parser.add_option("--startup-test",
+                      action="store_true",
+                      dest="startup_test",
+                      help="measure startup times instead of normal metrics")
     parser.add_option("--url-params", action="store",
                       dest="url_params", default="",
                       help="additional url parameters for test")
@@ -196,14 +210,18 @@ def main(args=sys.argv[1:]):
         for appname in appnames:
             run_test(device, appname, None, options.output_file, test,
                      options.url_params,
-                     options.num_runs, options.no_capture,
+                     options.num_runs,
+                     options.startup_test,
+                     options.no_capture,
                      options.get_internal_checkerboard_stats)
     else:
         for date in dates:
             apk = get_build_for_date(date)
             device.updateApp(apk)
             run_test(device, "org.mozilla.fennec", date, options.output_file, test,
-                     options.url_params, options.num_runs,
+                     options.url_params,
+                     options.num_runs,
+                     options.startup_test,
                      options.no_capture,
                      options.get_internal_checkerboard_stats)
 

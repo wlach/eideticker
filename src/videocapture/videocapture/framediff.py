@@ -90,3 +90,10 @@ def get_num_unique_frames(capture):
 
 def get_fps(capture):
     return get_num_unique_frames(capture) / capture.length
+
+def get_stable_frame(capture, threshold = 1024):
+    framediff_sums = get_framediff_sums(capture)
+    for i in range(len(framediff_sums)-1, 0, -1):
+        if framediff_sums[i] > threshold:
+            return i+1
+    return len(framediff_sums)-1

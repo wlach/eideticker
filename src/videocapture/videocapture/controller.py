@@ -171,7 +171,7 @@ class CaptureController(object):
                           self.output_raw_file.name, imagedir, self.mode),
                          close_fds=True).wait()
 
-        print "Cropping to start/end of capture..."
+        print "Gathering capture dimensions and cropping to start/end of capture..."
         imagefiles = [os.path.join(imagedir, path) for path in sorted(os.listdir(imagedir),
                                                                      key=_natural_key)]
         num_frames = len(imagefiles)
@@ -183,7 +183,7 @@ class CaptureController(object):
             frame_dimensions = im.size
 
         # start frame
-        print "Getting capture dimensions (and maybe start frame)..."
+        print "Searching for start of capture signal ..."
         squares = []
         capture_area = None
         for (i, imagefile) in enumerate(imagefiles):
@@ -200,17 +200,24 @@ class CaptureController(object):
             start_frame = 1
 
         # end frame
-        if not end_frame:
-            print "Getting end frame ..."
-            squares = []
-            end_frame = num_frames
-            for i in range(num_frames-1, 0, -1):
-                imgarray = numpy.array(Image.open(imagefiles[i]), dtype=numpy.int16)
-                squares.append(get_biggest_square((255,0,0), imgarray))
+        print "Searching for end of capture signal ..."
+        squares = []
+        for i in range(num_frames-1, 0, -1):
+            imgarray = numpy.array(Image.open(imagefiles[i]), dtype=numpy.int16)
+            squares.append(get_biggest_square((255,0,0), imgarray))
 
-                if len(squares) > 1 and not squares[-1] and squares[-2]:
-                    end_frame = i
-                    break
+            if len(squares) > 1 and not squares[-1] and squares[-2]:
+                if not end_frame:
+                    end_frame = (i-1)
+                if not capture_area:
+                    capture_area = squares[-2]
+                break
+
+        # still don't have an end frame? make it the entire length of the
+        # capture
+        if not end_frame:
+            end_frame = num_frames
+
 
         print "Rewriting images ..."
         rewritten_imagedir = tempfile.mkdtemp(dir=self.custom_tempdir)
@@ -224,9 +231,13 @@ class CaptureController(object):
         # map the frame before the start frame to the zeroth frame (if possible)
         if start_frame > 1:
             _rewrite_frame(0, rewritten_imagedir, imagefiles[start_frame-1])
-
-        # last frame is the first red frame, or the very last frame in the
-        # sequence (for the edge case where there is no red frame)
+        else:
+            # HACK: otherwise, create a copy of the start frame
+            # (this duplicates a frame)
+            _rewrite_frame(0, rewritten_imagedir, imagefiles[0])
+        # last frame is the specified end frame or the first red frame if
+        # no last frame specified, or the very last frame in the
+        # sequence if there is no red frame and no specified last frame
         last_frame = min(num_frames-1, end_frame+2)
 
         # copy the remaining frames into numeric order starting from 1
