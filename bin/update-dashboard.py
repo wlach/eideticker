@@ -9,33 +9,15 @@ import os
 import subprocess
 import sys
 import time
-import urllib2
 import videocapture
 import zipfile
+from eideticker.products import default_products
 
 class NestedDict(dict):
     def __getitem__(self, key):
         if key in self:
             return self.get(key)
         return self.setdefault(key, NestedDict())
-
-default_products = [
-    {
-        "name": "nightly",
-        "url": "http://ftp.mozilla.org/pub/mozilla.org/mobile/nightly/latest-mozilla-central-android/fennec-15.0a1.multi.android-arm.apk",
-        "appname": "org.mozilla.fennec"
-    },
-    {
-        "name": "xul",
-        "url": "http://ftp.mozilla.org/pub/mozilla.org/mobile/releases/latest/android/en-US/fennec-10.0.4esr.en-US.android-arm.apk",
-        "appname": "org.mozilla.firefox"
-    },
-    {
-        "name": "stock",
-        "url": None,
-        "appname": "com.android.browser"
-    }
-]
 
 default_tests = [
     {
@@ -156,9 +138,6 @@ def runtest(dm, product, current_date, appname, appinfo, test, capture_name,
 def main(args=sys.argv[1:]):
     usage = "usage: %prog [options] <test> <output dir>"
     parser = optparse.OptionParser(usage)
-    parser.add_option("--no-download",
-                      action="store_true", dest = "no_download",
-                      help = "Don't download new versions of the app")
     parser.add_option("--product",
                       action="store", dest="product",
                       help = "Restrict testing to product (options: %s)" %
@@ -202,16 +181,8 @@ def main(args=sys.argv[1:]):
     device = eideticker.device.getDevice(**deviceParams)
 
     for product in products:
-        product_fname = os.path.join(DOWNLOAD_DIR, "%s.apk" % product['name'])
-
-        if not options.no_download and product.get('url'):
-            print "Downloading %s" % product['name']
-            dl = urllib2.urlopen(product['url'])
-            with open(product_fname, 'w') as f:
-                f.write(dl.read())
-
         if product.get('url'):
-            device.updateApp(product_fname)
+            product_fname = os.path.join(DOWNLOAD_DIR, "%s.apk" % product['name'])
             appinfo = get_appinfo(product_fname)
             appname = appinfo['appname']
             capture_name = "%s %s" % (product['name'], appinfo['date'])

@@ -20,6 +20,9 @@ cd $EIDETICKER
 # I don't know how to make things come back with that enabled by default
 #./bin/reboot-device.py
 
+# Update apps on the phone to the latest
+./bin/update-phone.py
+
 for TEST in $TESTS; do
   echo "Running $TEST"
   ./bin/update-dashboard.py --product xul $TEST src/dashboard
