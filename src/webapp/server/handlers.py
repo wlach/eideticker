@@ -26,7 +26,8 @@ class CapturesHandler:
                                            "length": capture.num_frames/60.0,
                                            "numFrames": capture.num_frames },
                                          **capture.metadata))
-            except videocapture.BadCapture:
+            except videocapture.BadCapture, error:
+                print "File %s unreadable: %s" % (fname, str(error))
                 # just ignore files that aren't readable as captures
                 pass
 
