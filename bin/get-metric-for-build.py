@@ -55,7 +55,7 @@ def get_build_for_date(date):
 
     return fname
 
-def run_test(device, appname, appdate, outputfile, test, url_params, num_runs,
+def run_test(device, appname, appdate, outputdir, outputfile, test, url_params, num_runs,
              startup_test, no_capture, get_internal_checkerboard_stats):
     captures = []
 
@@ -95,6 +95,11 @@ def run_test(device, appname, appdate, outputfile, test, url_params, num_runs,
                 capture_result['uniqueframes'] = videocapture.get_num_unique_frames(capture)
                 capture_result['fps'] = videocapture.get_fps(capture)
                 capture_result['checkerboard'] = videocapture.get_checkerboarding_area_duration(capture)
+            if outputdir:
+                video_path = os.path.join('videos', 'video-%s.webm' % time.time())
+                video_file = os.path.join(outputdir, video_path)
+                open(video_file, 'w').write(capture.get_video().read())
+                capture_result['video'] = video_path
 
         if get_internal_checkerboard_stats:
             internal_checkerboard_totals = parse_checkerboard_log(checkerboard_logfile.name)
@@ -138,26 +143,26 @@ def run_test(device, appname, appdate, outputfile, test, url_params, num_runs,
         print
 
     if outputfile:
-        data = {}
+        resultdict = { 'title': test, 'data': {} }
         if os.path.isfile(outputfile):
-            data.update(json.loads(open(outputfile).read()))
+            resultdict.update(json.loads(open(outputfile).read()))
 
-        if not data.get(appkey):
-            data[appkey] = []
-        data[appkey].extend(captures)
+        if not resultdict['data'].get(appkey):
+            resultdict['data'][appkey] = []
+        resultdict['data'][appkey].extend(captures)
 
         with open(outputfile, 'w') as f:
-            f.write(json.dumps(data))
+            f.write(json.dumps(resultdict))
 
 def main(args=sys.argv[1:]):
-    usage = "usage: %prog <test> [apk of build1] [apk of build2] ..."
+    usage = "usage: %prog <test> [appname1] [appname2] ..."
     parser = eideticker.OptionParser(usage=usage)
     parser.add_option("--num-runs", action="store",
                       type = "int", dest = "num_runs",
                       default=1,
                       help = "number of runs (default: 1)")
-    parser.add_option("--output-file", action="store",
-                      type="string", dest="output_file",
+    parser.add_option("--output-dir", action="store",
+                      type="string", dest="outputdir",
                       help="output results to json file")
     parser.add_option("--no-capture", action="store_true",
                       dest = "no_capture",
@@ -206,9 +211,14 @@ def main(args=sys.argv[1:]):
 
     device = eideticker.getDevice(options)
 
+    if options.outputdir:
+        outputfile = os.path.join(options.outputdir, "metric-test-%s.json" % time.time())
+    else:
+        outputfile = None
+
     if appnames:
         for appname in appnames:
-            run_test(device, appname, None, options.output_file, test,
+            run_test(device, appname, None, options.outputdir, outputfile, test,
                      options.url_params,
                      options.num_runs,
                      options.startup_test,
