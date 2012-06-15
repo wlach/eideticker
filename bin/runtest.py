@@ -161,11 +161,20 @@ def main(args=sys.argv[1:]):
     if len(args) != 2:
         parser.error("incorrect number of arguments")
     (appname, testpath) = args
-    try:
-        testpath_rel = os.path.abspath(testpath).split(TEST_DIR)[1][1:]
-    except:
-        print "Test must be relative to %s" % TEST_DIR
-        sys.exit(1)
+
+    # Tests must be in src/tests/... unless it is a startup test and the
+    # path is about:home (indicating we want to measure startup to the
+    # home screen)
+    if options.startup_test and testpath == "about:home":
+        testpath_rel = testpath
+        capture_timeout = 5 # 5 seconds to wait for fennec to start after it claims to have started
+    else:
+        capture_timeout = None
+        try:
+            testpath_rel = os.path.abspath(testpath).split(TEST_DIR)[1][1:]
+        except:
+            print "Test must be relative to %s" % TEST_DIR
+            sys.exit(1)
 
     actions = None
     if not options.startup_test:
@@ -253,7 +262,10 @@ def main(args=sys.argv[1:]):
         testpath_rel += "?%s" % urllib.quote_plus(options.url_params)
 
     if options.startup_test:
-        url = "http://%s:%s/%s?startup_test=1" % (host, http.httpd.server_port, testpath_rel)
+        if testpath == "about:home":
+            url = testpath
+        else:
+            url = "http://%s:%s/%s?startup_test=1" % (host, http.httpd.server_port, testpath_rel)
     else:
         url = "http://%s:%s/start.html?testpath=%s" % (host,
                                                        http.httpd.server_port,
@@ -268,19 +280,27 @@ def main(args=sys.argv[1:]):
                                          capture_metadata)
     runner.start()
 
-    timeout = 100
+    # Keep on capturing until we timeout
+    if capture_timeout:
+        timeout = capture_timeout
+    else:
+        timeout = 100
     timer = 0
     interval = 0.1
     while not capture_server.finished and timer < timeout:
         time.sleep(interval)
         timer += interval
 
-    runner.stop()
-
-    if not capture_server.finished:
+    if capture_timeout and not capture_server.finished:
+        capture_server.terminate_capture()
+        runner.stop()
+    elif not capture_server.finished:
         print "Did not finish test! Error!"
         capture_server.terminate_capture()
+        runner.stop()
         sys.exit(1)
+
+
 
     if capture_file:
         print "Converting capture..."

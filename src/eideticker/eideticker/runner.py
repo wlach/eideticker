@@ -35,6 +35,7 @@ class BrowserRunner(object):
             args = []
             profile = None
             profile = mozprofile.Profile(preferences = { 'gfx.show_checkerboard_pattern': False,
+                                                         'browser.firstrun.show.uidiscovery': False,
                                                          'toolkit.telemetry.prompted': 2 })
             remote_profile_dir = "/".join([self.dm.getDeviceRoot(),
                                        os.path.basename(profile.profile)])

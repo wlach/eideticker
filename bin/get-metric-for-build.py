@@ -228,7 +228,8 @@ def main(args=sys.argv[1:]):
         for date in dates:
             apk = get_build_for_date(date)
             device.updateApp(apk)
-            run_test(device, "org.mozilla.fennec", date, options.output_file, test,
+            run_test(device, "org.mozilla.fennec", date, options.outputdir,
+                     outputfile, test,
                      options.url_params,
                      options.num_runs,
                      options.startup_test,
