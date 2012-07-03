@@ -10,17 +10,18 @@ now = int(time.time())
 
 expire_before = now - 7*24*60*60
 
-print 'expiring captures before %s' % datetime.datetime.fromtimestamp(expire_before)
+print 'expiring files before %s' % datetime.datetime.fromtimestamp(expire_before)
 
-captures = glob.glob('captures/*.zip')
-captures.extend(glob.glob('captures/*.cache'))
+files = glob.glob('src/dashboard/videos/*.webm')
+files.extend(glob.glob('captures/*.zip'))
+files.extend(glob.glob('captures/*.cache'))
 
-capture_re = re.compile('-(\d{10}).[^\.]+$')
+stamped_file_re = re.compile('-(\d{10})(\.?)(\d+)?.[^\.]+$')
 
 to_expire = []
 
-for f in captures:
-    m = re.search(capture_re, f)
+for f in files:
+    m = re.search(stamped_file_re, f)
     if not m:
         continue
     timestamp = int(m.group(1))
@@ -28,7 +29,6 @@ for f in captures:
         to_expire.append(f)
 
 print 'expiring %d files' % len(to_expire)
-
 for f in to_expire:
     os.unlink(f)
 
