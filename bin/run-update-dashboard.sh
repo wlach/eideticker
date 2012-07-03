@@ -14,12 +14,6 @@ export PATH=$PATH:$HOME/tools/android-sdk-linux/tools:$HOME/tools/android-sdk-li
 cd $EIDETICKER
 . bin/activate
 
-# Reboot phone and wait for watcher to come up (this ensures phone is in a good
-# state)
-# FIXME: temporarily disabled because we're using adb-over-tcp now and
-# I don't know how to make things come back with that enabled by default
-#./bin/reboot-device.py
-
 # Update apps on the phone to the latest
 ./bin/update-phone.py
 
