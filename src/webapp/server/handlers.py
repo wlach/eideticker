@@ -30,7 +30,7 @@ class CapturesHandler:
                 # just ignore files that aren't readable as captures
                 pass
 
-        return captures
+        return sorted(captures, key=lambda c: c['date'])
 
 class CaptureHandler:
 

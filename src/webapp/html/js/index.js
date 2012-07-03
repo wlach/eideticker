@@ -4,7 +4,6 @@ $(function() {
       on: function() {
         $.getJSON('api/captures/', function(data) {
           if (data.length > 0) {
-            data.sort(function(a,b) { return a.date > b.date; });
             $('#capture-list').html(ich.capture_list({captures: data}));
             $('.capture-row').click(function() {
               window.location.hash = '/captures/' + $(this).attr('id');
