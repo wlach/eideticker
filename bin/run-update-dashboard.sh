@@ -14,6 +14,13 @@ export PATH=$PATH:$HOME/tools/android-sdk-linux/tools:$HOME/tools/android-sdk-li
 cd $EIDETICKER
 . bin/activate
 
+# Clean out /tmp/eideticker directory (in case there are any artifacts
+# from unsuccessful runs kicking around)
+rm -rf /tmp/eideticker/*
+
+# Expire old captures/videos
+./bin/expire.py
+
 # Update apps on the phone to the latest
 ./bin/update-phone.py
 
