@@ -157,7 +157,7 @@ class EidetickerMixin(object):
             (cmd, args) = (cmd[0], cmd[1:])
             cmdevents.extend(self._getCmdEvents(cmd, args))
         self._executeScript(cmdevents, executeCallback=executeCallback)
-
+        print "OKIE"
 
 class DroidADB(mozdevice.DroidADB, EidetickerMixin):
 
