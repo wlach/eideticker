@@ -83,7 +83,6 @@ class CaptureServer(object):
 
             self.device.executeCommands(self.actions[commandset][self.device.model],
                                         executeCallback=executeCallback)
-            self.end_frame = self.capture_controller.capture_framenum()
             print "Finished commands (time: %s, framenum: %s)" % (time.time(),
                                                                   self.end_frame)
 
