@@ -27,6 +27,16 @@
         padding-top: 18px;
         min-height: 400px;
       }
+      #graph-container .button {
+        position: absolute;
+        cursor: pointer;
+      }
+      #graph-container div.button {
+        font-size: smaller;
+        color: #999;
+        background-color: #eee;
+        padding: 2px;
+      }
       #legend {
         padding-top: 18px;
       }
@@ -88,6 +98,7 @@
     <script src="js/jquery.flot.stack.js"></script>
     <script src="js/jquery.flot.axislabels.js"></script>
     <script src="js/jquery.flot.hiddengraphs.js"></script>
+    <script src="js/jquery.flot.navigate.js"></script>
     <script src="js/index.js"></script>
 
   <script id="graph" type="text/html">
@@ -112,7 +123,7 @@
             </span>
           </form>
         </div>
-        <p class="help-block"><strong>Hint:</strong> Click on the datapoints to see a video of the testrun!</p>
+        <p class="help-block">You can double click to zoom in, single click to drag (like Google Maps). Click on a datapoint to see a video of the associated testrun.</p>
         <p class="help-block"><strong>Note:</strong> Scrolling logic changed on April 17. All tests involving scrolling will post slightly different results after that date.</p>
       </div>
 

@@ -37,8 +37,10 @@ function updateGraph(rawdata, measure) {
   var metadataHash = {};
 
   var seriesIndex = 0;
+  var minMaxDates;
   Object.keys(rawdata).sort().forEach(function(type) {
     metadataHash[seriesIndex] = [];
+
     // point graph
     var series1 = {
       label: type,
@@ -54,6 +56,9 @@ function updateGraph(rawdata, measure) {
       });
     });
     graphdata.push(series1);
+
+    var dates = series1.data.map(function(d) { return d[0]; });
+    minMaxDates = [ Math.min.apply(null, dates), Math.max.apply(null, dates) ];
 
     // line graph (aggregate average per day)
     var series2 = {
@@ -91,7 +96,8 @@ function updateGraph(rawdata, measure) {
   var plot = $.plot($("#graph-container"), graphdata, {
     xaxis: {
       mode: "time",
-      timeformat: "%0m-%0d"
+      timeformat: "%0m-%0d",
+      panRange: [minMaxDates[0], minMaxDates[1]]
     },
     yaxis: {
       axisLabel: axisLabel,
@@ -101,6 +107,14 @@ function updateGraph(rawdata, measure) {
       container: $("#legend"),
     },
     grid: { clickable: true, hoverable: true },
+    zoom: { interactive: true },
+    pan: { interactive: true }
+  });
+
+    // add zoom out button
+  $('<div class="button" style="right:20px;top:20px">zoom out</div>').appendTo($("#graph-container")).click(function (e) {
+        e.preventDefault();
+        plot.zoomOut();
   });
 
   $("#graph-container").bind("plotclick", function (event, pos, item) {
