@@ -241,7 +241,7 @@ def main(args=sys.argv[1:]):
     # FIXME: currently start capture before launching app because we wait until app is
     # launched -- would be better to make waiting optional and then start capture
     # after triggering app launch to reduce latency?
-    if options.startup_test:
+    if options.startup_test and not options.no_capture:
         capture_controller.start_capture(capture_file, device.hdmiResolution,
                                          capture_metadata)
     runner.start()
