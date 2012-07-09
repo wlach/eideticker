@@ -6,11 +6,14 @@ import mozprofile
 import os
 
 class BrowserRunner(object):
+
+    remote_profile_dir = None
+    intent = "android.intent.action.VIEW"
+
     def __init__(self, dm, appname, url):
         self.dm = dm
         self.appname = appname
         self.url = url
-        self.intent = "android.intent.action.VIEW"
 
         activity_mappings = {
             'com.android.browser': '.BrowserActivity',
@@ -37,12 +40,12 @@ class BrowserRunner(object):
             profile = mozprofile.Profile(preferences = { 'gfx.show_checkerboard_pattern': False,
                                                          'browser.firstrun.show.uidiscovery': False,
                                                          'toolkit.telemetry.prompted': 2 })
-            remote_profile_dir = "/".join([self.dm.getDeviceRoot(),
-                                       os.path.basename(profile.profile)])
-            if not self.dm.pushDir(profile.profile, remote_profile_dir):
+            self.remote_profile_dir = "/".join([self.dm.getDeviceRoot(),
+                                                os.path.basename(profile.profile)])
+            if not self.dm.pushDir(profile.profile, self.remote_profile_dir):
                 raise Exception("Failed to copy profile to device")
 
-            args.extend(["-profile", remote_profile_dir])
+            args.extend(["-profile", self.remote_profile_dir])
 
             # sometimes fennec fails to start, so we'll try three times...
             for i in range(3):
@@ -56,3 +59,5 @@ class BrowserRunner(object):
 
     def stop(self):
         self.dm.killProcess(self.appname)
+        if not self.dm.removeDir(self.remote_profile_dir):
+            raise Exception("Failed to remove profile from device")

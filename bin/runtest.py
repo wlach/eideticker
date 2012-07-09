@@ -259,14 +259,13 @@ def main(args=sys.argv[1:]):
 
     if capture_timeout and not capture_server.finished:
         capture_server.terminate_capture()
-        runner.stop()
     elif not capture_server.finished:
         print "Did not finish test! Error!"
-        capture_server.terminate_capture()
         runner.stop()
+        capture_server.terminate_capture()
         sys.exit(1)
 
-
+    runner.stop()
 
     if capture_file:
         print "Converting capture..."
