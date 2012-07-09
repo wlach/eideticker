@@ -10,35 +10,16 @@ import sys
 import tempfile
 import time
 
-import eideticker.device
+import eideticker
 
 
 def main(args=sys.argv[1:]):
-
-    usage = "usage: %prog"
-    parser = optparse.OptionParser(usage)
-    parser.add_option("--host", action="store",
-                      type = "string", dest = "host",
-                      help = "Device hostname (only if using TCP/IP)", default=None)
-    parser.add_option("-p", "--port", action="store",
-                      type = "int", dest = "port",
-                      help = "Custom device port (if using SUTAgent or "
-                      "adb-over-tcp)", default=None)
-    parser.add_option("-m", "--dm-type", action="store",
-                      type = "string", dest = "dmtype",
-                      help = "DeviceManager type (adb or sut, defaults to adb)")
+    parser = eideticker.OptionParser(usage="usage: %prog")
 
     options, args = parser.parse_args()
 
-    # Create a droid object to interface with the phone
-    if not options.dmtype:
-        options.dmtype = os.environ.get('DM_TRANS', 'adb')
-    if not options.host and options.dmtype == "sut":
-        options.host = os.environ.get('TEST_DEVICE')
-    print "Using %s interface (host: %s, port: %s)" % (options.dmtype,
-                                                       options.host,
-                                                       options.port)
-    device = eideticker.device.getDevice(options.dmtype, options.host, options.port)
+    # Create a device object to interface with the phone
+    device = eideticker.getDevice(options)
 
     print "READY"
     sys.stdout.flush()

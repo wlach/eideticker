@@ -50,3 +50,17 @@ def get_framediff_sums(capture):
         pickle.dump(cache, open(capture.cache_filename, 'w'))
 
     return diffsums
+
+def get_num_unique_frames(capture):
+    framediff_sums = get_framediff_sums(capture)
+    return 1 + len([framediff for framediff in framediff_sums if framediff > 0])
+
+def get_fps(capture):
+    return get_num_unique_frames(capture) / capture.length
+
+def get_stable_frame(capture, threshold = 2048):
+    framediff_sums = get_framediff_sums(capture)
+    for i in range(len(framediff_sums)-1, 0, -1):
+        if framediff_sums[i] > threshold:
+            return i+1
+    return len(framediff_sums)-1

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import datetime
-import eideticker.device
+import eideticker
 import json
 import mozdevice
 from mozregression.runnightly import FennecNightly
@@ -55,8 +55,8 @@ def get_build_for_date(date):
 
     return fname
 
-def run_test(device, appname, appdate, outputfile, test, url_params, num_runs,
-             no_capture, get_internal_checkerboard_stats):
+def run_test(device, appname, appdate, outputdir, outputfile, test, url_params, num_runs,
+             startup_test, no_capture, get_internal_checkerboard_stats):
     captures = []
 
     for i in range(num_runs):
@@ -71,6 +71,8 @@ def run_test(device, appname, appdate, outputfile, test, url_params, num_runs,
         if get_internal_checkerboard_stats:
             checkerboard_logfile = tempfile.NamedTemporaryFile()
             args.extend(["--checkerboard-log-file", checkerboard_logfile.name])
+        if startup_test:
+            args.extend(["--startup-test"])
         if no_capture:
             args.extend(["--no-capture"])
         else:
@@ -87,9 +89,17 @@ def run_test(device, appname, appdate, outputfile, test, url_params, num_runs,
             capture = videocapture.Capture(capture_file)
 
             framediff_sums = videocapture.get_framediff_sums(capture)
-            capture_result['uniqueframes'] = 1 + len([framediff for framediff in framediff_sums if framediff > 0])
-
-            capture_result['checkerboard'] = videocapture.get_checkerboarding_area_duration(capture)
+            if startup_test:
+                capture_result['stableframe'] = videocapture.get_stable_frame(capture)
+            else:
+                capture_result['uniqueframes'] = videocapture.get_num_unique_frames(capture)
+                capture_result['fps'] = videocapture.get_fps(capture)
+                capture_result['checkerboard'] = videocapture.get_checkerboarding_area_duration(capture)
+            if outputdir:
+                video_path = os.path.join('videos', 'video-%s.webm' % time.time())
+                video_file = os.path.join(outputdir, video_path)
+                open(video_file, 'w').write(capture.get_video().read())
+                capture_result['video'] = video_path
 
         if get_internal_checkerboard_stats:
             internal_checkerboard_totals = parse_checkerboard_log(checkerboard_logfile.name)
@@ -106,13 +116,22 @@ def run_test(device, appname, appdate, outputfile, test, url_params, num_runs,
     print "=== Results for %s ===" % appkey
 
     if not no_capture:
-        print "  Number of unique frames:"
-        print "  %s" % map(lambda c: c['uniqueframes'], captures)
-        print
+        if startup_test:
+            print "  First stable frames:"
+            print "  %s" % map(lambda c: c['stableframe'], captures)
+            print
+        else:
+            print "  Number of unique frames:"
+            print "  %s" % map(lambda c: c['uniqueframes'], captures)
+            print
 
-        print "  Checkerboard area/duration (sum of percents NOT percentage):"
-        print "  %s" % map(lambda c: c['checkerboard'], captures)
-        print
+            print "  Average number of unique frames per second:"
+            print "  %s" % map(lambda c: c['fps'], captures)
+            print
+
+            print "  Checkerboard area/duration (sum of percents NOT percentage):"
+            print "  %s" % map(lambda c: c['checkerboard'], captures)
+            print
 
         print "  Capture files (for further reference):"
         print "  Capture files: %s" % map(lambda c: c['file'], captures)
@@ -124,26 +143,26 @@ def run_test(device, appname, appdate, outputfile, test, url_params, num_runs,
         print
 
     if outputfile:
-        data = {}
+        resultdict = { 'title': test, 'data': {} }
         if os.path.isfile(outputfile):
-            data.update(json.loads(open(outputfile).read()))
+            resultdict.update(json.loads(open(outputfile).read()))
 
-        if not data.get(appkey):
-            data[appkey] = []
-        data[appkey].extend(captures)
+        if not resultdict['data'].get(appkey):
+            resultdict['data'][appkey] = []
+        resultdict['data'][appkey].extend(captures)
 
         with open(outputfile, 'w') as f:
-            f.write(json.dumps(data))
+            f.write(json.dumps(resultdict))
 
 def main(args=sys.argv[1:]):
-    usage = "usage: %prog <test> [apk of build1] [apk of build2] ..."
-    parser = optparse.OptionParser(usage)
+    usage = "usage: %prog <test> [appname1] [appname2] ..."
+    parser = eideticker.OptionParser(usage=usage)
     parser.add_option("--num-runs", action="store",
                       type = "int", dest = "num_runs",
                       default=1,
                       help = "number of runs (default: 1)")
-    parser.add_option("--output-file", action="store",
-                      type="string", dest="output_file",
+    parser.add_option("--output-dir", action="store",
+                      type="string", dest="outputdir",
                       help="output results to json file")
     parser.add_option("--no-capture", action="store_true",
                       dest = "no_capture",
@@ -153,6 +172,10 @@ def main(args=sys.argv[1:]):
                       action="store_true",
                       dest="get_internal_checkerboard_stats",
                       help="get and calculate internal checkerboard stats")
+    parser.add_option("--startup-test",
+                      action="store_true",
+                      dest="startup_test",
+                      help="measure startup times instead of normal metrics")
     parser.add_option("--url-params", action="store",
                       dest="url_params", default="",
                       help="additional url parameters for test")
@@ -165,7 +188,6 @@ def main(args=sys.argv[1:]):
     parser.add_option("--end-date", action="store", dest="end_date",
                       metavar="YYYY-MM-DD",
                       help="end date for range of nightlies to test")
-    eideticker.device.addDeviceOptionsToParser(parser)
 
     options, args = parser.parse_args()
 
@@ -187,21 +209,30 @@ def main(args=sys.argv[1:]):
     elif not options.date or (not options.start_date and not options.end_date):
         parser.error("Must specify date, date range, or a set of appnames (e.g. org.mozilla.fennec)")
 
-    device_params = eideticker.device.getDeviceParams(options)
-    device = eideticker.device.getDevice(**device_params)
+    device = eideticker.getDevice(options)
+
+    if options.outputdir:
+        outputfile = os.path.join(options.outputdir, "metric-test-%s.json" % time.time())
+    else:
+        outputfile = None
 
     if appnames:
         for appname in appnames:
-            run_test(device, appname, None, options.output_file, test,
+            run_test(device, appname, None, options.outputdir, outputfile, test,
                      options.url_params,
-                     options.num_runs, options.no_capture,
+                     options.num_runs,
+                     options.startup_test,
+                     options.no_capture,
                      options.get_internal_checkerboard_stats)
     else:
         for date in dates:
             apk = get_build_for_date(date)
             device.updateApp(apk)
-            run_test(device, "org.mozilla.fennec", date, options.output_file, test,
-                     options.url_params, options.num_runs,
+            run_test(device, "org.mozilla.fennec", date, options.outputdir,
+                     outputfile, test,
+                     options.url_params,
+                     options.num_runs,
+                     options.startup_test,
                      options.no_capture,
                      options.get_internal_checkerboard_stats)
 

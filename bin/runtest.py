@@ -17,7 +17,7 @@ import urllib
 import urlparse
 import videocapture
 import StringIO
-import eideticker.device
+import eideticker
 
 BINDIR = os.path.dirname(__file__)
 CAPTURE_DIR = os.path.abspath(os.path.join(BINDIR, "../captures"))
@@ -64,28 +64,30 @@ class CaptureServer(object):
 
     @mozhttpd.handlers.json_response
     def input(self, request):
-        commandset = urlparse.parse_qs(request.body)['commands'][0]
-        if self.capture_file:
-            self.start_frame = self.capture_controller.capture_framenum()
+        if self.actions: # startup test currently indicated by no actions
+            commandset = urlparse.parse_qs(request.body)['commands'][0]
 
-        if self.checkerboard_log_file:
-            self.device.clear_logcat()
+            if not self.actions.get(commandset) or not \
+                    self.actions[commandset].get(self.device.model):
+                print "Could not get actions for commandset '%s', model " \
+                    "'%s'" % (commandset, self.device.model)
+                sys.exit(1)
 
-        if not self.actions.get(commandset) or not \
-                self.actions[commandset].get(self.device.model):
-            print "Could not get actions for commandset '%s', model " \
-                "'%s'" % (commandset, self.device.model)
-            sys.exit(1)
+            def executeCallback():
+                if self.checkerboard_log_file:
+                    self.device.clear_logcat()
+                if self.capture_file:
+                    self.start_frame = self.capture_controller.capture_framenum()
+                print "Executing commands '%s' for device '%s' (time: %s, framenum: %s)" % (
+                    commandset, self.device.model, time.time(), self.start_frame)
 
-        print "Executing commands '%s' for device '%s' (time: %s, framenum: %s)" % (
-            commandset, self.device.model, time.time(), self.start_frame)
-
-        self.device.executeCommands(self.actions[commandset][self.device.model])
+            self.device.executeCommands(self.actions[commandset][self.device.model],
+                                        executeCallback=executeCallback)
+            print "Finished commands (time: %s, framenum: %s)" % (time.time(),
+                                                                  self.end_frame)
 
         if self.capture_file:
             self.end_frame = self.capture_controller.capture_framenum()
-        print "Finished commands (time: %s, framenum: %s)" % (time.time(),
-                                                              self.end_frame)
 
         if self.checkerboard_log_file:
             # sleep a bit to make sure we get all the checkerboard stats from
@@ -98,59 +100,9 @@ class CaptureServer(object):
 
         return (200, {})
 
-
-class BrowserRunner(object):
-
-    def __init__(self, dm, appname, url):
-        self.dm = dm
-        self.appname = appname
-        self.url = url
-        self.intent = "android.intent.action.VIEW"
-
-        activity_mappings = {
-            'com.android.browser': '.BrowserActivity',
-            'com.google.android.browser': 'com.android.browser.BrowserActivity',
-            'com.android.chrome': '.Main'
-            }
-
-        # use activity mapping if not mozilla
-        if self.appname.startswith('org.mozilla'):
-            self.activity = '.App'
-            self.intent = None
-        else:
-            self.activity = activity_mappings[self.appname]
-
-    def start(self):
-        print "Starting %s... " % self.appname
-
-        # for fennec only, we create and use a profile
-        if self.appname.startswith('org.mozilla'):
-            args = []
-            profile = None
-            profile = mozprofile.Profile(preferences = { 'gfx.show_checkerboard_pattern': False })
-            remote_profile_dir = "/".join([self.dm.getDeviceRoot(),
-                                       os.path.basename(profile.profile)])
-            if not self.dm.pushDir(profile.profile, remote_profile_dir):
-                raise Exception("Failed to copy profile to device")
-
-            args.extend(["-profile", remote_profile_dir])
-
-            # sometimes fennec fails to start, so we'll try three times...
-            for i in range(3):
-                print "Launching fennec (try %s of 3)" % (i+1)
-                if self.dm.launchFennec(self.appname, url=self.url, extraArgs=args):
-                    return
-            raise Exception("Failed to start Fennec after three tries")
-        else:
-            self.dm.launchApplication(self.appname, self.activity, self.intent,
-                                      url=self.url)
-
-    def stop(self):
-        self.dm.killProcess(self.appname)
-
 def main(args=sys.argv[1:]):
     usage = "usage: %prog [options] <appname> <test path>"
-    parser = optparse.OptionParser(usage)
+    parser = eideticker.OptionParser(usage=usage)
     parser.add_option("--url-params", action="store",
                       dest="url_params",
                       help="additional url parameters for test")
@@ -167,25 +119,38 @@ def main(args=sys.argv[1:]):
     parser.add_option("--checkerboard-log-file", action="store",
                       type = "string", dest = "checkerboard_log_file",
                       help = "name to give checkerboarding stats file")
-    eideticker.device.addDeviceOptionsToParser(parser)
+    parser.add_option("--startup-test", action="store_true",
+                      dest="startup_test",
+                      help="do a startup test: full capture, no actions")
 
     options, args = parser.parse_args()
     if len(args) != 2:
         parser.error("incorrect number of arguments")
     (appname, testpath) = args
-    try:
-        testpath_rel = os.path.abspath(testpath).split(TEST_DIR)[1][1:]
-    except:
-        print "Test must be relative to %s" % TEST_DIR
-        sys.exit(1)
 
-    actions_path = os.path.join(os.path.dirname(testpath), "actions.json")
-    try:
-        with open(actions_path) as f:
-            actions = json.loads(f.read())
-    except EnvironmentError:
-        print "Couldn't open actions file '%s'" % actions_path
-        sys.exit(1)
+    # Tests must be in src/tests/... unless it is a startup test and the
+    # path is about:home (indicating we want to measure startup to the
+    # home screen)
+    if options.startup_test and testpath == "about:home":
+        testpath_rel = testpath
+        capture_timeout = 5 # 5 seconds to wait for fennec to start after it claims to have started
+    else:
+        capture_timeout = None
+        try:
+            testpath_rel = os.path.abspath(testpath).split(TEST_DIR)[1][1:]
+        except:
+            print "Test must be relative to %s" % TEST_DIR
+            sys.exit(1)
+
+    actions = None
+    if not options.startup_test:
+        actions_path = os.path.join(os.path.dirname(testpath), "actions.json")
+        try:
+            with open(actions_path) as f:
+                actions = json.loads(f.read())
+        except EnvironmentError:
+            print "Couldn't open actions file '%s'" % actions_path
+            sys.exit(1)
 
     if not os.path.exists(EIDETICKER_TEMP_DIR):
         os.mkdir(EIDETICKER_TEMP_DIR)
@@ -201,9 +166,8 @@ def main(args=sys.argv[1:]):
         capture_file = os.path.join(CAPTURE_DIR, "capture-%s.zip" %
                                          datetime.datetime.now().isoformat())
 
-    # Create a droid object to interface with the phone
-    deviceParams = eideticker.device.getDeviceParams(options)
-    device = eideticker.device.getDevice(**deviceParams)
+    # Create a device object to interface with the phone
+    device = eideticker.getDevice(options)
 
     if device.processExist(appname):
         print "An instance of %s is running. Please stop it before running Eideticker." % appname
@@ -222,7 +186,8 @@ def main(args=sys.argv[1:]):
         'name': capture_name,
         'testpath': testpath_rel,
         'app': appname,
-        'device': device.model
+        'device': device.model,
+        'startupTest': options.startup_test
         }
     capture_server = CaptureServer(capture_metadata,
                                    capture_file,
@@ -258,29 +223,49 @@ def main(args=sys.argv[1:]):
         print "Could not open webserver. Error!"
         sys.exit(1)
 
+    # note: url params for startup tests currently not supported
     if options.url_params:
         testpath_rel += "?%s" % urllib.quote_plus(options.url_params)
 
-    url = "http://%s:%s/start.html?testpath=%s" % (host,
-                                                   http.httpd.server_port,
-                                                   testpath_rel)
+    if options.startup_test:
+        if testpath == "about:home":
+            url = testpath
+        else:
+            url = "http://%s:%s/%s?startup_test=1" % (host, http.httpd.server_port, testpath_rel)
+    else:
+        url = "http://%s:%s/start.html?testpath=%s" % (host,
+                                                       http.httpd.server_port,
+                                                       testpath_rel)
     print "Test URL is: %s" % url
-    runner = BrowserRunner(device, appname, url)
+    runner = eideticker.BrowserRunner(device, appname, url)
+    # FIXME: currently start capture before launching app because we wait until app is
+    # launched -- would be better to make waiting optional and then start capture
+    # after triggering app launch to reduce latency?
+    if options.startup_test and not options.no_capture:
+        capture_controller.start_capture(capture_file, device.hdmiResolution,
+                                         capture_metadata)
     runner.start()
 
-    timeout = 100
+    # Keep on capturing until we timeout
+    if capture_timeout:
+        timeout = capture_timeout
+    else:
+        timeout = 100
     timer = 0
     interval = 0.1
     while not capture_server.finished and timer < timeout:
         time.sleep(interval)
         timer += interval
 
-    runner.stop()
-
-    if not capture_server.finished:
+    if capture_timeout and not capture_server.finished:
+        capture_server.terminate_capture()
+    elif not capture_server.finished:
         print "Did not finish test! Error!"
+        runner.stop()
         capture_server.terminate_capture()
         sys.exit(1)
+
+    runner.stop()
 
     if capture_file:
         print "Converting capture..."

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import ConfigParser
-import eideticker.device
+import eideticker
 import json
 import mozdevice
 import optparse
@@ -109,9 +109,8 @@ def runtest(dm, product, current_date, appname, appinfo, test, capture_name,
     open(video_file, 'w').write(capture.get_video().read())
 
     # frames-per-second / num unique frames
-    framediff_sums = videocapture.get_framediff_sums(capture)
-    num_unique_frames = 1 + len([framediff for framediff in framediff_sums if framediff > 0])
-    fps = num_unique_frames / capture.length
+    num_unique_frames = videocapture.get_num_unique_frames(capture)
+    fps = videocapture.get_fps(capture)
 
     # checkerboarding
     checkerboard = videocapture.get_checkerboarding_area_duration(capture)
@@ -137,7 +136,11 @@ def runtest(dm, product, current_date, appname, appinfo, test, capture_name,
 
 def main(args=sys.argv[1:]):
     usage = "usage: %prog [options] <test> <output dir>"
-    parser = optparse.OptionParser(usage)
+
+    parser = eideticker.OptionParser(usage=usage)
+    parser.add_option("--no-download",
+                      action="store_true", dest = "no_download",
+                      help = "Don't download new versions of the app")
     parser.add_option("--product",
                       action="store", dest="product",
                       help = "Restrict testing to product (options: %s)" %
@@ -145,7 +148,6 @@ def main(args=sys.argv[1:]):
     parser.add_option("--num-runs", action="store",
                       type = "int", dest = "num_runs",
                       help = "number of runs (default: 1)")
-    eideticker.device.addDeviceOptionsToParser(parser)
 
     options, args = parser.parse_args()
     if len(args) != 2:
@@ -177,8 +179,7 @@ def main(args=sys.argv[1:]):
     if os.path.isfile(datafile):
         data.update(json.loads(open(datafile).read()))
 
-    deviceParams = eideticker.device.getDeviceParams(options)
-    device = eideticker.device.getDevice(**deviceParams)
+    device = eideticker.getDevice(options)
 
     for product in products:
         if product.get('url'):
