@@ -1,18 +1,17 @@
 #!/usr/bin/env python
 
-import eideticker.device
 import optparse
 import os
 import sys
 import urllib2
 from eideticker.products import default_products
+import eideticker
 
 DOWNLOAD_DIR = os.path.join(os.path.dirname(__file__), "../downloads")
 
 def main(args=sys.argv[1:]):
     usage = "usage: %prog [product1] [product2]"
-    parser = optparse.OptionParser(usage)
-    eideticker.device.addDeviceOptionsToParser(parser)
+    parser = eideticker.OptionParser(usage=usage)
 
     options, args = parser.parse_args()
     if len(args):
@@ -26,8 +25,7 @@ def main(args=sys.argv[1:]):
 
     print products
 
-    deviceParams = eideticker.device.getDeviceParams(options)
-    device = eideticker.device.getDevice(**deviceParams)
+    device = eideticker.getDevice(options)
 
     for product in products:
         if not product.get('url'):
