@@ -55,9 +55,10 @@ class EidetickerMixin(object):
     def _shellCheckOutput(self, args):
         buf = StringIO.StringIO()
         retval = self.shell(args, buf)
+        output = str(buf.getvalue()[0:-1]).rstrip()
         if int(retval) != 0: # int() necessary because of bug 757546
-            raise Exception("Non-zero return code for command: %s" % args)
-        return str(buf.getvalue()[0:-1]).rstrip()
+            raise Exception("Non-zero return code for command: %s (output: '%s')" % (args, output))
+        return output
 
     def _executeScript(self, events, executeCallback=None):
         '''Executes a set of monkey commands on the device'''
