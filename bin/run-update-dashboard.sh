@@ -26,7 +26,5 @@ rm -rf /tmp/eideticker/*
 
 for TEST in $TESTS; do
   echo "Running $TEST"
-  ./bin/update-dashboard.py --product xul $TEST src/dashboard
-  ./bin/update-dashboard.py --product stock $TEST src/dashboard
   ./bin/update-dashboard.py --product nightly --num-runs 5 $TEST src/dashboard
 done
