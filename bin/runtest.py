@@ -83,11 +83,12 @@ class CaptureServer(object):
 
             self.device.executeCommands(self.actions[commandset][self.device.model],
                                         executeCallback=executeCallback)
-            print "Finished commands (time: %s, framenum: %s)" % (time.time(),
-                                                                  self.end_frame)
 
         if self.capture_file:
             self.end_frame = self.capture_controller.capture_framenum()
+
+        print "Finished (time: %s, framenum: %s)" % (time.time(),
+                                                     self.end_frame)
 
         if self.checkerboard_log_file:
             # sleep a bit to make sure we get all the checkerboard stats from
