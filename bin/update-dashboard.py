@@ -93,12 +93,24 @@ def runtest(dm, product, current_date, appname, appinfo, test, capture_name,
                                                      appinfo.get('date'),
                                                      int(time.time())))
     urlparams = test.get('urlparams', '')
-    retval = subprocess.call(["runtest.py", "--url-params", urlparams,
-                              "--name", capture_name,
-                              "--capture-file", capture_file,
-                              appname, test['path']])
-    if retval != 0:
-        raise Exception("Failed to run test %s for %s" % (test['name'], product['name']))
+
+    test_completed = False
+    for i in range(3):
+        print "Running test (try %s of 3)" % (i+1)
+
+        retval = subprocess.call(["runtest.py", "--url-params", urlparams,
+                                  "--name", capture_name,
+                                  "--capture-file", capture_file,
+                                  appname, test['path']])
+        if retval == 0:
+            test_completed = True
+            break
+        else:
+            print "Test failed, retrying..."
+
+    if not test_completed:
+        raise Exception("Failed to run test %s for %s (after 3 tries). "
+                        "Aborting." % (test['name'], product['name']))
 
 
     capture = videocapture.Capture(capture_file)
