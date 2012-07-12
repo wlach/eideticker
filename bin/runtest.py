@@ -42,7 +42,7 @@ class CaptureServer(object):
         self.actions = actions
 
     def terminate_capture(self):
-        if self.capture_file:
+        if self.capture_file and self.capture_controller.capturing:
             self.capture_controller.terminate_capture()
 
     @mozhttpd.handlers.json_response
@@ -254,9 +254,16 @@ def main(args=sys.argv[1:]):
         timeout = 100
     timer = 0
     interval = 0.1
-    while not capture_server.finished and timer < timeout:
-        time.sleep(interval)
-        timer += interval
+
+    try:
+        while not capture_server.finished and timer < timeout:
+            time.sleep(interval)
+            timer += interval
+    except KeyboardInterrupt:
+        print "Aborting"
+        runner.stop()
+        capture_server.terminate_capture()
+        sys.exit(1)
 
     if capture_timeout and not capture_server.finished:
         capture_server.terminate_capture()
@@ -270,7 +277,11 @@ def main(args=sys.argv[1:]):
 
     if capture_file:
         print "Converting capture..."
-        capture_controller.convert_capture(capture_server.start_frame, capture_server.end_frame)
+        try:
+            capture_controller.convert_capture(capture_server.start_frame, capture_server.end_frame)
+        except KeyboardInterrupt:
+            print "Aborting"
+            sys.exit(1)
 
     # Clean up checkerboard logging preferences
     if options.checkerboard_log_file:

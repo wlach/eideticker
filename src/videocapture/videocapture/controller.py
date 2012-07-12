@@ -118,6 +118,10 @@ class CaptureController(object):
                                               custom_tempdir=self.custom_tempdir)
         self.capture_process.start()
 
+    @property
+    def capturing(self):
+        return self.capture_process != None
+
     def capture_framenum(self):
         assert self.capture_process
         return self.frame_counter.value
