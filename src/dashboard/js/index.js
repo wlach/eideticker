@@ -96,8 +96,7 @@ function updateGraph(rawdata, measure) {
   var plot = $.plot($("#graph-container"), graphdata, {
     xaxis: {
       mode: "time",
-      timeformat: "%0m-%0d",
-      panRange: [minMaxDates[0], minMaxDates[1]]
+      timeformat: "%0m-%0d"
     },
     yaxis: {
       axisLabel: axisLabel,
