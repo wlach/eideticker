@@ -3,7 +3,7 @@
 set -e
 
 EIDETICKER=$(dirname $0)/../
-TESTS="clock taskjs nightly cnn nytimes-scroll nytimes-zoom reddit wikipedia"
+TESTS="clock taskjs nightly cnn nytimes-scroll nytimes-zoom reddit wikipedia imgur"
 
 if [ $# -gt 0 ]; then
     TESTS=$@
