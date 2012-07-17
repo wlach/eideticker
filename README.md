@@ -40,9 +40,15 @@ that up in your shell by running this command within the root directory:
 
     source ./bin/activate
 
-Now, connect your Android device to your computer's USB port. That's it,
-you should now be set to run tests! Eideticker currently supports two methods
-of running tests: console mode and dashboard mode.
+The next step depends on whether you're using ADB or SUTAgent to interface
+with the device. If the former, just connect your Android device to your
+computer's USB port. That's it, you should now be set to run tests!
+
+If you're using SUTAgent, you'll want to start the SUTAgent app, note the
+ip address of your phone, then set the following environment variables:
+
+    export DM_TRANS=sut
+    export TEST_DEVICE=<device ip of phone>
 
 #### Console Mode
 
@@ -50,19 +56,19 @@ Console mode is meant for internal profiling. You run a program
 called get-metric-for-build.py with a specific test against an Android apk,
 and out will pop several results.
 
-    ./bin/get-metric-for-build.py <apk of build> <test>
+    ./bin/get-metric-for-build.py <test> <apk of build 1> [apk of build 2] ...
 
 For example, to run the canvas clock example against Fennec nightly, try
 this:
 
-    ./bin/get-metric-for-build.py nightly.apk src/tests/ep1/clock.html
+    ./bin/get-metric-for-build.py src/tests/ep1/clock.html nightly.apk
 
 Typically, you want to run Eideticker more than once on a particular test to
 get a range of results as tests are not 100% deterministic (partly due to the
 way we run tests, partly due to Android itself). You can do this with the
 `--num-runs` option. For example:
 
-    ./bin/get-metric-for-build.py --num-runs 5 nightly.apk src/tests/ep1/clock.html
+    ./bin/get-metric-for-build.py --num-runs 5 src/tests/ep1/clock.html nightly.apk
 
 If you want to know more about the results (where the numbers are coming from)
 you can open them up inside the Eideticker web interface. To open it, execute:
@@ -79,7 +85,7 @@ any kind of specialized hardware. Second, it's much faster (since there's no
 video encoding/decoding/analysis step). For this you want to pass in
 "--no-capture" and "--get-internal-checkerboard-stats", like so:
 
-    ./bin/get-metric-for-build.py --no-capture --get-internal-checkerboard-stats nightly.apk src/tests/ep1/taskjs.org/index.html
+    ./bin/get-metric-for-build.py --no-capture --get-internal-checkerboard-stats src/tests/ep1/taskjs.org/index.html nightly.apk
 
 #### Dashboard Mode
 
@@ -91,3 +97,17 @@ standalone. This script then it turn calls another script called
 version, test to run, etc. The dashboard is currently under heavy development
 and is not meant to be a developer/qa facing tool. For now, if you have need
 to use/modify it, please refer to the source.
+
+### Eideticker "tests"
+
+Eideticker tests are simply static HTML with a bit of JavaScript glue to
+interface with the harness and some JSON metadata to describe actions that
+Eideticker should perform while a capture is ongoing. The simplest example
+of a test would probably be the clock demo, which you can find in
+`src/tests/ep1/clock/index.html` (you have to run `./bootstrap.sh first to
+checkout the ep1 submodule before you can find this file).
+
+Writing your own tests is a matter of adding a subdirectory to `src/tests`,
+creating/copying an HTML page of your choice, adding the relevant JavaScript
+code to start/stop the test as appropriate, and then making an actions.json
+file with whatever actions you want to simulate during the test.
