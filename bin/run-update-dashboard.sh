@@ -14,10 +14,6 @@ export PATH=$PATH:$HOME/tools/android-sdk-linux/tools:$HOME/tools/android-sdk-li
 cd $EIDETICKER
 . bin/activate
 
-# Clean out /tmp/eideticker directory (in case there are any artifacts
-# from unsuccessful runs kicking around)
-rm -rf /tmp/eideticker/*
-
 # Expire old captures/videos
 ./bin/expire.py
 
@@ -25,6 +21,9 @@ rm -rf /tmp/eideticker/*
 ./bin/update-phone.py
 
 for TEST in $TESTS; do
+  # Clean out /tmp/eideticker directory (in case there are any artifacts
+  # from unsuccessful runs kicking around)
+  rm -rf /tmp/eideticker/*
   echo "Running $TEST"
   ./bin/update-dashboard.py --product nightly --num-runs 5 $TEST src/dashboard
 done
