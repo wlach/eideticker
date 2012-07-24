@@ -55,8 +55,17 @@ def get_build_for_date(date):
 
     return fname
 
-def run_test(device, appname, appdate, outputdir, outputfile, test, url_params, num_runs,
-             startup_test, no_capture, get_internal_checkerboard_stats):
+def run_test(device, outputdir, outputfile, test, url_params, num_runs,
+             startup_test, no_capture, get_internal_checkerboard_stats, apk=None,
+             appname = None, appdate = None):
+    if apk:
+        appinfo = eideticker.get_fennec_appinfo(apk)
+        appname = appinfo['appname']
+        print "Installing %s (version: %s, revision %s)" % (appinfo['appname'],
+                                                            appinfo['version'],
+                                                            appinfo['revision'])
+        device.updateApp(apk)
+
     captures = []
 
     for i in range(num_runs):
@@ -179,6 +188,8 @@ def main(args=sys.argv[1:]):
     parser.add_option("--url-params", action="store",
                       dest="url_params", default="",
                       help="additional url parameters for test")
+    parser.add_option("--use-apks", action="store_true", dest="use_apks",
+                      help="use and install android APKs as part of test (instead of specifying appnames)")
     parser.add_option("--date", action="store", dest="date",
                       metavar="YYYY-MM-DD",
                       help="get and test nightly build for date")
@@ -191,8 +202,12 @@ def main(args=sys.argv[1:]):
 
     options, args = parser.parse_args()
 
+    if len(args) == 0:
+        parser.error("Must specify at least one argument: the path to the test")
+
     dates = []
     appnames = []
+    apks = []
     if options.start_date and options.end_date and len(args) == 1:
         test = args[0]
         start_date = get_date(options.start_date)
@@ -205,9 +220,12 @@ def main(args=sys.argv[1:]):
         dates = [get_date(options.date)]
     elif not options.date and len(args) >= 2:
         test = args[0]
-        appnames = args[1:]
+        if options.use_apks:
+            apks = args[1:]
+        else:
+            appnames = args[1:]
     elif not options.date or (not options.start_date and not options.end_date):
-        parser.error("Must specify date, date range, or a set of appnames (e.g. org.mozilla.fennec)")
+        parser.error("Must specify date, date range, a set of appnames (e.g. org.mozilla.fennec) or a set of apks (if --use-apks is specified)")
 
     device = eideticker.getDevice(options)
 
@@ -218,23 +236,33 @@ def main(args=sys.argv[1:]):
 
     if appnames:
         for appname in appnames:
-            run_test(device, appname, None, options.outputdir, outputfile, test,
+            run_test(device, options.outputdir, outputfile, test,
                      options.url_params,
                      options.num_runs,
                      options.startup_test,
                      options.no_capture,
-                     options.get_internal_checkerboard_stats)
-    else:
-        for date in dates:
-            apk = get_build_for_date(date)
-            device.updateApp(apk)
-            run_test(device, "org.mozilla.fennec", date, options.outputdir,
+                     options.get_internal_checkerboard_stats, appname=appname)
+    elif apks:
+        for apk in apks:
+            run_test(device, options.outputdir,
                      outputfile, test,
                      options.url_params,
                      options.num_runs,
                      options.startup_test,
                      options.no_capture,
-                     options.get_internal_checkerboard_stats)
+                     options.get_internal_checkerboard_stats, apk=apk)
+    else:
+        for date in dates:
+            apk = get_build_for_date(date)
+            device.updateApp(apk)
+            run_test(device, options.outputdir,
+                     outputfile, test,
+                     options.url_params,
+                     options.num_runs,
+                     options.startup_test,
+                     options.no_capture,
+                     options.get_internal_checkerboard_stats, apk=apk,
+                     appdate=date)
 
 
 main()

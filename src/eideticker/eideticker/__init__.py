@@ -5,3 +5,4 @@
 from runner import BrowserRunner
 from options import OptionParser
 from device import getDevice
+from apk import get_fennec_appinfo

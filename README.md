@@ -56,19 +56,19 @@ Console mode is meant for internal profiling. You run a program
 called get-metric-for-build.py with a specific test against an Android apk,
 and out will pop several results.
 
-    ./bin/get-metric-for-build.py <test> <apk of build 1> [apk of build 2] ...
+    ./bin/get-metric-for-build.py --use-apks <test> <apk of build 1> [apk of build 2] ...
 
 For example, to run the canvas clock example against Fennec nightly, try
 this:
 
-    ./bin/get-metric-for-build.py src/tests/ep1/clock.html nightly.apk
+    ./bin/get-metric-for-build.py --use-apks src/tests/ep1/clock.html nightly.apk
 
 Typically, you want to run Eideticker more than once on a particular test to
 get a range of results as tests are not 100% deterministic (partly due to the
 way we run tests, partly due to Android itself). You can do this with the
 `--num-runs` option. For example:
 
-    ./bin/get-metric-for-build.py --num-runs 5 src/tests/ep1/clock.html nightly.apk
+    ./bin/get-metric-for-build.py --use-apks --num-runs 5 src/tests/ep1/clock.html nightly.apk
 
 If you want to know more about the results (where the numbers are coming from)
 you can open them up inside the Eideticker web interface. To open it, execute:
@@ -85,7 +85,7 @@ any kind of specialized hardware. Second, it's much faster (since there's no
 video encoding/decoding/analysis step). For this you want to pass in
 "--no-capture" and "--get-internal-checkerboard-stats", like so:
 
-    ./bin/get-metric-for-build.py --no-capture --get-internal-checkerboard-stats src/tests/ep1/taskjs.org/index.html nightly.apk
+    ./bin/get-metric-for-build.py --use-apks --no-capture --get-internal-checkerboard-stats src/tests/ep1/taskjs.org/index.html nightly.apk
 
 #### Dashboard Mode
 

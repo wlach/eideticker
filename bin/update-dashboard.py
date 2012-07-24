@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-import ConfigParser
 import eideticker
 import json
 import mozdevice
@@ -62,22 +61,6 @@ default_tests = [
 
 DOWNLOAD_DIR = os.path.join(os.path.dirname(__file__), "../downloads")
 CAPTURE_DIR = os.path.join(os.path.dirname(__file__), "../captures")
-
-def get_appinfo(fname):
-    archive = zipfile.ZipFile(fname, 'r')
-    config = ConfigParser.ConfigParser()
-    config.readfp(archive.open('application.ini'))
-    buildid = config.get('App', 'BuildID')
-    revision = config.get('App', 'SourceStamp')
-    (year, month, day) = (buildid[0:4], buildid[4:6], buildid[6:8])
-    if 'package-name.txt' in archive.namelist():
-        appname = archive.open('package-name.txt').read().rstrip()
-    else:
-        appname = None
-    return { 'date':  "%s-%s-%s" % (year, month, day),
-             'buildid': buildid,
-             'revision': revision,
-             'appname': appname }
 
 def kill_app(dm, appname):
     procs = dm.getProcessList()
@@ -196,7 +179,7 @@ def main(args=sys.argv[1:]):
     for product in products:
         if product.get('url'):
             product_fname = os.path.join(DOWNLOAD_DIR, "%s.apk" % product['name'])
-            appinfo = get_appinfo(product_fname)
+            appinfo = eideticker.get_fennec_appinfo(product_fname)
             appname = appinfo['appname']
             capture_name = "%s %s" % (product['name'], appinfo['date'])
         else:
