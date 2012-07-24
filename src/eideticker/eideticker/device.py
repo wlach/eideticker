@@ -70,8 +70,8 @@ class EidetickerMixin(object):
         self.pushFile(f.name, remotefilename)
         if executeCallback:
             executeCallback()
-        self._shellCheckOutput(["su", "-c",
-                                "LD_LIBRARY_PATH=/vendor/lib:/system/lib /system/xbin/orng %s %s" % (self.inputDevice, remotefilename)])
+        self._shellCheckOutput(["/system/xbin/orng", self.inputDevice,
+                                remotefilename])
 
     def getprop(self, prop):
         return self._shellCheckOutput(["getprop", str(prop)])
