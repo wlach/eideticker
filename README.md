@@ -50,6 +50,10 @@ ip address of your phone, then set the following environment variables:
     export DM_TRANS=sut
     export TEST_DEVICE=<device ip of phone>
 
+If you are using a B2G pandaboard with adb, then you'll need sudo privileges for adb:
+
+    adb kill-server 
+    sudo adb start-server
 #### Console Mode
 
 Console mode is meant for internal profiling. You run a program
