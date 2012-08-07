@@ -252,7 +252,7 @@ def main(args=sys.argv[1:]):
                                                        testpath_rel)
     print "Test URL is: %s" % url
     if options.b2g:
-        runner = eideticker.B2GRunner(device, url)
+        runner = eideticker.B2GRunner(device, url, EIDETICKER_TEMP_DIR)
     else: 
         runner = eideticker.BrowserRunner(device, appname, url)
     # FIXME: currently start capture before launching app because we wait until app is
