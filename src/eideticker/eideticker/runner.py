@@ -35,7 +35,9 @@ class B2GRunner(object):
         #ethFile = open("ethFile", "rw")
         #self.dm.shell("netcfg eth0 dhcp", ethFile)
         print "running netcfg, it may take some time"
-        #self.dm.checkCmd(['shell', 'netcfg', 'eth0', 'dhcp'])
+	t = time.time()
+        self.dm.checkCmd(['shell', 'netcfg', 'eth0', 'dhcp'])
+	print time.time() - t
         print "sleeping"
         #time.sleep(4)
         print "launching"

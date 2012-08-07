@@ -81,6 +81,8 @@ class CaptureServer(object):
                 print "Executing commands '%s' for device '%s' (time: %s, framenum: %s)" % (
                     commandset, self.device.model, time.time(), self.start_frame)
 
+            print "Running these commands"
+            print self.actions[commandset][self.device.model]
             self.device.executeCommands(self.actions[commandset][self.device.model],
                                         executeCallback=executeCallback)
 
