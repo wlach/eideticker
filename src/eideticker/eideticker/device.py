@@ -62,7 +62,6 @@ class EidetickerMixin(object):
 
     def _executeScript(self, events, executeCallback=None):
         '''Executes a set of monkey commands on the device'''
-        print "Running _executeScript with: %s" % events
         f = tempfile.NamedTemporaryFile()
         f.write("\n".join(events) + "\n")
         f.flush()
@@ -89,7 +88,6 @@ class EidetickerMixin(object):
     def _transformXY(self, coords):
         # FIXME: Only handling 90 degrees for now, everything else falls back
         # to default
-	print "going to rotate"
         if hasattr(self, "rotation") and self.rotation == 90:
             return (self.dimensions[1] - int(coords[1]), int(coords[0]))
 

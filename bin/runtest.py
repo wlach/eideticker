@@ -81,8 +81,6 @@ class CaptureServer(object):
                 print "Executing commands '%s' for device '%s' (time: %s, framenum: %s)" % (
                     commandset, self.device.model, time.time(), self.start_frame)
 
-            print "Running these commands"
-            print self.actions[commandset][self.device.model]
             self.device.executeCommands(self.actions[commandset][self.device.model],
                                         executeCallback=executeCallback)
 
@@ -155,7 +153,7 @@ def main(args=sys.argv[1:]):
         except:
             print "Test must be relative to %s" % TEST_DIR
             sys.exit(1)
-    
+
     actions = None
     if not options.startup_test:
         actions_path = os.path.join(os.path.dirname(testpath), "actions.json")

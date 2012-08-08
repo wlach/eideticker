@@ -49,8 +49,7 @@ class B2GRunner(object):
         
         #wait for marionette port to come up
         if not self.wait_for_port(30000):
-            print "Could not communicate with Marionette port after restarting B2G"
-            sys.exit(1)
+            raise Exception("Could not communicate with Marionette port after restarting B2G")
         self.marionette = Marionette(self.marionette_host, self.marionette_port)
     
     def setup_profile(self):
@@ -80,14 +79,11 @@ user_pref("power.screen.timeout", 999999);
                           'tcp:%s' % self.marionette_port,
                           'tcp:%s' % self.marionette_port])
 
-        print "setting up profile"
+        print "Setting up profile"
         self.setup_profile()
         #enable ethernet connection
-        print "running netcfg, it may take some time"
+        print "Running netcfg, it may take some time."
         self.dm.checkCmd(['shell', 'netcfg', 'eth0', 'dhcp'])
-        print "sleeping"
-        #time.sleep(4)
-        print "launching"
         #launch app
         session = self.marionette.start_session()
         if 'b2g' not in session:
