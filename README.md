@@ -3,7 +3,8 @@ Project Eideticker
 
 Project Eideticker is an automated test harness that captures and analyzes
 browser output via HDMI. It currently only supports various browsers (Fennec,
-Stock) on Android, but support for other platforms is planned.
+Stock) on Android, but support for other platforms is planned. There is
+experimental support for B2G on the pandaboard.
 
 ### Requirements
 
@@ -58,7 +59,7 @@ If you are using a B2G pandaboard with adb, then you'll need sudo privileges for
 
 Console mode is meant for internal profiling. You run a program
 called get-metric-for-build.py with a specific test against an Android apk,
-and out will pop several results.
+and out will pop several results. This is not yet supported for B2G.
 
     ./bin/get-metric-for-build.py --use-apks <test> <apk of build 1> [apk of build 2] ...
 
@@ -100,7 +101,7 @@ standalone. This script then it turn calls another script called
 `bin/update-dashboard.py` with various arguments corresponding to firefox
 version, test to run, etc. The dashboard is currently under heavy development
 and is not meant to be a developer/qa facing tool. For now, if you have need
-to use/modify it, please refer to the source.
+to use/modify it, please refer to the source. This is not yet supported for B2G.
 
 ### Eideticker "tests"
 
