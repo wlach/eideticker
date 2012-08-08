@@ -81,6 +81,8 @@ class CaptureServer(object):
                 print "Executing commands '%s' for device '%s' (time: %s, framenum: %s)" % (
                     commandset, self.device.model, time.time(), self.start_frame)
 
+            print "Running these commands"
+            print self.actions[commandset][self.device.model]
             self.device.executeCommands(self.actions[commandset][self.device.model],
                                         executeCallback=executeCallback)
 
@@ -123,12 +125,23 @@ def main(args=sys.argv[1:]):
     parser.add_option("--startup-test", action="store_true",
                       dest="startup_test",
                       help="do a startup test: full capture, no actions")
+    parser.add_option("--b2g", action="store_true",
+                      dest="b2g", default=False,
+                      help="Run in B2G environment. You do not need to pass an appname")
 
     options, args = parser.parse_args()
-    if len(args) != 2:
-        parser.error("incorrect number of arguments")
-    (appname, testpath) = args
+    testpath, appname = None, None
+    if options.b2g:
+        if len(args) != 1:
+            parser.error("incorrect number of arguments")
+            sys.exit(1)
+        testpath = args[0]
+    else:
+        if len(args) != 2:
+            parser.error("incorrect number of arguments")
+            sys.exit(1)
 
+        (appname, testpath) = args
     # Tests must be in src/tests/... unless it is a startup test and the
     # path is about:home (indicating we want to measure startup to the
     # home screen)
@@ -142,7 +155,7 @@ def main(args=sys.argv[1:]):
         except:
             print "Test must be relative to %s" % TEST_DIR
             sys.exit(1)
-
+    
     actions = None
     if not options.startup_test:
         actions_path = os.path.join(os.path.dirname(testpath), "actions.json")
@@ -170,7 +183,7 @@ def main(args=sys.argv[1:]):
     # Create a device object to interface with the phone
     device = eideticker.getDevice(options)
 
-    if device.processExist(appname):
+    if appname and device.processExist(appname):
         print "An instance of %s is running. Please stop it before running Eideticker." % appname
         sys.exit(1)
 
@@ -238,7 +251,10 @@ def main(args=sys.argv[1:]):
                                                        http.httpd.server_port,
                                                        testpath_rel)
     print "Test URL is: %s" % url
-    runner = eideticker.BrowserRunner(device, appname, url)
+    if options.b2g:
+        runner = eideticker.B2GRunner(device, url, EIDETICKER_TEMP_DIR)
+    else: 
+        runner = eideticker.BrowserRunner(device, appname, url)
     # FIXME: currently start capture before launching app because we wait until app is
     # launched -- would be better to make waiting optional and then start capture
     # after triggering app launch to reduce latency?
