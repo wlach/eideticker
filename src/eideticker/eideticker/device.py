@@ -56,7 +56,9 @@ class EidetickerMixin(object):
         buf = StringIO.StringIO()
         retval = self.shell(args, buf)
         output = str(buf.getvalue()[0:-1]).rstrip()
-        if int(retval) != 0: # int() necessary because of bug 757546
+        if retval == None:
+            raise Exception("Did not successfully run command %s (output: '%s')" % (args, output))
+        if retval != 0:
             raise Exception("Non-zero return code for command: %s (output: '%s')" % (args, output))
         return output
 
