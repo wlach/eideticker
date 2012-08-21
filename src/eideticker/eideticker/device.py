@@ -87,6 +87,8 @@ class EidetickerMixin(object):
         return self._shellCheckOutput(["getprop", str(prop)])
 
     def setprop(self, prop, value):
+        if not value:
+            value = ""
         self._shellCheckOutput(["setprop", str(prop), str(value)])
 
     def clear_logcat(self):
