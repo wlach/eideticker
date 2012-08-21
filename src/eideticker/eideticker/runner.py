@@ -150,4 +150,4 @@ class BrowserRunner(object):
     def stop(self):
         self.dm.killProcess(self.appname)
         if not self.dm.removeDir(self.remote_profile_dir):
-            raise Exception("Failed to remove profile from device")
+            print "WARNING: Failed to remove profile (%s) from device" % self.remote_profile_dir
