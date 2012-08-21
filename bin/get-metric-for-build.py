@@ -254,7 +254,6 @@ def main(args=sys.argv[1:]):
     else:
         for date in dates:
             apk = get_build_for_date(date)
-            device.updateApp(apk)
             run_test(device, options.outputdir,
                      outputfile, test,
                      options.url_params,
