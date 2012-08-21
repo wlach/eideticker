@@ -29,6 +29,11 @@ DEVICE_PROPERTIES = {
         "inputDevice": "/dev/input/event1",
         "dimensions": (480, 800)
     },
+    "MID": {
+        "hdmiResolution": None,
+        "inputDevice": "/dev/input/event2",
+        "dimensions": (480, 800)
+    },
 }
 
 class EidetickerMixin(object):
