@@ -184,6 +184,10 @@ class DroidADB(mozdevice.DroidADB, EidetickerMixin):
     def dimensions(self):
         return DEVICE_PROPERTIES[self.model]['dimensions']
 
+    @property
+    def rotation(self):
+        return 0
+
 class DroidSUT(mozdevice.DroidSUT, EidetickerMixin):
 
     cached_dimensions = None
