@@ -67,16 +67,16 @@ class EidetickerMixin(object):
 
     def _executeScript(self, events, executeCallback=None):
         '''Executes a set of monkey commands on the device'''
-        f = tempfile.NamedTemporaryFile()
-        f.write("\n".join(events) + "\n")
-        f.flush()
-        remotefilename = os.path.join(self.getDeviceRoot(),
-                                      os.path.basename(f.name))
-        self.pushFile(f.name, remotefilename)
-        if executeCallback:
-            executeCallback()
-        self._shellCheckOutput(["/system/xbin/orng", self.inputDevice,
-                                remotefilename])
+        with tempfile.NamedTemporaryFile() as f:
+            f.write("\n".join(events) + "\n")
+            f.flush()
+            remotefilename = os.path.join(self.getDeviceRoot(),
+                                          os.path.basename(f.name))
+            self.pushFile(f.name, remotefilename)
+            if executeCallback:
+                executeCallback()
+            self._shellCheckOutput(["/system/xbin/orng", self.inputDevice,
+                                    remotefilename])
 
     def getprop(self, prop):
         return self._shellCheckOutput(["getprop", str(prop)])
