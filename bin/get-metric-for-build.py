@@ -65,6 +65,8 @@ def run_test(device, outputdir, outputfile, test, url_params, num_runs,
                                                             appinfo['version'],
                                                             appinfo['revision'])
         device.updateApp(apk)
+    else:
+        appinfo = None
 
     captures = []
 
@@ -122,7 +124,11 @@ def run_test(device, outputdir, outputfile, test, url_params, num_runs,
     else:
         appkey = appname
 
-    print "=== Results for %s ===" % appkey
+    if appinfo and appinfo.get('revision'):
+        display_key = "%s (%s)" % (appkey, appinfo['revision'])
+    else:
+        display_key = appkey
+    print "=== Results for %s ===" % display_key
 
     if not no_capture:
         if startup_test:
