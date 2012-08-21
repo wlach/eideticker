@@ -46,6 +46,9 @@ class EidetickerMixin(object):
     def _init(self):
         self.model = self.getprop("ro.product.model")
 
+        if not DEVICE_PROPERTIES.get(self.model):
+            raise Exception("Unsupported device type '%s'" % self.model)
+
         # Hack: this gets rid of the "finished charging" modal dialog that the
         # LG G2X sometimes brings up
         if self.model == 'LG-P999':
