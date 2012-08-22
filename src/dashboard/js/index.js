@@ -142,7 +142,7 @@ function updateGraph(rawdata, measure) {
 
         if (metadataHash[item.seriesIndex] && metadataHash[item.seriesIndex][item.dataIndex]) {
           var metadata = metadataHash[item.seriesIndex][item.dataIndex];
-          toolTip = (item.series.label || item.series.hoverLabel) + " of " + metadata.appDate + " = " + y;
+          toolTip = (item.series.label || item.series.hoverLabel) + " of " + (metadata.appDate || "'Unknown Date'") + " = " + y;
         } else {
           console.log(JSON.stringify(item.series));
           toolTip = (item.series.label || item.series.hoverLabel) + " = " + y;
