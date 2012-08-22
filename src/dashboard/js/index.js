@@ -62,6 +62,7 @@ function updateGraph(rawdata, measure) {
 
     // line graph (aggregate average per day)
     var series2 = {
+      hoverLabel: "Average per day for " + type,
       lines: { show: true },
       color: color,
       data: [],
@@ -114,6 +115,47 @@ function updateGraph(rawdata, measure) {
   $('<div class="button" style="right:20px;top:20px">zoom out</div>').appendTo($("#graph-container")).click(function (e) {
         e.preventDefault();
         plot.zoomOut();
+  });
+
+  function showTooltip(x, y, contents) {
+      $('<div id="tooltip">' + contents + '</div>').css( {
+          position: 'absolute',
+          display: 'none',
+          top: y + 5,
+          left: x + 5,
+          border: '1px solid #fdd',
+          padding: '2px',
+          'background-color': '#fee',
+          opacity: 0.80
+      }).appendTo("body").fadeIn(200);
+  }
+
+  // Plot Hover tooltip
+  var previousPoint = null;
+  $("#graph-container").bind("plothover", function (event, pos, item) {
+    if (item) {
+      if (previousPoint != item.dataIndex) {
+        var toolTip;
+        var x = item.datapoint[0].toFixed(2),
+            y = item.datapoint[1].toFixed(2);
+
+        if (metadataHash[item.seriesIndex] && metadataHash[item.seriesIndex][item.dataIndex]) {
+          var metadata = metadataHash[item.seriesIndex][item.dataIndex];
+          toolTip = (item.series.label || item.series.hoverLabel) + " of " + metadata.appDate + " = " + y;
+        } else {
+          console.log(JSON.stringify(item.series));
+          toolTip = (item.series.label || item.series.hoverLabel) + " = " + y;
+        }
+
+        previousPoint = item.dataIndex;
+
+        $("#tooltip").remove();
+        showTooltip(item.pageX, item.pageY, toolTip);
+      }
+    } else {
+      $("#tooltip").remove();
+      previousPoint = null;
+    }
   });
 
   $("#graph-container").bind("plotclick", function (event, pos, item) {
