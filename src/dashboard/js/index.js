@@ -66,7 +66,8 @@ function updateGraph(rawdata, measure) {
       lines: { show: true },
       color: color,
       data: [],
-      clickable: false
+      clickable: false,
+      hoverable: false
     };
     Object.keys(rawdata[type]).forEach(function(datestr) {
       var numSamples = 0;
