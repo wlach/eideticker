@@ -9,6 +9,7 @@ import subprocess
 import sys
 import time
 import videocapture
+import uuid
 import zipfile
 from eideticker.products import default_products
 
@@ -117,6 +118,7 @@ def runtest(dm, product, current_date, appname, appinfo, test, capture_name,
     if not data[test['name']][product['name']].get(current_date):
         data[test['name']][product['name']][current_date] = []
     datapoint = { 'fps': fps,
+                  'uuid': uuid.uuid1().hex,
                   'checkerboard': checkerboard,
                   'uniqueframes': num_unique_frames,
                   'video': video_path,
