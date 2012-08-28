@@ -195,7 +195,7 @@ def main(args=sys.argv[1:]):
     devices[device_id] = { 'name': device.model,
                            'version': device.getprop('ro.build.version.release') }
     with open(devicefile, 'w') as f:
-        f.write(json.dumps(devices))
+        f.write(json.dumps({ 'devices': devices }))
 
     for product in products:
         if product.get('url'):

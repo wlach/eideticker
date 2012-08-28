@@ -236,10 +236,11 @@ $(function() {
 
   var graphData = {};
   $.getJSON('devices.json', function(rawData) {
-    var deviceIds = Object.keys(rawData);
+    var devices = rawData['devices'];
+    var deviceIds = Object.keys(devices);
     var routes = {};
     deviceIds.forEach(function(deviceId) {
-      $('<li id="device-' + deviceId + '-li" deviceid= ' + deviceId + '><a>'+rawData[deviceId].name+'</a></li>').appendTo($('#device-chooser'));
+      $('<li id="device-' + deviceId + '-li" deviceid= ' + deviceId + '><a>'+devices[deviceId].name+'</a></li>').appendTo($('#device-chooser'));
 
       var baseRoute = "/(" + deviceId + ")/(" + Object.keys(testInfoDict).join("|") + ")";
       routes[baseRoute] = {
