@@ -193,7 +193,7 @@ class DroidADB(mozdevice.DroidADB, EidetickerMixin):
 
     @property
     def rotation(self):
-        return 0
+        return 0 # No way to find real rotation, assume 0
 
 class DroidSUT(mozdevice.DroidSUT, EidetickerMixin):
 
