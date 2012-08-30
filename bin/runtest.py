@@ -126,6 +126,9 @@ def main(args=sys.argv[1:]):
     parser.add_option("--b2g", action="store_true",
                       dest="b2g", default=False,
                       help="Run in B2G environment. You do not need to pass an appname")
+    parser.add_option("--profile-file", action="store",
+                      type="string", dest = "profile_file",
+                      help="Collect a performance profile using the built in profiler.")
 
     options, args = parser.parse_args()
     testpath, appname = None, None
@@ -259,7 +262,7 @@ def main(args=sys.argv[1:]):
     if options.startup_test and not options.no_capture:
         capture_controller.start_capture(capture_file, device.hdmiResolution,
                                          capture_metadata)
-    runner.start()
+    runner.start(profile_file=options.profile_file)
 
     # Keep on capturing until we timeout
     if capture_timeout:
