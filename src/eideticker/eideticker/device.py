@@ -62,7 +62,7 @@ class EidetickerMixin(object):
     # FIXME: make this part of devicemanager
     def _shellCheckOutput(self, args):
         buf = StringIO.StringIO()
-        retval = self.shell(args, buf)
+        retval = self.shell(args, buf, root=True)
         output = str(buf.getvalue()[0:-1]).rstrip()
         if retval == None:
             raise Exception("Did not successfully run command %s (output: '%s', retval: 'None')" % (args, output))
