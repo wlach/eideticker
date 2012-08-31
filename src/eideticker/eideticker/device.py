@@ -97,6 +97,24 @@ class EidetickerMixin(object):
         if pids:
             self._shellCheckOutput(['kill', '-s', '12', pids[0]])
 
+    def getAPK(self, appname, localfile):
+        remote_tempfile = '/data/local/apk-tmp-%s' % time.time()
+        for remote_apk_path in [ '/data/app/%s-1.apk' % appname,
+                                 '/data/app/%s-2.apk' % appname ]:
+            try:
+                self._shellCheckOutput(['dd', 'if=%s' % remote_apk_path,
+                                        'of=%s' % remote_tempfile])
+                self._shellCheckOutput(['chmod', '0666', remote_tempfile])
+                self.removeFile(remote_tempfile)
+            except:
+                continue
+
+            if self.getFile(remote_tempfile, localfile):
+                return
+
+        raise Exception("Unable to get remote APK for %s!" % appname)
+
+
     def getprop(self, prop):
         return self._shellCheckOutput(["getprop", str(prop)])
 
