@@ -292,6 +292,15 @@ $(function() {
         }
       }
     });
-    var router = Router(routes).init('/' + deviceIds[0] + '/taskjs-scrolling/checkerboard');
+
+    var defaultDeviceId = deviceIds[0];
+    // HACK: try to default to the LG-P999 for now
+    deviceIds.forEach(function(deviceId) {
+      if (devices[deviceId].name === "LG-P999") {
+        defaultDeviceId = deviceId;
+      }
+    });
+
+    var router = Router(routes).init('/' + defaultDeviceId + '/taskjs-scrolling/checkerboard');
   });
 });
