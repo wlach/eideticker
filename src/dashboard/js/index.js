@@ -60,7 +60,8 @@ function updateGraph(rawdata, measure) {
           'appDate': sample.appdate,
           'revision': sample.revision,
           'prevRevision': prevRevision,
-          'buildId': sample.buildid
+          'buildId': sample.buildid,
+          'profileURL': sample.profile
         });
       });
       prevRevision = rawdata[type][datestr][0].revision;
@@ -174,6 +175,7 @@ function updateGraph(rawdata, measure) {
     if (item) {
       var metadata = metadataHash[item.seriesIndex][item.dataIndex];
       $('#datapoint-info').html(ich.graphDatapoint({ 'videoURL': metadata.videoURL,
+                                                     'profileURL': metadata.profileURL,
                                                      'measureName': measure,
                                                      'date': metadata.dateStr,
                                                      'appDate': metadata.appDate,
