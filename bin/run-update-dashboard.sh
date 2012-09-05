@@ -23,7 +23,7 @@ cd $EIDETICKER
 . bin/activate
 
 # Expire old captures/videos
-./bin/expire.py $EXPIRY_THRESHOLD
+./bin/expire.py --max-age $EXPIRY_THRESHOLD
 
 # Update apps on the phone to the latest
 ./bin/update-phone.py

@@ -8,22 +8,29 @@ import re
 import sys
 import time
 
-usage = "usage: %prog [options] <maximum allowable age in days>"
+usage = "usage: %prog [options] [directory1] [directory2]"
 parser = optparse.OptionParser(usage)
+parser.add_option("--max-age", action="store",
+                  type = "int", dest = "max_age_days",
+                  default = 3, help = "number of runs")
 options, args = parser.parse_args()
-if len(args) != 1:
-    parser.error("incorrect number of arguments")
 
-max_age_days = int(args[0])
 now = int(time.time())
 
-expire_before = now - max_age_days*24*60*60
+expire_before = now - options.max_age_days*24*60*60
 
 print 'expiring files before %s' % datetime.datetime.fromtimestamp(expire_before)
 
-files = glob.glob('src/dashboard/videos/*.webm')
-files.extend(glob.glob('captures/*.zip'))
-files.extend(glob.glob('captures/*.cache'))
+if not args:
+    # default assume run from root of eideticker directory
+    dirs = [ 'src/dashboard/videos/', 'captures/' ]
+else:
+    dirs = args
+
+files = []
+for dir in dirs:
+    for ext in [ 'webm', 'zip', 'cache' ]:
+        files.extend(glob.glob('%s/*.%s' % (dir, ext)))
 
 stamped_file_re = re.compile('-(\d{10})(\.?)(\d+)?.[^\.]+$')
 
