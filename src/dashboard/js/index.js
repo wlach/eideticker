@@ -259,8 +259,6 @@ $(function() {
       routes[baseRoute] = {
         '/(checkerboard|fps|uniqueframes)': {
           on: function(deviceId, testId, measure) {
-            console.log("ON: " + [deviceId,testId,measure]);
-
             // update all links to be relative to the new test or device
             $('#device-chooser').children('li').removeClass("active");
             $('#device-chooser').children('#device-'+deviceId+'-li').addClass("active");
