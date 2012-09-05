@@ -2,13 +2,22 @@
 
 import datetime
 import glob
+import optparse
 import os
 import re
+import sys
 import time
 
+usage = "usage: %prog [options] <maximum allowable age in days>"
+parser = optparse.OptionParser(usage)
+options, args = parser.parse_args()
+if len(args) != 1:
+    parser.error("incorrect number of arguments")
+
+max_age_days = int(args[0])
 now = int(time.time())
 
-expire_before = now - 7*24*60*60
+expire_before = now - max_age_days*24*60*60
 
 print 'expiring files before %s' % datetime.datetime.fromtimestamp(expire_before)
 
