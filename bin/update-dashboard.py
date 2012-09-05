@@ -163,9 +163,6 @@ def main(args=sys.argv[1:]):
     usage = "usage: %prog [options] <test> <output dir>"
 
     parser = eideticker.OptionParser(usage=usage)
-    parser.add_option("--no-download",
-                      action="store_true", dest = "no_download",
-                      help = "Don't download new versions of the app")
     parser.add_option("--enable-profiling",
                       action="store_true", dest = "enable_profiling",
                       help = "Create SPS profile to go along with capture")
