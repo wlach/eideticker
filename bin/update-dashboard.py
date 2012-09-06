@@ -230,6 +230,7 @@ def main(args=sys.argv[1:]):
             product_fname = os.path.join(DOWNLOAD_DIR, "%s.apk" % product['name'])
             appinfo = eideticker.get_fennec_appinfo(product_fname)
             appname = appinfo['appname']
+            print "Using application name '%s' from apk '%s'" % (appname, product_fname)
             capture_name = "%s %s" % (product['name'], appinfo['date'])
         else:
             appinfo = { }
