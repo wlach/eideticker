@@ -206,16 +206,21 @@ class BrowserRunner(object):
         # for fennec only, we create and use a profile
         if self.appname.startswith('org.mozilla'):
             args = []
-            profile = None
-            profile = mozprofile.Profile(preferences = { 'gfx.show_checkerboard_pattern': False,
-                                                         'browser.firstrun.show.uidiscovery': False,
-                                                         'toolkit.telemetry.prompted': 2 })
+            self.is_profiling = profile_file != None
+            preferences = { 'gfx.show_checkerboard_pattern': False,
+                            'browser.firstrun.show.uidiscovery': False,
+                            'toolkit.telemetry.prompted': 2 }
+
+            # Add frame counter to correlate video capture with profile
+            if self.is_profiling:
+                preferences['layers.acceleration.frame-counter'] = True
+
+            profile = mozprofile.Profile(preferences = preferences)
             self.remote_profile_dir = "/".join([self.dm.getDeviceRoot(),
                                                 os.path.basename(profile.profile)])
             if not self.dm.pushDir(profile.profile, self.remote_profile_dir):
                 raise Exception("Failed to copy profile to device")
 
-            self.is_profiling = profile_file != None
             if self.is_profiling:
                 self.profile_file = profile_file
                 mozEnv = { "MOZ_PROFILER_STARTUP": "true" }

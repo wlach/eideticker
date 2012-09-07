@@ -12,17 +12,34 @@ import numpy
 PIXEL_DIFF_THRESHOLD = 5.0
 
 def get_framediff_image(capture, framenum1, framenum2, cropped=False):
+    if capture.metadata.get('ignoreAreas'):
+        ignored_areas = capture.metadata['ignoreAreas']
+    else:
+        ignored_areas = []
+
     frame1 = capture.get_frame(framenum1, cropped)
     frame2 = capture.get_frame(framenum2, cropped)
     framediff = numpy.abs(frame1.astype('float') - frame2.astype('float'))
     thresh = 5.0
-    for row in framediff:
-        for px in row:
-            if px[0] >= PIXEL_DIFF_THRESHOLD or px[1] >= PIXEL_DIFF_THRESHOLD \
-                    or px[2] >= PIXEL_DIFF_THRESHOLD:
+    for (y, row) in enumerate(framediff):
+        for (x, px) in enumerate(row):
+            skip = False
+            for ignored_area in ignored_areas:
+                if y >= ignored_area[1] and y < ignored_area[3] and \
+                        x >= ignored_area[0] and x < ignored_area[2]:
+                    print ignored_area
+                    print "Skipped: %s %s" % (x, y)
+                    skip = True
+                    break
+
+            if not skip and (px[0] >= PIXEL_DIFF_THRESHOLD or \
+                                 px[1] >= PIXEL_DIFF_THRESHOLD or \
+                                 px[2] >= PIXEL_DIFF_THRESHOLD):
                 px[0] = 255.0
                 px[1] = 0.0
                 px[2] = 0.0
+            else:
+                px[0] = px[1] = px[2] = 0.0
 
     return Image.fromarray(framediff.astype(numpy.uint8))
 
@@ -31,6 +48,11 @@ def get_framediff_sums(capture):
         cache = pickle.load(open(capture.cache_filename, 'r'))
     except:
         cache = {}
+
+    if capture.metadata.get('ignoreAreas'):
+        ignored_areas = capture.metadata['ignoreAreas']
+    else:
+        ignored_areas = []
 
     try:
         diffsums = cache['diffsums']
@@ -43,6 +65,10 @@ def get_framediff_sums(capture):
             frame = capture.get_frame(i, True).astype('float')
             if prevframe != None:
                 framediff = (frame - prevframe)
+                for ignored_area in ignored_areas:
+                    for x in range(ignored_area[0], ignored_area[2]):
+                        for y in range(ignored_area[1], ignored_area[3]):
+                            framediff[x][y] = 0.0
                 framediff = framediff[framediff >= PIXEL_DIFF_THRESHOLD]
                 diffsums.append(len(framediff))
             prevframe = frame

@@ -4,6 +4,11 @@
 
 import numpy
 
+# how far outside the bounds of the square a scanline can be and still be
+# considered part of the frame
+X_TOLERANCE_MIN = 192 + 1 # ignore frame counter on left for fennec
+X_TOLERANCE_MAX = 1
+
 def get_squares(rgb, imgarray):
     ''' Get contiguous square regions within a certain threshold of an RGB
         color inside an image '''
@@ -26,9 +31,16 @@ def get_squares(rgb, imgarray):
         if scanline:
             found_existing = False
             for square in squares:
-                if abs(square[0] - scanline[0]) < 1 and abs(square[2] - scanline[1]) < 1:
+                if abs(square[0] - scanline[0]) < X_TOLERANCE_MIN and \
+                        abs(square[2] - scanline[1]) < X_TOLERANCE_MAX:
                     square[3] = y
                     found_existing = True
+                    # expand the square if the scanline is bigger
+                    if square[0] > scanline[0]:
+                        square[0] = scanline[0]
+                    if square[2] < scanline[1]:
+                        square[2] = scanline[1]
+
             if not found_existing:
                squares.append([int(scanline[0]), y, int(scanline[1]), y])
 

@@ -205,6 +205,12 @@ def main(args=sys.argv[1:]):
         'device': device.model,
         'startupTest': options.startup_test
         }
+
+    # something of a hack. if profiling is enabled, carve off an area to
+    # ignore in the capture
+    if options.profile_file:
+        capture_metadata['ignoreAreas'] = [ [ 0, 0, 3*64, 3 ] ]
+
     capture_server = CaptureServer(capture_metadata,
                                    capture_file,
                                    options.checkerboard_log_file,
