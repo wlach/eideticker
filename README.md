@@ -117,3 +117,77 @@ Writing your own tests is a matter of adding a subdirectory to `src/tests`,
 creating/copying an HTML page of your choice, adding the relevant JavaScript
 code to start/stop the test as appropriate, and then making an actions.json
 file with whatever actions you want to simulate during the test.
+
+The JavaScript code is encapsulated in the file: `src/tests/js/eideticker.js`.
+Much of the code in there is just used by the harness. From the point of view
+of an Eideticker test, you really just need to call the "finish" method, which
+we use to trigger the end of a capture.
+
+Creating actions for use during a test (and making sure they get called) is
+somewhat more involved, but not much. Alongside the various HTML/JS/Image
+files that correspond to your page, you also want to create an `actions.json`
+file that indicates what you want to happen during the test. Here's an example:
+
+    {
+      "default": {
+        "LG-P999": [
+          ["scroll_down", 4],
+          ["sleep", 5]
+        ],
+        "Galaxy Nexus": [
+          ["scroll_down", 7, 3],
+          ["sleep", "4"]
+        ]
+      }
+    }
+
+As you can see, this is basically a dictionary of dictionaries. The top-level
+is a dictionary of action sets. Normally you just have one, default, but you
+can add more in case you want to have multiple tests with different types
+of actions (the New York Times test, in `src/tests/ep1/nytimes` would be
+an exmaple of this).
+
+The next level down is a dictionary of actions corresponding to different
+models of phone (as determined by the `ro.product.model` property of
+Android). This is because different types of phones have different input
+properties (screen sizes, operating system versions, etc.). The set of
+actions is an array of arrays. Each action array corresponds to a single
+action performed during a test. As of this writing, there are four possible
+actions:
+
+*sleep* <secs>
+
+This action simply sleeps for the corresponding number of seconds (typically
+used to allow something to complete in the capture before possibly performing
+other actions)
+
+*scroll_down* <number of times> [number of steps]
+
+Triggers a scroll down the specified number of times. Optionally pass the
+number of steps parameter to make the action go slower is faster
+(lower=faster, default is 10).
+
+*scroll_up* <number of times> [number of steps]
+
+Triggers a scroll up the specified number of times. Optionally pass the
+number of steps parameter to make the action go slower is faster
+(lower=faster, default is 10).
+
+*double_tap* <x coordinate> <y coordinate>
+
+Triggers two tap events in succession, at the specified x and y coordinates
+(this is designed to allow zooming into a web page).
+
+--
+
+Triggering these actions requires posting to the JSON API endpoint on the
+eideticker desktop machine running the test. This is typically done as
+follows (using jQuery):
+
+    $.post('/api/captures/input', { 'commands': 'default' },
+           function() {
+               Eideticker.finish();
+           });
+
+Obviously you should replace "default" in the above example with the set of
+commands that you actually want to run.
