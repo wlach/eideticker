@@ -155,25 +155,25 @@ actions is an array of arrays. Each action array corresponds to a single
 action performed during a test. As of this writing, there are four possible
 actions:
 
-*sleep* <secs>
+*sleep* [secs]
 
 This action simply sleeps for the corresponding number of seconds (typically
 used to allow something to complete in the capture before possibly performing
 other actions)
 
-*scroll_down* <number of times> [number of steps]
+*scroll_down* [number of times] [number of steps]
 
 Triggers a scroll down the specified number of times. Optionally pass the
 number of steps parameter to make the action go slower is faster
 (lower=faster, default is 10).
 
-*scroll_up* <number of times> [number of steps]
+*scroll_up* [number of times] [number of steps]
 
 Triggers a scroll up the specified number of times. Optionally pass the
 number of steps parameter to make the action go slower is faster
 (lower=faster, default is 10).
 
-*double_tap* <x coordinate> <y coordinate>
+*double_tap* [x coordinate] [y coordinate]
 
 Triggers two tap events in succession, at the specified x and y coordinates
 (this is designed to allow zooming into a web page).
