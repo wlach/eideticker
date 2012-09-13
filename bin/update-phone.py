@@ -37,6 +37,7 @@ def main(args=sys.argv[1:]):
             dl = urllib2.urlopen(product['url'])
             with open(product_fname, 'w') as f:
                 f.write(dl.read())
+            print "Installing %s" % product['name']
             device.updateApp(product_fname)
 
 main()
