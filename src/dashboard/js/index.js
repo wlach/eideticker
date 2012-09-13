@@ -9,24 +9,58 @@ function parseDate(datestr) {
   return Date.UTC(year, month, day);
 }
 
-function updateContent(graphTitle, deviceId, testId, measureId) {
+var measures = {
+  'checkerboard': { 'shortDesc': 'Checkerboard',
+                    'longDesc': 'The measure is the sum of the percentages of frames that are checkerboarded over the entire capture. Lower values are better.' },
+  'uniqueframes': { 'shortDesc': 'Unique frames',
+                    'longDesc': 'The measure is a calculation of the average number of UNIQUE frames per second of capture. The theoretical maximum is 60 fps (which is what we are capturing), but note that if there periods where the page being captured is unchanging this number may be aritifically low.' },
+  'fps': { 'shortDesc': 'Frames per second',
+           'longDesc': 'The measure is a calculation of the average number of UNIQUE frames per second of capture. The theoretical maximum is 60 fps (which is what we are capturing), but note that if there periods where the page being captured is unchanging this number may be aritifically low.' },
+  'timetostableframe': { 'shortDesc': 'Time to first stable frame (seconds)',
+                         'longDesc': 'The time to the first frame of the capture where the image is stable (i.e. mostly unchanging). This is a startup metric that indicates roughly when things have stopped loading. Lower values are better.' }
+}
 
-  var measureDescription;
-  if (measureId === "checkerboard") {
-    measureDescription = 'The measure is the sum of the percentages of frames that are checkerboarded over the entire capture. Lower values are better.';
-  } else if (measureId === "fps") {
-    measureDescription = 'The measure is a calculation of the average number of UNIQUE frames per second of capture. The theoretical maximum is 60 fps (which is what we are capturing), but note that if there periods where the page being captured is unchanging this number may be aritifically low.';
-  } else {
-    measureDescription = 'The measure is a calculation of the total number of UNIQUE frames in the capture. Higher values generally indicate more fluid animations.';
-  }
+function updateContent(testInfo, deviceId, testId, measureId) {
+  $.getJSON('data-' + deviceId + '.json', function(graphDataForDevice) {
+    var testDataForDevice = graphDataForDevice[testInfo.key];
+    if (!testDataForDevice) {
+      $('#content').html("<p><b>No data for that device/test combination. :(</b></p>");
+      return;
+    }
 
-  $('#content').html(ich.graph({'title': graphTitle,
-                                'measureDescription': measureDescription
-                               }));
-  $('#measure-'+measureId).attr("selected", "true");
-  $('#measure').change(function() {
-    var newMeasure = $(this).val();
-    window.location.hash = '/' + [ deviceId, testId, newMeasure ].join('/');
+    // figure out which measures could apply to this graph
+    var availableMeasures = [];
+    Object.keys(testDataForDevice).forEach(function(type) {
+      Object.keys(testDataForDevice[type]).forEach(function(datestr) {
+        testDataForDevice[type][datestr].forEach(function(sample) {
+          Object.keys(measures).forEach(function(measure) {
+            if (jQuery.inArray(measure, Object.keys(sample)) !== -1 &&
+                jQuery.inArray(measure, availableMeasures) === -1) {
+              availableMeasures.push(measure);
+            }
+          });
+        });
+      });
+    });
+
+    $('#content').html(ich.graph({'title': testInfo.graphTitle,
+                                  'measureDescription': measures[measureId].longDesc,
+                                  'measures': availableMeasures.map(
+                                    function(measureId) {
+                                      return { 'id': measureId,
+                                               'desc': measures[measureId].shortDesc
+                                             };
+                                    })
+                                 }));
+
+    // update graph
+    updateGraph(testDataForDevice, measureId);
+
+    $('#measure-'+measureId).attr("selected", "true");
+    $('#measure').change(function() {
+      window.location.hash = '/' + [ deviceId, testId, newMeasure ].join('/');
+    });
+
   });
 }
 
@@ -48,7 +82,6 @@ function updateGraph(rawdata, measure) {
       color: color,
       data: []
     };
-
 
     var prevRevision = null;
     Object.keys(rawdata[type]).sort().forEach(function(datestr) {
@@ -97,22 +130,13 @@ function updateGraph(rawdata, measure) {
     seriesIndex += 2;
   });
 
-  var axisLabel;
-  if (measure == "checkerboard") {
-    axisLabel = "Checkerboard";
-  } else if (measure === "uniqueframes") {
-    axisLabel = "Unique frames";
-  } else {
-    axisLabel = "Frames per second";
-  }
-
   var plot = $.plot($("#graph-container"), graphdata, {
     xaxis: {
       mode: "time",
       timeformat: "%0m-%0d"
     },
     yaxis: {
-      axisLabel: axisLabel,
+      axisLabel: measures[measure].shortDesc,
       min: 0
     },
     legend: {
@@ -240,7 +264,13 @@ $(function() {
       'key': 'wikipedia',
       'graphTitle': 'wikipedia test',
       'defaultMeasure': 'checkerboard'
+    },
+    'startup-abouthome-cold': {
+      'key': 'startup-abouthome-cold',
+      'graphTitle': 'Cold startup to about:home',
+      'defaultMeasure': 'timetostableframe'
     }
+
   }
 
   Object.keys(testInfoDict).forEach(function(testkey) {
@@ -257,7 +287,7 @@ $(function() {
 
       var baseRoute = "/(" + deviceId + ")/(" + Object.keys(testInfoDict).join("|") + ")";
       routes[baseRoute] = {
-        '/(checkerboard|fps|uniqueframes)': {
+        '/(checkerboard|fps|uniqueframes|timetostableframe)': {
           on: function(deviceId, testId, measure) {
             // update all links to be relative to the new test or device
             $('#device-chooser').children('li').removeClass("active");
@@ -282,12 +312,7 @@ $(function() {
             });
 
             var testInfo = testInfoDict[testId];
-            updateContent(testInfo.graphTitle, deviceId, testId, measure);
-
-            // update graph
-            $.getJSON('data-' + deviceId + '.json', function(graphDataForDevice) {
-              updateGraph(graphDataForDevice[testInfo.key], measure);
-            });
+            updateContent(testInfo, deviceId, testId, measure);
           }
         }
       }

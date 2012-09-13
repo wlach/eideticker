@@ -57,6 +57,11 @@ default_tests = [
     {
         'name': 'wikipedia',
         'path': 'src/tests/ep1/en.wikipedia.org/en.wikipedia.org/wiki/Rorschach_test.html'
+    },
+    {
+        'name': 'startup-abouthome-cold',
+        'path': 'about:home',
+        'startup_test': True
     }
 ]
 
@@ -101,6 +106,8 @@ def runtest(dm, product, current_date, appname, appinfo, test, capture_name,
 
         args = ["runtest.py", "--url-params", urlparams,
                 "--name", capture_name, "--capture-file", capture_file ]
+        if test.get('startup_test'):
+            args.append("--startup-test")
         if enable_profiling:
             args.extend(["--profile-file", profile_package])
         retval = subprocess.call(args + [ appname, test['path'] ])
@@ -122,19 +129,12 @@ def runtest(dm, product, current_date, appname, appinfo, test, capture_name,
     video_file = os.path.join(outputdir, video_path)
     open(video_file, 'w').write(capture.get_video().read())
 
-    #  profile file
+    # profile file
     if enable_profiling:
         profile_path = os.path.join('profiles', 'sps-profile-%s.zip' % time.time())
         profile_file = os.path.join(outputdir, profile_path)
         symbolicated_profile_path = symbolicate_profile_package(profile_package, profile_path, profile_file)
         os.remove(profile_package)
-
-    # frames-per-second / num unique frames
-    num_unique_frames = videocapture.get_num_unique_frames(capture)
-    fps = videocapture.get_fps(capture)
-
-    # checkerboarding
-    checkerboard = videocapture.get_checkerboarding_area_duration(capture)
 
     # need to initialize dict for product if not there already
     if not data[test['name']].get(product['name']):
@@ -142,14 +142,21 @@ def runtest(dm, product, current_date, appname, appinfo, test, capture_name,
 
     if not data[test['name']][product['name']].get(current_date):
         data[test['name']][product['name']][current_date] = []
-    datapoint = { 'fps': fps,
-                  'uuid': uuid.uuid1().hex,
-                  'checkerboard': checkerboard,
-                  'uniqueframes': num_unique_frames,
+
+    datapoint = { 'uuid': uuid.uuid1().hex,
                   'video': video_path,
                   'appdate': appinfo.get('date'),
                   'buildid': appinfo.get('buildid'),
                   'revision': appinfo.get('revision') }
+
+    if test.get('startup_test'):
+        datapoint['timetostableframe'] = videocapture.get_stable_frame_time(capture)
+    else:
+        # standard test metrics
+        datapoint['uniqueframes'] = videocapture.get_num_unique_frames(capture)
+        datapoint['fps'] = videocapture.get_fps(capture)
+        datapoint['checkerboard'] = videocapture.get_checkerboarding_area_duration(capture)
+
     if enable_profiling:
         datapoint['profile'] = symbolicated_profile_path
 

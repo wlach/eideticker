@@ -109,9 +109,9 @@
         <div id="measure-form">
           <form>
             <select id="measure" type="text">
-              <option id="measure-fps" value="fps">Frames Per Second</option>
-              <option id="measure-uniqueframes" value="uniqueframes">Unique Frames</option>
-              <option id="measure-checkerboard" value="checkerboard">Checkerboard</option>
+              {{#measures}}
+              <option id="measure-{{id}}" value="{{id}}">{{desc}}</option>
+              {{/measures}}
             </select>
             <span class="help-inline">
               {{measureDescription}}

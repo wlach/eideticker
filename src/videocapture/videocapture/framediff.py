@@ -64,3 +64,6 @@ def get_stable_frame(capture, threshold = 2048):
         if framediff_sums[i] > threshold:
             return i+1
     return len(framediff_sums)-1
+
+def get_stable_frame_time(capture, threshold = 2048):
+    return get_stable_frame(capture, threshold) / 60.0
