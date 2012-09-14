@@ -231,6 +231,7 @@ class BrowserRunner(object):
                     return
             raise Exception("Failed to start Fennec after three tries")
         else:
+            self.is_profiling = False # never profiling with non-fennec browsers
             self.dm.launchApplication(self.appname, self.activity, self.intent,
                                       url=self.url)
 
