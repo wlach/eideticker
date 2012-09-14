@@ -31,9 +31,10 @@ if [ -z $NUM_RUNS ]; then
     NUM_RUNS=5
 fi
 
-# Update timeout is per sequence of test runs. Default is 10 minutes per test
+# Update timeout is per sequence of test runs. Default is 30 minutes per test
+# (quite long)
 if [ -z $UPDATE_TIMEOUT ]; then
-    UPDATE_TIMEOUT=$((600*NUM_RUNS))
+    UPDATE_TIMEOUT=$((1800*NUM_RUNS))
 fi
 
 if [ -z $EXPIRY_THRESHOLD ]; then
