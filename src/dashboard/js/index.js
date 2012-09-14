@@ -58,6 +58,7 @@ function updateContent(testInfo, deviceId, testId, measureId) {
 
     $('#measure-'+measureId).attr("selected", "true");
     $('#measure').change(function() {
+      var newMeasure = $(this).val();
       window.location.hash = '/' + [ deviceId, testId, newMeasure ].join('/');
     });
 
