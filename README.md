@@ -93,16 +93,69 @@ video encoding/decoding/analysis step). For this you want to pass in
 
     ./bin/get-metric-for-build.py --use-apks --no-capture --get-internal-checkerboard-stats src/tests/ep1/taskjs.org/index.html nightly.apk
 
-#### Dashboard Mode
+### Eideticker "dashboard"
 
 Dashboard mode is used to generate a dashboard of eideticker results, like
 what you see at http://wrla.ch/eideticker/dashboard. From a toplevel, it
 is run from a script called `bin/run-update-dashboard.sh`, which can be called
 standalone. This script then it turn calls another script called
 `bin/update-dashboard.py` with various arguments corresponding to firefox
-version, test to run, etc. The dashboard is currently under heavy development
-and is not meant to be a developer/qa facing tool. For now, if you have need
-to use/modify it, please refer to the source. This is not yet supported for B2G.
+version, test to run, etc. This is not yet supported for B2G.
+
+Setting up a new instance of the dashboard has two components: setting up one
+or more "clients" (machines that run the tests) and setting up the server
+(machines that will serve up the results).
+
+#### Dashboard Server Setup
+
+* Install nginx, ssh, and rsync if not installed already.
+* Create an "eideticker" user on the machine (with home directory).
+* As the newly-created eideticker user, create a "www" subdirectory.
+* Create an nginx configuration where applicable (on Redhat-based systems,
+`/etc/nginx/conf.d`). It should look something like this:
+
+    server {
+            listen 80; #or change this to your public IP address eg 1.1.1.1:80
+            server_name eideticker;
+            server_name eideticker.wrla.ch;
+            access_log /var/log/nginx/eideticker.access_log;
+            error_log /var/log/nginx/eideticker.error_log;
+
+            location / {
+                    root   /home/eideticker/www;
+                    index  index.html index.htm;
+                    add_header 'Access-Control-Allow-Origin' '*';
+            }
+    }
+
+Note the Access-Control-Origin header, which allows us to integrate the SPS
+profiler to request eideticker resources directly (useful for direct linking
+to capture analysis).
+* Finally, restart nginx. You will need to configure the clients before you
+will see anything on the dashboard.
+
+#### Dashboard Client Setup
+
+Each eideticker client works by creating its own static copy of the dashboard,
+then copying the relevant files to the server setup above.
+
+To setup to capture and store results
+
+FIXME: TODO
+
+To setup to synchronize to the eideticker server:
+
+* Generate an ssh key for the client machine, if it doesn't have one already.
+* On the server, copy/paste the generated public key into
+  `/home/eideticker/.ssh/authorized_keys` (if you're creating this file /
+  directory for the first time, be sure that the directory has 700 (rwx only
+  for its owner) permissions and the file has 600 (rw only for its owner)
+  permissions.
+* Set up the sync-dashboard script to synchronize the dashboard data to the
+  server on a fixed schedule using cron. Use `crontab -e` to add an entry like
+  this:
+
+    0 0 * * * /home/mozauto/src/eideticker/bin/sync-dashboard.sh eideticker.wrla.ch
 
 ### Eideticker "tests"
 
