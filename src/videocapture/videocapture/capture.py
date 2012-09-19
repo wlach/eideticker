@@ -29,6 +29,10 @@ class Capture(object):
             self.archive = ZipFile(filename, 'r')
         except BadZipfile:
             raise BadCapture("Capture file '%s' not a .zip file")
+
+        if 'metadata.json' not in self.archive.namelist():
+            raise BadCapture("No metadata in capture")
+
         self.metadata = json.loads(self.archive.open('metadata.json').read())
         # A cache file for storing hard-to-generate data about the capture
         self.cache_filename = filename + '.cache'
