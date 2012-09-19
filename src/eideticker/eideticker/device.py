@@ -157,9 +157,9 @@ class EidetickerMixin(object):
         x = int(self.dimensions[0] / 2)
         ybottom = self.dimensions[1] - 200
         ytop = 240
-        for i in range(numtimes):
+        for i in range(int(numtimes)):
             events.append(self._getDragEvents((x,ybottom), (x,ytop), 0.1,
-                                              numsteps))
+                                              int(numsteps)))
         return events
 
     def _getScrollUpEvents(self, numtimes=1, numsteps=10):
@@ -167,9 +167,9 @@ class EidetickerMixin(object):
         x = int(self.dimensions[0] / 2)
         ybottom = self.dimensions[1] - 100
         ytop = 240
-        for i in range(numtimes):
+        for i in range(int(numtimes)):
             events.append(self._getDragEvents((x,ytop), (x,ybottom), 0.1,
-                                              numsteps))
+                                              int(numsteps)))
         return events
 
     def _getCmdEvents(self, cmd, args):
