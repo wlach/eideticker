@@ -229,7 +229,7 @@ class CaptureController(object):
                           os.path.join(rewritten_imagedir, '%d.png'),
                           moviefile.name), close_fds=True).wait()
 
-        print "Writing final capture..."
+        print "Writing final capture '%s'..." % self.output_filename
         zipfile = ZipFile(self.output_filename, 'a')
 
         zipfile.writestr('metadata.json',
