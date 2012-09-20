@@ -250,5 +250,6 @@ class BrowserRunner(object):
         if self.is_profiling:
             self.get_profile_and_symbols(self.profile_file)
 
-        if not self.dm.removeDir(self.remote_profile_dir):
-            print "WARNING: Failed to remove profile (%s) from device" % self.remote_profile_dir
+            if self.remote_profile_dir and not \
+                    self.dm.removeDir(self.remote_profile_dir):
+                print "WARNING: Failed to remove profile (%s) from device" % self.remote_profile_dir
