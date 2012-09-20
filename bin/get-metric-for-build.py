@@ -56,8 +56,9 @@ def get_build_for_date(date):
     return fname
 
 def run_test(device, outputdir, outputfile, test, url_params, num_runs,
-             startup_test, no_capture, get_internal_checkerboard_stats, apk=None,
-             appname = None, appdate = None, profile_file=None):
+             startup_test, no_capture, get_internal_checkerboard_stats,
+             apk=None, appname = None, appdate = None, profile_file=None,
+             dmtype="adb", host=None, port=None):
     if apk:
         appinfo = eideticker.get_fennec_appinfo(apk)
         appname = appinfo['appname']
@@ -90,6 +91,12 @@ def run_test(device, outputdir, outputfile, test, url_params, num_runs,
             args.extend(["--capture-file", capture_file])
         if profile_file:
             args.extend(["--profile-file", profile_file])
+        if dmtype:
+            args.extend(["-m", dmtype])
+        if host:
+            args.extend(["--host", host])
+        if port:
+            args.extend(["--port", port])
         print args
         retval = subprocess.call(args)
         if retval != 0:
@@ -238,7 +245,8 @@ def main(args=sys.argv[1:]):
     elif not options.date or (not options.start_date and not options.end_date):
         parser.error("Must specify date, date range, a set of appnames (e.g. org.mozilla.fennec) or a set of apks (if --use-apks is specified)")
 
-    device = eideticker.getDevice(options)
+    devicePrefs = eideticker.getDevicePrefs(options)
+    device = eideticker.getDevice(**devicePrefs)
 
     if options.outputdir:
         outputfile = os.path.join(options.outputdir, "metric-test-%s.json" % time.time())
@@ -253,7 +261,7 @@ def main(args=sys.argv[1:]):
                      options.startup_test,
                      options.no_capture,
                      options.get_internal_checkerboard_stats, appname=appname,
-                     profile_file=options.profile_file)
+                     profile_file=options.profile_file, **devicePrefs)
     elif apks:
         for apk in apks:
             run_test(device, options.outputdir,
@@ -263,7 +271,7 @@ def main(args=sys.argv[1:]):
                      options.startup_test,
                      options.no_capture,
                      options.get_internal_checkerboard_stats, apk=apk,
-                     profile_file=options.profile_file)
+                     profile_file=options.profile_file, **devicePrefs)
     else:
         for date in dates:
             apk = get_build_for_date(date)
@@ -275,7 +283,7 @@ def main(args=sys.argv[1:]):
                      options.no_capture,
                      options.get_internal_checkerboard_stats, apk=apk,
                      appdate=date,
-                     profile_file=options.profile_file)
+                     profile_file=options.profile_file, **devicePrefs)
 
 
 main()

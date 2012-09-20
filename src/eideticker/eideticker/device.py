@@ -265,18 +265,25 @@ class DroidSUT(mozdevice.DroidSUT, EidetickerMixin):
         self.installApp(pathOnDevice)
         self.removeFile(pathOnDevice)
 
-def getDevice(options):
-    '''Gets an eideticker device according to parameters'''
-
+def getDevicePrefs(options):
+    '''Gets a dictionary of eideticker device parameters'''
+    optionDict = {}
     if options.dmtype:
-        dmtype = options.dmtype
+        optionDict['dmtype'] = options.dmtype
     else:
-        dmtype = os.environ.get('DM_TRANS', 'adb')
+        optionDict['dmtype'] = os.environ.get('DM_TRANS', 'adb')
 
     host = options.host
-    if not host and dmtype == "sut":
+    if not host and optionDict['dmtype'] == "sut":
         host = os.environ.get('TEST_DEVICE')
-    port = options.port
+
+    optionDict['host'] = host
+    optionDict['port'] = options.port
+
+    return optionDict
+
+def getDevice(dmtype="adb", host=None, port=None):
+    '''Gets an eideticker device according to parameters'''
 
     print "Using %s interface (host: %s, port: %s)" % (dmtype, host, port)
     if dmtype == "adb":

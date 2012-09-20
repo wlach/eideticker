@@ -19,7 +19,8 @@ def main(args=sys.argv[1:]):
     options, args = parser.parse_args()
 
     # Create a device object to interface with the phone
-    device = eideticker.getDevice(options)
+    devicePrefs = eideticker.getDevicePrefs(options)
+    device = eideticker.getDevice(**devicePrefs)
 
     print "READY"
     sys.stdout.flush()

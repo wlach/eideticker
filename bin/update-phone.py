@@ -25,7 +25,8 @@ def main(args=sys.argv[1:]):
 
     print products
 
-    device = eideticker.getDevice(options)
+    devicePrefs = eideticker.getDevicePrefs(options)
+    device = eideticker.getDevice(**devicePrefs)
 
     for product in products:
         if not product.get('url'):

@@ -85,7 +85,8 @@ def symbolicate_profile_package(profile_package, profile_path, profile_file):
         return None
 
 def runtest(dm, product, current_date, appname, appinfo, test, capture_name,
-            outputdir, datafile, data, enable_profiling=False):
+            outputdir, datafile, data, enable_profiling=False,
+            dmtype="adb", host=None, port=None):
     capture_file = os.path.join(CAPTURE_DIR,
                                 "%s-%s-%s-%s.zip" % (test['name'],
                                                      appname,
@@ -108,6 +109,12 @@ def runtest(dm, product, current_date, appname, appinfo, test, capture_name,
                 "--name", capture_name, "--capture-file", capture_file ]
         if test.get('startup_test'):
             args.append("--startup-test")
+        if dmtype:
+            args.extend(["-m", dmtype])
+        if host:
+            args.extend(["--host", host])
+        if port:
+            args.extend(["--port", port])
         if enable_profiling:
             args.extend(["--profile-file", profile_package])
         retval = subprocess.call(args + [ appname, test['path'] ])
@@ -220,7 +227,8 @@ def main(args=sys.argv[1:]):
     if os.path.isfile(datafile):
         data.update(json.loads(open(datafile).read()))
 
-    device = eideticker.getDevice(options)
+    devicePrefs = eideticker.getDevicePrefs(options)
+    device = eideticker.getDevice(**devicePrefs)
 
     # update the device list for the dashboard
     devices = {}
@@ -257,7 +265,7 @@ def main(args=sys.argv[1:]):
             # Now run the test
             runtest(device, product, current_date, appname, appinfo, test,
                     capture_name + " #%s" % i, outputdir, datafile, data,
-                    enable_profiling=options.enable_profiling)
+                    enable_profiling=options.enable_profiling, **devicePrefs)
 
             # Kill app after test complete
             device.killProcess(appname)

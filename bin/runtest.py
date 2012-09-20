@@ -182,7 +182,8 @@ def main(args=sys.argv[1:]):
                                          datetime.datetime.now().isoformat())
 
     # Create a device object to interface with the phone
-    device = eideticker.getDevice(options)
+    devicePrefs = eideticker.getDevicePrefs(options)
+    device = eideticker.getDevice(**devicePrefs)
 
     if appname and device.processExist(appname):
         print "An instance of %s is running. Please stop it before running Eideticker." % appname
