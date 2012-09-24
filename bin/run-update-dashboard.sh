@@ -70,6 +70,10 @@ for TEST in $TESTS; do
   # Clean out /tmp/eideticker directory (in case there are any artifacts
   # from unsuccessful runs kicking around)
   rm -rf /tmp/eideticker/*
+
+  # Do a full cleanup before every test run
+  ./bin/cleanup-phone.py
+
   echo "Running $TEST"
   timeout $UPDATE_TIMEOUT ./bin/update-dashboard.py --product nightly --num-runs $NUM_RUNS $EXTRA_UPDATE_DASHBOARD_ARGS $TEST src/dashboard
   RET=$?
