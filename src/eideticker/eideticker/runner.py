@@ -231,8 +231,7 @@ class BrowserRunner(object):
         # Process the profile
         if self.is_profiling:
             self.get_profile_and_symbols(remote_sps_profile_location, self.profile_file)
-
-        self.dm.removeFile(remote_sps_profile_location)
+            self.dm.removeFile(remote_sps_profile_location)
 
         # Remove the Mozilla profile from the sdcard (not to be confused with
         # the sampling profile)
