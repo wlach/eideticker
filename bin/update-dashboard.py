@@ -105,6 +105,9 @@ def runtest(dm, product, current_date, appname, appinfo, test, capture_name,
     for i in range(3):
         print "Running test (try %s of 3)" % (i+1)
 
+        # Kill any existing instances of the processes before starting
+        device.killProcess(appname)
+
         args = ["runtest.py", "--url-params", urlparams,
                 "--name", capture_name, "--capture-file", capture_file ]
         if test.get('startup_test'):
@@ -259,9 +262,6 @@ def main(args=sys.argv[1:]):
 
         # Run the test the specified number of times
         for i in range(num_runs):
-            # Kill any existing instances of the processes
-            device.killProcess(appname)
-
             # Now run the test
             runtest(device, product, current_date, appname, appinfo, test,
                     capture_name + " #%s" % i, outputdir, datafile, data,
