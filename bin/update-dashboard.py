@@ -106,7 +106,7 @@ def runtest(dm, product, current_date, appname, appinfo, test, capture_name,
         print "Running test (try %s of 3)" % (i+1)
 
         # Kill any existing instances of the processes before starting
-        device.killProcess(appname)
+        dm.killProcess(appname)
 
         args = ["runtest.py", "--url-params", urlparams,
                 "--name", capture_name, "--capture-file", capture_file ]
