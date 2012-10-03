@@ -197,8 +197,7 @@ class BrowserRunner(object):
             profile = mozprofile.Profile(preferences = preferences)
             self.remote_profile_dir = "/".join([self.dm.getDeviceRoot(),
                                                 os.path.basename(profile.profile)])
-            if not self.dm.pushDir(profile.profile, self.remote_profile_dir):
-                raise Exception("Failed to copy profile to device")
+            self.dm.pushDir(profile.profile, self.remote_profile_dir)
 
             if self.is_profiling:
                 self.profile_file = profile_file
@@ -211,8 +210,11 @@ class BrowserRunner(object):
             # sometimes fennec fails to start, so we'll try three times...
             for i in range(3):
                 print "Launching %s (try %s of 3)" % (self.appname, i+1)
-                if self.dm.launchFennec(self.appname, url=self.url, mozEnv=mozEnv, extraArgs=args):
-                    return
+                try:
+                    self.dm.launchFennec(self.appname, url=self.url, mozEnv=mozEnv, extraArgs=args)
+                except DMError:
+                    continue
+                return # Ok!
             raise Exception("Failed to start Fennec after three tries")
         else:
             self.is_profiling = False # never profiling with non-fennec browsers
@@ -237,6 +239,6 @@ class BrowserRunner(object):
 
         # Remove the Mozilla profile from the sdcard (not to be confused with
         # the sampling profile)
-        if self.remote_profile_dir and not \
-                self.dm.removeDir(self.remote_profile_dir):
+        if self.remote_profile_dir:
+            self.dm.removeDir(self.remote_profile_dir)
             print "WARNING: Failed to remove profile (%s) from device" % self.remote_profile_dir
