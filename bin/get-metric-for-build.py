@@ -18,6 +18,7 @@ import videocapture
 import zipfile
 
 CAPTURE_DIR = os.path.join(os.path.dirname(__file__), "../captures")
+PROFILE_DIR = os.path.join(os.path.dirname(__file__), "../profiles")
 DOWNLOAD_DIR = os.path.join(os.path.dirname(__file__), "../downloads")
 CHECKERBOARD_REGEX = re.compile('.*GeckoLayerRendererProf.*1000ms:.*\ '
                                 '([0-9]+\.[0-9]+)\/([0-9]+).*')
@@ -57,7 +58,7 @@ def get_build_for_date(date):
 
 def run_test(device, outputdir, outputfile, test, url_params, num_runs,
              startup_test, no_capture, get_internal_checkerboard_stats,
-             apk=None, appname = None, appdate = None, profile_file=None,
+             apk=None, appname = None, appdate = None, enable_profiling=False,
              dmtype="adb", host=None, port=None):
     if apk:
         appinfo = eideticker.get_fennec_appinfo(apk)
@@ -76,9 +77,14 @@ def run_test(device, outputdir, outputfile, test, url_params, num_runs,
         device.killProcess(appname)
 
         # Now run the test
+        curtime = int(time.time())
         capture_file = os.path.join(CAPTURE_DIR,
                                     "metric-test-%s-%s.zip" % (appname,
-                                                               int(time.time())))
+                                                               curtime))
+        if enable_profiling:
+            profile_file = os.path.join(PROFILE_DIR,
+                                        "profile-%s-%s.zip" % (appname, curtime))
+
         args = ["runtest.py", "--url-params", url_params, appname, test]
         if get_internal_checkerboard_stats:
             checkerboard_logfile = tempfile.NamedTemporaryFile()
@@ -89,7 +95,7 @@ def run_test(device, outputdir, outputfile, test, url_params, num_runs,
             args.extend(["--no-capture"])
         else:
             args.extend(["--capture-file", capture_file])
-        if profile_file:
+        if enable_profiling:
             args.extend(["--profile-file", profile_file])
         if dmtype:
             args.extend(["-m", dmtype])
@@ -120,6 +126,9 @@ def run_test(device, outputdir, outputfile, test, url_params, num_runs,
                 video_file = os.path.join(outputdir, video_path)
                 open(video_file, 'w').write(capture.get_video().read())
                 capture_result['video'] = video_path
+
+        if enable_profiling:
+            capture_result['profile'] = profile_file
 
         if get_internal_checkerboard_stats:
             internal_checkerboard_totals = parse_checkerboard_log(checkerboard_logfile.name)
@@ -157,8 +166,13 @@ def run_test(device, outputdir, outputfile, test, url_params, num_runs,
             print "  %s" % map(lambda c: c['checkerboard'], captures)
             print
 
-        print "  Capture files (for further reference):"
+        print "  Capture files:"
         print "  Capture files: %s" % map(lambda c: c['file'], captures)
+        print
+
+    if enable_profiling:
+        print "  Profile files:"
+        print "  Profile files: %s" % map(lambda c: c['profile'], captures)
         print
 
     if get_internal_checkerboard_stats:
@@ -192,9 +206,9 @@ def main(args=sys.argv[1:]):
                       dest = "no_capture",
                       help = "run through the test, but don't actually "
                       "capture anything")
-    parser.add_option("--profile-file", action="store",
-                      type="string", dest = "profile_file",
-                      help="Collect a performance profile using the built in profiler.")
+    parser.add_option("--enable-profiling", action="store_true",
+                      dest = "enable_profiling",
+                      help="Collect performance profiles using the built in profiler.")
     parser.add_option("--get-internal-checkerboard-stats",
                       action="store_true",
                       dest="get_internal_checkerboard_stats",
@@ -261,7 +275,7 @@ def main(args=sys.argv[1:]):
                      options.startup_test,
                      options.no_capture,
                      options.get_internal_checkerboard_stats, appname=appname,
-                     profile_file=options.profile_file, **devicePrefs)
+                     enable_profiling=options.enable_profiling, **devicePrefs)
     elif apks:
         for apk in apks:
             run_test(device, options.outputdir,
@@ -271,7 +285,7 @@ def main(args=sys.argv[1:]):
                      options.startup_test,
                      options.no_capture,
                      options.get_internal_checkerboard_stats, apk=apk,
-                     profile_file=options.profile_file, **devicePrefs)
+                     enable_profiling=options.enable_profiling, **devicePrefs)
     else:
         for date in dates:
             apk = get_build_for_date(date)
@@ -283,7 +297,7 @@ def main(args=sys.argv[1:]):
                      options.no_capture,
                      options.get_internal_checkerboard_stats, apk=apk,
                      appdate=date,
-                     profile_file=options.profile_file, **devicePrefs)
+                     enable_profiling=options.enable_profiling, **devicePrefs)
 
 
 main()

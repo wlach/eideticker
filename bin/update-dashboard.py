@@ -67,22 +67,12 @@ default_tests = [
 
 DOWNLOAD_DIR = os.path.join(os.path.dirname(__file__), "../downloads")
 CAPTURE_DIR = os.path.join(os.path.dirname(__file__), "../captures")
-GECKO_PROFILER_ADDON_DIR = os.path.join(os.path.dirname(__file__), "../src/GeckoProfilerAddon")
 
 def kill_app(dm, appname):
     procs = dm.getProcessList()
     for (pid, name, user) in procs:
       if name == appname:
         dm.runCmd(["shell", "echo kill %s | su" % pid])
-
-def symbolicate_profile_package(profile_package, profile_path, profile_file):
-    retval = subprocess.call(["./symbolicate.sh",
-                              os.path.abspath(profile_package), os.path.abspath(profile_file)],
-                              cwd=GECKO_PROFILER_ADDON_DIR)
-    if retval == 0:
-        return profile_path
-    else:
-        return None
 
 def runtest(dm, product, current_date, appname, appinfo, test, capture_name,
             outputdir, datafile, data, enable_profiling=False,
@@ -93,11 +83,8 @@ def runtest(dm, product, current_date, appname, appinfo, test, capture_name,
                                                      appinfo.get('date'),
                                                      int(time.time())))
     if enable_profiling:
-        profile_package = os.path.join(CAPTURE_DIR,
-                                       "profile-package-%s-%s-%s-%s.zip" % (test['name'],
-                                                                            appname,
-                                                                            appinfo.get('date'),
-                                                                            int(time.time())))
+        profile_path = os.path.join(outputdir, 'profiles',
+                                    'sps-profile-%s.zip' % time.time())
 
     urlparams = test.get('urlparams', '')
 
@@ -119,7 +106,7 @@ def runtest(dm, product, current_date, appname, appinfo, test, capture_name,
         if port:
             args.extend(["--port", port])
         if enable_profiling:
-            args.extend(["--profile-file", profile_package])
+            args.extend(["--profile-file", profile_path])
         retval = subprocess.call(args + [ appname, test['path'] ])
         if retval == 0:
             test_completed = True
@@ -138,13 +125,6 @@ def runtest(dm, product, current_date, appname, appinfo, test, capture_name,
     video_path = os.path.join('videos', 'video-%s.webm' % time.time())
     video_file = os.path.join(outputdir, video_path)
     open(video_file, 'w').write(capture.get_video().read())
-
-    # profile file
-    if enable_profiling:
-        profile_path = os.path.join('profiles', 'sps-profile-%s.zip' % time.time())
-        profile_file = os.path.join(outputdir, profile_path)
-        symbolicated_profile_path = symbolicate_profile_package(profile_package, profile_path, profile_file)
-        os.remove(profile_package)
 
     # need to initialize dict for product if not there already
     if not data[test['name']].get(product['name']):
@@ -168,7 +148,7 @@ def runtest(dm, product, current_date, appname, appinfo, test, capture_name,
         datapoint['checkerboard'] = videocapture.get_checkerboarding_area_duration(capture)
 
     if enable_profiling:
-        datapoint['profile'] = symbolicated_profile_path
+        datapoint['profile'] = profile_path
 
     data[test['name']][product['name']][current_date].append(datapoint)
 

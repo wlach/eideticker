@@ -12,6 +12,7 @@ import optparse
 import os
 import subprocess
 import sys
+import tempfile
 import time
 import urllib
 import urlparse
@@ -23,6 +24,7 @@ BINDIR = os.path.dirname(__file__)
 CAPTURE_DIR = os.path.abspath(os.path.join(BINDIR, "../captures"))
 TEST_DIR = os.path.abspath(os.path.join(BINDIR, "../src/tests"))
 EIDETICKER_TEMP_DIR = "/tmp/eideticker"
+GECKO_PROFILER_ADDON_DIR = os.path.join(os.path.dirname(__file__), "../src/GeckoProfilerAddon")
 
 capture_controller = videocapture.CaptureController(custom_tempdir=EIDETICKER_TEMP_DIR)
 
@@ -261,15 +263,21 @@ def main(args=sys.argv[1:]):
     print "Test URL is: %s" % url
     if options.b2g:
         runner = eideticker.B2GRunner(device, url, EIDETICKER_TEMP_DIR)
-    else: 
+    else:
         runner = eideticker.BrowserRunner(device, appname, url)
+
+    temp_profile_file_name = None
+    if options.profile_file:
+        temp_profile_file = tempfile.NamedTemporaryFile()
+        temp_profile_file_name = temp_profile_file.name
+
     # FIXME: currently start capture before launching app because we wait until app is
     # launched -- would be better to make waiting optional and then start capture
     # after triggering app launch to reduce latency?
     if options.startup_test and not options.no_capture:
         capture_controller.start_capture(capture_file, device.hdmiResolution,
                                          capture_metadata)
-    runner.start(profile_file=options.profile_file)
+    runner.start(profile_file=temp_profile_file_name)
 
     # Keep on capturing until we timeout
     if capture_timeout:
@@ -299,6 +307,10 @@ def main(args=sys.argv[1:]):
 
     runner.stop()
 
+    # Clean up checkerboard logging preferences
+    if options.checkerboard_log_file:
+        device.setprop("log.tag.GeckoLayerRendererProf", old_log_val)
+
     if capture_file:
         print "Converting capture..."
         try:
@@ -307,9 +319,13 @@ def main(args=sys.argv[1:]):
             print "Aborting"
             sys.exit(1)
 
-    # Clean up checkerboard logging preferences
-    if options.checkerboard_log_file:
-        device.setprop("log.tag.GeckoLayerRendererProf", old_log_val)
+    # profile file
+    if options.profile_file:
+        subprocess.check_call(["./symbolicate.sh",
+                         os.path.abspath(temp_profile_file_name),
+                         os.path.abspath(options.profile_file)],
+                        cwd=GECKO_PROFILER_ADDON_DIR)
+
 
 
 main()
