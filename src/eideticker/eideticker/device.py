@@ -215,7 +215,7 @@ class DroidADB(mozdevice.DroidADB, EidetickerMixin):
         didKillProcess = False
         for (pid, name, user) in procs:
             if name == appname:
-                self.runCmd(["shell", "echo kill %s | su" % pid])
+                self._runCmd(["shell", "echo kill %s | su" % pid])
                 didKillProcess = True
         return didKillProcess
 
