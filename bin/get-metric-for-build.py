@@ -59,7 +59,7 @@ def get_build_for_date(date):
 def run_test(device, outputdir, outputfile, test, url_params, num_runs,
              startup_test, no_capture, get_internal_checkerboard_stats,
              apk=None, appname = None, appdate = None, enable_profiling=False,
-             dmtype="adb", host=None, port=None):
+             extra_prefs="{}", dmtype="adb", host=None, port=None):
     if apk:
         appinfo = eideticker.get_fennec_appinfo(apk)
         appname = appinfo['appname']
@@ -85,7 +85,8 @@ def run_test(device, outputdir, outputfile, test, url_params, num_runs,
             profile_file = os.path.join(PROFILE_DIR,
                                         "profile-%s-%s.zip" % (appname, curtime))
 
-        args = ["runtest.py", "--url-params", url_params, appname, test]
+        args = ["runtest.py", "--url-params", url_params,
+                "--extra-prefs", extra_prefs, appname, test]
         if get_internal_checkerboard_stats:
             checkerboard_logfile = tempfile.NamedTemporaryFile()
             args.extend(["--checkerboard-log-file", checkerboard_logfile.name])
@@ -220,6 +221,10 @@ def main(args=sys.argv[1:]):
     parser.add_option("--url-params", action="store",
                       dest="url_params", default="",
                       help="additional url parameters for test")
+    parser.add_option("--extra-prefs", action="store", dest="extra_prefs",
+                      default="{}",
+                      help="Extra profile preference for Firefox browsers. " \
+                          "Must be passed in as a JSON dictionary")
     parser.add_option("--use-apks", action="store_true", dest="use_apks",
                       help="use and install android APKs as part of test (instead of specifying appnames)")
     parser.add_option("--date", action="store", dest="date",
@@ -236,6 +241,15 @@ def main(args=sys.argv[1:]):
 
     if len(args) == 0:
         parser.error("Must specify at least one argument: the path to the test")
+
+    try:
+        # we only need to validate extra_prefs, as we'll just be passing it down
+        # to runtest
+        json.loads(options.extra_prefs)
+    except ValueError:
+        parser.error("Error processing extra preferences: not valid JSON!")
+        raise
+
 
     dates = []
     appnames = []
@@ -274,8 +288,11 @@ def main(args=sys.argv[1:]):
                      options.num_runs,
                      options.startup_test,
                      options.no_capture,
-                     options.get_internal_checkerboard_stats, appname=appname,
-                     enable_profiling=options.enable_profiling, **devicePrefs)
+                     options.get_internal_checkerboard_stats,
+                     appname=appname,
+                     enable_profiling=options.enable_profiling,
+                     extra_prefs=extra_prefs,
+                     **devicePrefs)
     elif apks:
         for apk in apks:
             run_test(device, options.outputdir,
@@ -285,7 +302,9 @@ def main(args=sys.argv[1:]):
                      options.startup_test,
                      options.no_capture,
                      options.get_internal_checkerboard_stats, apk=apk,
-                     enable_profiling=options.enable_profiling, **devicePrefs)
+                     enable_profiling=options.enable_profiling,
+                     extra_prefs=extra_prefs,
+                     **devicePrefs)
     else:
         for date in dates:
             apk = get_build_for_date(date)
@@ -297,7 +316,9 @@ def main(args=sys.argv[1:]):
                      options.no_capture,
                      options.get_internal_checkerboard_stats, apk=apk,
                      appdate=date,
-                     enable_profiling=options.enable_profiling, **devicePrefs)
+                     enable_profiling=options.enable_profiling,
+                     extra_prefs=extra_prefs,
+                     **devicePrefs)
 
 
 main()

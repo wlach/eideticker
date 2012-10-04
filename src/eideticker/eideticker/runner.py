@@ -102,10 +102,11 @@ class BrowserRunner(object):
     remote_profile_dir = None
     intent = "android.intent.action.VIEW"
 
-    def __init__(self, dm, appname, url):
+    def __init__(self, dm, appname, url, extra_prefs={}):
         self.dm = dm
         self.appname = appname
         self.url = url
+        self.extra_prefs = extra_prefs
 
         activity_mappings = {
             'com.android.browser': '.BrowserActivity',
@@ -187,6 +188,7 @@ class BrowserRunner(object):
             preferences = { 'gfx.show_checkerboard_pattern': False,
                             'browser.firstrun.show.uidiscovery': False,
                             'toolkit.telemetry.prompted': 2 }
+            preferences.update(self.extra_prefs)
 
             # Add frame counter to correlate video capture with profile
             if self.is_profiling:

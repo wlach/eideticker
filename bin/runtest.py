@@ -128,6 +128,10 @@ def main(args=sys.argv[1:]):
     parser.add_option("--b2g", action="store_true",
                       dest="b2g", default=False,
                       help="Run in B2G environment. You do not need to pass an appname")
+    parser.add_option("--extra-prefs", action="store", dest="extra_prefs",
+                      default="{}",
+                      help="Extra profile preference for Firefox browsers. " \
+                          "Must be passed in as a JSON dictionary")
     parser.add_option("--profile-file", action="store",
                       type="string", dest = "profile_file",
                       help="Collect a performance profile using the built in profiler.")
@@ -145,6 +149,13 @@ def main(args=sys.argv[1:]):
             sys.exit(1)
 
         (appname, testpath) = args
+
+    try:
+        extra_prefs = json.loads(options.extra_prefs)
+    except ValueError:
+        parser.error("Error processing extra preferences: not valid JSON!")
+        raise
+
     # Tests must be in src/tests/... unless it is a startup test and the
     # path is about:home (indicating we want to measure startup to the
     # home screen)
@@ -264,7 +275,7 @@ def main(args=sys.argv[1:]):
     if options.b2g:
         runner = eideticker.B2GRunner(device, url, EIDETICKER_TEMP_DIR)
     else:
-        runner = eideticker.BrowserRunner(device, appname, url)
+        runner = eideticker.BrowserRunner(device, appname, url, extra_prefs=extra_prefs)
 
     temp_profile_file_name = None
     if options.profile_file:
