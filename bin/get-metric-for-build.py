@@ -291,7 +291,7 @@ def main(args=sys.argv[1:]):
                      options.get_internal_checkerboard_stats,
                      appname=appname,
                      enable_profiling=options.enable_profiling,
-                     extra_prefs=extra_prefs,
+                     extra_prefs=options.extra_prefs,
                      **devicePrefs)
     elif apks:
         for apk in apks:
@@ -303,7 +303,7 @@ def main(args=sys.argv[1:]):
                      options.no_capture,
                      options.get_internal_checkerboard_stats, apk=apk,
                      enable_profiling=options.enable_profiling,
-                     extra_prefs=extra_prefs,
+                     extra_prefs=options.extra_prefs,
                      **devicePrefs)
     else:
         for date in dates:
@@ -317,7 +317,7 @@ def main(args=sys.argv[1:]):
                      options.get_internal_checkerboard_stats, apk=apk,
                      appdate=date,
                      enable_profiling=options.enable_profiling,
-                     extra_prefs=extra_prefs,
+                     extra_prefs=options.extra_prefs,
                      **devicePrefs)
 
 
