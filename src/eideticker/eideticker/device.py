@@ -96,6 +96,7 @@ class EidetickerMixin(object):
                 executeCallback()
             self._shellCheckOutput([self.orngLocation, self.inputDevice,
                                     remotefilename])
+            self.removeFile(remotefilename)
 
     def getPIDs(self, appname):
         '''FIXME: Total hack, put this in devicemanagerADB instead'''
