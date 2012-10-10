@@ -59,6 +59,20 @@ class EidetickerMixin(object):
         if self.model == 'LG-P999':
             self.executeCommand("tap", [240, 617])
 
+        # use a copy of orng in /data/local
+        for location in ["/data/local/orng", "/system/xbin/orng"]:
+            # we use ls instead of fileExists because fileExists doesn't
+            # handle directories which we can't read like /data/local :(
+            try:
+                if self.shellCheckOutput(["ls", location]).strip() == location:
+                    self.orngLocation = location
+                    break
+            except DMError:
+                pass
+
+        if not self.orngLocation:
+            raise DMError("Could not find a copy of Orangutan (orng) to run")
+
     # FIXME: make this part of devicemanager
     def _shellCheckOutput(self, args):
         buf = StringIO.StringIO()
@@ -80,7 +94,7 @@ class EidetickerMixin(object):
             self.pushFile(f.name, remotefilename)
             if executeCallback:
                 executeCallback()
-            self._shellCheckOutput(["/system/xbin/orng", self.inputDevice,
+            self._shellCheckOutput([self.orngLocation, self.inputDevice,
                                     remotefilename])
 
     def getPIDs(self, appname):
