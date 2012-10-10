@@ -7,6 +7,14 @@ var Eideticker = function () {
 
       return match && decodeURIComponent(match[1].replace(/\+/g, ' '));
     },
+    getTestType: function() {
+       var testType = this.getParameterByName('testtype');
+       if (!testType) {
+          return "default";
+       }
+
+       return testType;
+    },
     loadTest: function(testurl) {
       setTimeout(function() {
         window.location.href = testurl;
