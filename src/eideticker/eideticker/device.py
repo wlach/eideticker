@@ -54,12 +54,8 @@ class EidetickerMixin(object):
         if not DEVICE_PROPERTIES.get(self.model):
             raise Exception("Unsupported device type '%s'" % self.model)
 
-        # Hack: this gets rid of the "finished charging" modal dialog that the
-        # LG G2X sometimes brings up
-        if self.model == 'LG-P999':
-            self.executeCommand("tap", [240, 617])
-
-        # use a copy of orng in /data/local
+        # we support two locations for the orng executable: /data/local
+        # and /system/xbin
         for location in ["/data/local/orng", "/system/xbin/orng"]:
             # we use ls instead of fileExists because fileExists doesn't
             # handle directories which we can't read like /data/local :(
@@ -72,6 +68,11 @@ class EidetickerMixin(object):
 
         if not self.orngLocation:
             raise DMError("Could not find a copy of Orangutan (orng) to run")
+
+        # Hack: this gets rid of the "finished charging" modal dialog that the
+        # LG G2X sometimes brings up
+        if self.model == 'LG-P999':
+            self.executeCommand("tap", [240, 617])
 
     # FIXME: make this part of devicemanager
     def _shellCheckOutput(self, args):
