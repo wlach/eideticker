@@ -186,6 +186,15 @@ class EidetickerMixin(object):
                                               int(numsteps)))
         return events
 
+    def _getPinchEvent(self, touch1_x1, touch1_y1, touch1_x2, touch1_y2,
+                       touch2_x1, touch2_y1, touch2_x2, touch2_y2,
+                       numsteps=10, duration=1.0):
+        return "pinch %s %s %s %s %s %s %s %s %s %s" % (touch1_x1, touch1_y1,
+                                                        touch1_x2, touch1_y2,
+                                                        touch2_x1, touch2_y1,
+                                                        touch2_x2, touch2_y2,
+                                                        numsteps,
+                                                        int(duration)*1000)
     def _getCmdEvents(self, cmd, args):
         if cmd == "scroll_down":
             cmdevents = self._getScrollDownEvents(*args)
@@ -195,6 +204,8 @@ class EidetickerMixin(object):
             cmdevents = [self._getTapEvent(*args)]
         elif cmd == "double_tap":
             cmdevents = [self._getTapEvent(*args, times=2)]
+        elif cmd == "pinch":
+            cmdevents = [self._getPinchEvent(*args)]
         elif cmd == "sleep":
             if len(args):
                 cmdevents = [self._getSleepEvent(duration=args[0])]
