@@ -63,11 +63,11 @@ class EidetickerMixin(object):
                 if self.shellCheckOutput(["ls", location]).strip() == location:
                     self.orngLocation = location
                     break
-            except DMError:
+            except mozdevice.DMError:
                 pass
 
         if not self.orngLocation:
-            raise DMError("Could not find a copy of Orangutan (orng) to run")
+            raise mozdevice.DMError("Could not find a copy of Orangutan (orng) to run")
 
         # Hack: this gets rid of the "finished charging" modal dialog that the
         # LG G2X sometimes brings up
