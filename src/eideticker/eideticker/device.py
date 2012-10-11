@@ -75,16 +75,6 @@ class EidetickerMixin(object):
             self.executeCommand("tap", [240, 617])
 
     # FIXME: make this part of devicemanager
-    def _shellCheckOutput(self, args):
-        buf = StringIO.StringIO()
-        retval = self.shell(args, buf, root=True)
-        output = str(buf.getvalue()[0:-1]).rstrip()
-        if retval == None:
-            raise Exception("Did not successfully run command %s (output: '%s', retval: 'None')" % (args, output))
-        if retval != 0:
-            raise Exception("Non-zero return code for command: %s (output: '%s', retval: '%i')" % (args, output, retval))
-        return output
-
     def _executeScript(self, events, executeCallback=None):
         '''Executes a set of monkey commands on the device'''
         with tempfile.NamedTemporaryFile() as f:
@@ -95,8 +85,8 @@ class EidetickerMixin(object):
             self.pushFile(f.name, remotefilename)
             if executeCallback:
                 executeCallback()
-            self._shellCheckOutput([self.orngLocation, self.inputDevice,
-                                    remotefilename])
+            self.shellCheckOutput([self.orngLocation, self.inputDevice,
+                                   remotefilename], root=True)
             self.removeFile(remotefilename)
 
     def getPIDs(self, appname):
@@ -111,16 +101,17 @@ class EidetickerMixin(object):
     def sendSaveProfileSignal(self, appName):
         pids = self.getPIDs(appName)
         if pids:
-            self._shellCheckOutput(['kill', '-s', '12', pids[0]])
+            self.shellCheckOutput(['kill', '-s', '12', pids[0]], root=True)
 
     def getAPK(self, appname, localfile):
         remote_tempfile = '/data/local/apk-tmp-%s' % time.time()
         for remote_apk_path in [ '/data/app/%s-1.apk' % appname,
                                  '/data/app/%s-2.apk' % appname ]:
             try:
-                self._shellCheckOutput(['dd', 'if=%s' % remote_apk_path,
-                                        'of=%s' % remote_tempfile])
-                self._shellCheckOutput(['chmod', '0666', remote_tempfile])
+                self.shellCheckOutput(['dd', 'if=%s' % remote_apk_path,
+                                       'of=%s' % remote_tempfile], root=True)
+                self.shellCheckOutput(['chmod', '0666', remote_tempfile],
+                                      root=True)
                 self.removeFile(remote_tempfile)
             except:
                 continue
@@ -132,18 +123,18 @@ class EidetickerMixin(object):
 
 
     def getprop(self, prop):
-        return self._shellCheckOutput(["getprop", str(prop)])
+        return self.shellCheckOutput(["getprop", str(prop)])
 
     def setprop(self, prop, value):
         if not value:
             value = "\"\""
-        self._shellCheckOutput(["setprop", str(prop), str(value)])
+        self.shellCheckOutput(["setprop", str(prop), str(value)])
 
     def clear_logcat(self):
-        self._shellCheckOutput(["logcat", "-c"])
+        self.shellCheckOutput(["logcat", "-c"], root=True)
 
     def get_logcat(self, args):
-        return self._shellCheckOutput(["logcat", "-d"] + args)
+        return self.shellCheckOutput(["logcat", "-d"] + args, root=True)
 
     def _transformXY(self, coords):
         # FIXME: Only handling 90 degrees for now, everything else falls back
