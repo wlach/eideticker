@@ -41,6 +41,10 @@ if [ -z $EXPIRY_THRESHOLD ]; then
     EXPIRY_THRESHOLD=3
 fi
 
+if [ -z $PRODUCT ]; then
+    PRODUCT=nightly
+fi
+
 if [ $# -gt 0 ]; then
     TESTS=$@
 else
@@ -75,7 +79,7 @@ for TEST in $TESTS; do
   ./bin/cleanup-phone.py
 
   echo "Running $TEST"
-  timeout $UPDATE_TIMEOUT ./bin/update-dashboard.py --product nightly --num-runs $NUM_RUNS $EXTRA_UPDATE_DASHBOARD_ARGS $TEST src/dashboard
+  timeout $UPDATE_TIMEOUT ./bin/update-dashboard.py --product $PRODUCT --num-runs $NUM_RUNS $EXTRA_UPDATE_DASHBOARD_ARGS $TEST src/dashboard
   RET=$?
   if [ $RET == 124 ]; then
       echo "ERROR: Timed out when updating dashboard (TEST: $TEST)"

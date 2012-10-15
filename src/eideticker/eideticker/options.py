@@ -19,5 +19,9 @@ class OptionParser(optparse.OptionParser):
                         "adb-over-tcp)", default=None)
         self.add_option("-m", "--dm-type", action="store",
                         type = "string", dest = "dmtype",
+                        default = os.environ.get('DM_TRANS', 'adb'))
                         help = "DeviceManager type (adb or sut, defaults to adb)")
-
+        self.add_option("-d", "--device-type", action="store",
+                        type = "string", dest = "devicetype",
+                        default = os.environ.get('DEVICE_TYPE', 'android'),
+                        help = "Device type (android or b2g, default to android)")
