@@ -23,12 +23,10 @@ def main(args=sys.argv[1:]):
         print "No products matching arguments!"
         sys.exit(1)
 
+    print products
+
     devicePrefs = eideticker.getDevicePrefs(options)
     device = eideticker.getDevice(**devicePrefs)
-
-    if device.type != 'android':
-        print "Device type '%s' does not currently support updates" % device.type
-        sys.exit(0)
 
     for product in products:
         if not product.get('url'):

@@ -97,8 +97,6 @@ def runtest(dm, product, current_date, appname, appinfo, test, capture_name,
 
         args = ["runtest.py", "--url-params", urlparams,
                 "--name", capture_name, "--capture-file", capture_file ]
-        if product['platform'] == 'b2g':
-            args.append("--b2g")
         if test.get('startup_test'):
             args.append("--startup-test")
         if dmtype:

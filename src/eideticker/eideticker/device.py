@@ -4,7 +4,6 @@
 
 import StringIO
 import mozdevice
-import mozb2g
 import os
 import re
 import tempfile
@@ -15,40 +14,26 @@ import time
 # information universally (we can get the resolution with SUT, but not the
 # required HDMI mode)
 DEVICE_PROPERTIES = {
-    "android": {
-        "Galaxy Nexus": {
-            "hdmiResolution": "720p",
-            "inputDevice": "/dev/input/event1",
-            "dimensions": (1180, 720)
-            },
-        "Panda": {
-            "hdmiResolution": "720p",
-            "inputDevice": "/dev/input/event0",
-            "dimensions": (1280, 672)
-            },
-        "Panda": {
-            "hdmiResolution": "720p",
-            "inputDevice": "/dev/input/event0",
-            "dimensions": (1280, 672)
-            },
-        "LG-P999": {
-            "hdmiResolution": "1080p",
-            "inputDevice": "/dev/input/event1",
-            "dimensions": (480, 800)
-            },
-        "MID": {
-            "hdmiResolution": None,
-            "inputDevice": "/dev/input/event2",
-            "dimensions": (480, 800)
-            },
-        },
-    "b2g": {
-        "Panda": {
-            "hdmiResolution": "720p",
-            "inputDevice": "/dev/input/event2",
-            "dimensions": (1280, 672)
-            },
-        }
+    "Galaxy Nexus": {
+        "hdmiResolution": "720p",
+        "inputDevice": "/dev/input/event1",
+        "dimensions": (1180, 720)
+    },
+    "Panda": {
+        "hdmiResolution": "720p",
+        "inputDevice": "/dev/input/event0",
+        "dimensions": (1280, 672)
+    },
+    "LG-P999": {
+        "hdmiResolution": "1080p",
+        "inputDevice": "/dev/input/event1",
+        "dimensions": (480, 800)
+    },
+    "MID": {
+        "hdmiResolution": None,
+        "inputDevice": "/dev/input/event2",
+        "dimensions": (480, 800)
+    },
 }
 
 class EidetickerMixin(object):
@@ -57,19 +42,17 @@ class EidetickerMixin(object):
 
     @property
     def hdmiResolution(self):
-        return self.deviceProperties['hdmiResolution']
+        return DEVICE_PROPERTIES[self.model]['hdmiResolution']
 
     @property
     def inputDevice(self):
-        return self.deviceProperties['inputDevice']
+        return DEVICE_PROPERTIES[self.model]['inputDevice']
 
     def _init(self):
-        self.model = self.getprop("ro.product.model"),
+        self.model = self.getprop("ro.product.model")
 
-        if not DEVICE_PROPERTIES.get(self.type) or \
-                not DEVICE_PROPERTIES[self.type].get(self.model):
-            raise mozdevice.DMError("Unsupported device type '%s'" % self.model)
-        self.deviceProperties = DEVICE_PROPERTIES[self.type][self.model]
+        if not DEVICE_PROPERTIES.get(self.model):
+            raise Exception("Unsupported device type '%s'" % self.model)
 
         # we support two locations for the orng executable: /data/local
         # and /system/xbin
@@ -118,7 +101,7 @@ class EidetickerMixin(object):
     def sendSaveProfileSignal(self, appName):
         pids = self.getPIDs(appName)
         if pids:
-            self.shellCheckOutput(['kill', '-s', '12', str(pids[0])], root=True)
+            self.shellCheckOutput(['kill', '-s', '12', pids[0]], root=True)
 
     def getAPK(self, appname, localfile):
         remote_tempfile = '/data/local/apk-tmp-%s' % time.time()
@@ -244,10 +227,6 @@ class DroidADB(mozdevice.DroidADB, EidetickerMixin):
         mozdevice.DroidADB.__init__(self, **kwargs)
         self._init() # custom eideticker init steps
 
-    @property
-    def type(self):
-        return "android"
-
     def killProcess(self, appname, forceKill=False):
         '''FIXME: Total hack, put this in devicemanagerADB instead'''
         procs = self.getProcessList()
@@ -260,7 +239,7 @@ class DroidADB(mozdevice.DroidADB, EidetickerMixin):
 
     @property
     def dimensions(self):
-        return self.deviceProperties['dimensions']
+        return DEVICE_PROPERTIES[self.model]['dimensions']
 
     @property
     def rotation(self):
@@ -273,10 +252,6 @@ class DroidSUT(mozdevice.DroidSUT, EidetickerMixin):
     def __init__(self, **kwargs):
         mozdevice.DroidSUT.__init__(self, **kwargs)
         self._init() # custom eideticker init steps
-
-    @property
-    def type(self):
-        return "android"
 
     @property
     def dimensions(self):
@@ -308,23 +283,13 @@ class DroidSUT(mozdevice.DroidSUT, EidetickerMixin):
         self.installApp(pathOnDevice)
         self.removeFile(pathOnDevice)
 
-class B2GADB(mozb2g.DeviceADB, EidetickerMixin):
-    def __init__(self, **kwargs):
-        mozb2g.DeviceADB.__init__(self, **kwargs)
-        self._init(suffix='-B2G') # custom eideticker init steps
-        self.setupProfile()
-
-class B2GSUT(mozb2g.DeviceSUT, EidetickerMixin):
-    def __init__(self, **kwargs):
-        mozb2g.DeviceSUT.__init__(self, **kwargs)
-        self._init(suffix='-B2G') # custom eideticker init steps
-        self.setupProfile()
-
 def getDevicePrefs(options):
     '''Gets a dictionary of eideticker device parameters'''
     optionDict = {}
-    optionDict['dmtype'] = options.dmtype
-    optionDict['devicetype'] = options.devicetype
+    if options.dmtype:
+        optionDict['dmtype'] = options.dmtype
+    else:
+        optionDict['dmtype'] = os.environ.get('DM_TRANS', 'adb')
 
     host = options.host
     if not host and optionDict['dmtype'] == "sut":
@@ -335,25 +300,19 @@ def getDevicePrefs(options):
 
     return optionDict
 
-def getDevice(dmtype="adb", devicetype="android", host=None, port=None):
+def getDevice(dmtype="adb", host=None, port=None):
     '''Gets an eideticker device according to parameters'''
 
     print "Using %s interface (host: %s, port: %s)" % (dmtype, host, port)
     if dmtype == "adb":
         if host and not port:
             port = 5555
-        if devicetype=='b2g':
-            return B2GADB(host=host, port=port)
-        else:
-            return DroidADB(packageName=None, host=host, port=port)
+        return DroidADB(packageName=None, host=host, port=port)
     elif dmtype == "sut":
         if not host:
             raise Exception("Must specify host with SUT!")
         if not port:
             port = 20701
-        if devicetype=='b2g':
-            return B2GSUT(host=host, port=port)
-        else:
-            return DroidSUT(host=host, port=port)
+        return DroidSUT(host=host, port=port)
     else:
         raise Exception("Unknown device manager type: %s" % type)
