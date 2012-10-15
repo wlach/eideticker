@@ -118,7 +118,7 @@ class EidetickerMixin(object):
     def sendSaveProfileSignal(self, appName):
         pids = self.getPIDs(appName)
         if pids:
-            self.shellCheckOutput(['kill', '-s', '12', pids[0]], root=True)
+            self.shellCheckOutput(['kill', '-s', '12', str(pids[0])], root=True)
 
     def getAPK(self, appname, localfile):
         remote_tempfile = '/data/local/apk-tmp-%s' % time.time()
