@@ -125,9 +125,6 @@ def main(args=sys.argv[1:]):
     parser.add_option("--startup-test", action="store_true",
                       dest="startup_test",
                       help="do a startup test: full capture, no actions")
-    parser.add_option("--b2g", action="store_true",
-                      dest="b2g", default=False,
-                      help="Run in B2G environment. You do not need to pass an appname")
     parser.add_option("--extra-prefs", action="store", dest="extra_prefs",
                       default="{}",
                       help="Extra profile preference for Firefox browsers. " \
@@ -138,7 +135,7 @@ def main(args=sys.argv[1:]):
 
     options, args = parser.parse_args()
     testpath, appname = None, None
-    if options.b2g:
+    if options.devicetype == 'b2g':
         if len(args) != 1:
             parser.error("incorrect number of arguments")
             sys.exit(1)
@@ -271,11 +268,6 @@ def main(args=sys.argv[1:]):
         url = "http://%s:%s/start.html?testpath=%s" % (host,
                                                        http.httpd.server_port,
                                                        testpath_rel)
-    print "Test URL is: %s" % url
-    if options.b2g:
-        runner = eideticker.B2GRunner(device, url, EIDETICKER_TEMP_DIR)
-    else:
-        runner = eideticker.BrowserRunner(device, appname, url, extra_prefs=extra_prefs)
 
     temp_profile_file_name = None
     if options.profile_file:
@@ -288,7 +280,14 @@ def main(args=sys.argv[1:]):
     if options.startup_test and not options.no_capture:
         capture_controller.start_capture(capture_file, device.hdmiResolution,
                                          capture_metadata)
-    runner.start(profile_file=temp_profile_file_name)
+
+    print "Test URL is: %s" % url
+    if options.devicetype == 'b2g':
+        runner = eideticker.B2GRunner(device, url, EIDETICKER_TEMP_DIR)
+        runner.start()
+    else:
+        runner = eideticker.BrowserRunner(device, appname, url, extra_prefs=extra_prefs)
+        runner.start(profile_file=temp_profile_file_name)
 
     # Keep on capturing until we timeout
     if capture_timeout:

@@ -69,6 +69,7 @@ make -C src/videocapture/videocapture/decklink
 ./bin/pip install -e src/mozbase/mozhttpd
 ./bin/pip install -e src/mozbase/mozrunner
 ./bin/pip install -e src/mozbase/mozdevice
+./bin/pip install -e src/mozbase/mozb2g
 ./bin/pip install -e src/templeton
 ./bin/pip install -e src/mozregression
 ./bin/pip install -e src/marionette_client
