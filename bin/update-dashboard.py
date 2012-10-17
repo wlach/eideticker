@@ -76,7 +76,7 @@ def kill_app(dm, appname):
 
 def runtest(dm, product, current_date, appname, appinfo, test, capture_name,
             outputdir, datafile, data, enable_profiling=False,
-            dmtype="adb", host=None, port=None):
+            dmtype="adb", host=None, port=None, devicetype="android"):
     capture_file = os.path.join(CAPTURE_DIR,
                                 "%s-%s-%s-%s.zip" % (test['name'],
                                                      appname,
@@ -97,12 +97,12 @@ def runtest(dm, product, current_date, appname, appinfo, test, capture_name,
 
         args = ["runtest.py", "--url-params", urlparams,
                 "--name", capture_name, "--capture-file", capture_file ]
-        if product['platform'] == 'b2g':
-            args.append("--b2g")
         if test.get('startup_test'):
             args.append("--startup-test")
         if dmtype:
             args.extend(["-m", dmtype])
+        if devicetype:
+            args.extend(["-d", devicetype])
         if host:
             args.extend(["--host", host])
         if port:

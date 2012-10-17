@@ -104,7 +104,7 @@ class CaptureServer(object):
         return (200, {})
 
 def main(args=sys.argv[1:]):
-    usage = "usage: %prog [options] <appname> <test path>"
+    usage = "usage: %prog [options] [appname] <test path>"
     parser = eideticker.OptionParser(usage=usage)
     parser.add_option("--url-params", action="store",
                       dest="url_params",
@@ -137,12 +137,13 @@ def main(args=sys.argv[1:]):
     testpath, appname = None, None
     if options.devicetype == 'b2g':
         if len(args) != 1:
-            parser.error("incorrect number of arguments")
+            parser.error("You must specify (only) a test path on b2g")
             sys.exit(1)
         testpath = args[0]
     else:
         if len(args) != 2:
-            parser.error("incorrect number of arguments")
+            parser.error("You must specify (only) an application name "
+                         "(e.g. org.mozilla.fennec) and a test path")
             sys.exit(1)
 
         (appname, testpath) = args
