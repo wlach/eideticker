@@ -83,8 +83,8 @@ def runtest(dm, product, current_date, appname, appinfo, test, capture_name,
                                                      appinfo.get('date'),
                                                      int(time.time())))
     if enable_profiling:
-        profile_path = os.path.join(outputdir, 'profiles',
-                                    'sps-profile-%s.zip' % time.time())
+        profile_path = os.path.join('profiles', 'sps-profile-%s.zip' % time.time())
+        profile_file = os.path.join(outputdir, profile_path)
 
     urlparams = test.get('urlparams', '')
 
@@ -108,7 +108,7 @@ def runtest(dm, product, current_date, appname, appinfo, test, capture_name,
         if port:
             args.extend(["--port", port])
         if enable_profiling:
-            args.extend(["--profile-file", profile_path])
+            args.extend(["--profile-file", profile_file])
         retval = subprocess.call(args + [ appname, test['path'] ])
         if retval == 0:
             test_completed = True
