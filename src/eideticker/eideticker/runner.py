@@ -2,6 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 
+import mozdevice
 import mozprofile
 import os
 import tempfile
@@ -151,7 +152,7 @@ class BrowserRunner(object):
                 print "Launching %s (try %s of 3)" % (self.appname, i+1)
                 try:
                     self.dm.launchFennec(self.appname, url=self.url, mozEnv=mozEnv, extraArgs=args)
-                except DMError:
+                except mozdevice.DMError:
                     continue
                 return # Ok!
             raise Exception("Failed to start Fennec after three tries")
