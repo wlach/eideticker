@@ -59,6 +59,10 @@ default_tests = [
         'path': 'src/tests/ep1/en.wikipedia.org/en.wikipedia.org/wiki/Rorschach_test.html'
     },
     {
+        'name': 'timecube',
+        'path': 'src/tests/ep1/timecube/timecube.html'
+    },
+    {
         'name': 'startup-abouthome-cold',
         'path': 'about:home',
         'startup_test': True

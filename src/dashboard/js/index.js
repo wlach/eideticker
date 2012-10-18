@@ -266,6 +266,11 @@ $(function() {
       'graphTitle': 'wikipedia test',
       'defaultMeasure': 'checkerboard'
     },
+    'timecube': {
+      'key': 'timecube',
+      'graphTitle': 'timecube test',
+      'defaultMeasure': 'checkerboard'
+    },
     'startup-abouthome-cold': {
       'key': 'startup-abouthome-cold',
       'graphTitle': 'Cold startup to about:home',
