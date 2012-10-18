@@ -62,8 +62,8 @@ cd $EIDETICKER
 # Expire old captures/videos
 ./bin/expire.py --max-age $EXPIRY_THRESHOLD
 
-# Update apps on the phone to the latest
-./bin/update-phone.py
+# Update app on the phone to the latest
+./bin/update-phone.py $PRODUCT
 
 # We want to allow failures when updating the dashboard, so we can be more
 # verbose about errors before exiting
