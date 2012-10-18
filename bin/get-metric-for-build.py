@@ -59,7 +59,8 @@ def get_build_for_date(date):
 def run_test(device, outputdir, outputfile, test, url_params, num_runs,
              startup_test, no_capture, get_internal_checkerboard_stats,
              apk=None, appname = None, appdate = None, enable_profiling=False,
-             extra_prefs="{}", dmtype="adb", host=None, port=None):
+             extra_prefs="{}", dmtype="adb", devicetype="android", host=None,
+             port=None):
     if apk:
         appinfo = eideticker.get_fennec_appinfo(apk)
         appname = appinfo['appname']
@@ -100,6 +101,8 @@ def run_test(device, outputdir, outputfile, test, url_params, num_runs,
             args.extend(["--profile-file", profile_file])
         if dmtype:
             args.extend(["-m", dmtype])
+        if devicetype:
+            args.extend(["-d", devicetype])
         if host:
             args.extend(["--host", host])
         if port:
