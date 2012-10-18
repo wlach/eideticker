@@ -67,7 +67,8 @@ make -C src/videocapture/videocapture/decklink
 ./bin/pip install -e src/eideticker
 ./bin/pip install -e src/videocapture
 ./bin/pip install -e src/mozbase/mozhttpd
-./bin/pip install -e src/mozbase/mozrunner
+./bin/pip install -e src/mozbase/mozprocess
+./bin/pip install -e src/mozbase/mozprofile
 ./bin/pip install -e src/mozbase/mozdevice
 ./bin/pip install -e src/mozbase/mozb2g
 ./bin/pip install -e src/templeton
