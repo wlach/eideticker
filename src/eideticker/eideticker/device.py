@@ -166,13 +166,13 @@ class EidetickerMixin(object):
 
         return coords
 
-    def _getDragEvents(self, touch_start, touch_end, duration=1.0, num_steps=5):
+    def _getDragEvents(self, touch_start, touch_end, duration=1000, num_steps=5):
         touch_start = self._transformXY(touch_start)
         touch_end = self._transformXY(touch_end)
 
         return "drag %s %s %s %s %s %s" % (int(touch_start[0]), int(touch_start[1]),
                                            int(touch_end[0]), int(touch_end[1]),
-                                           num_steps, int(duration * 1000))
+                                           num_steps, duration)
 
     def _getSleepEvent(self, duration=1.0):
         return "sleep %s" % int(float(duration) * 1000.0)
@@ -181,35 +181,35 @@ class EidetickerMixin(object):
         coords = self._transformXY((x,y))
         return "tap %s %s %s" % (int(coords[0]), int(coords[1]), times)
 
-    def _getScrollDownEvents(self, numtimes=1, numsteps=10):
+    def _getScrollDownEvents(self, numtimes=1, numsteps=10, duration=100):
         events = []
         x = int(self.dimensions[0] / 2)
         ybottom = self.dimensions[1] - 200
         ytop = 240
         for i in range(int(numtimes)):
-            events.append(self._getDragEvents((x,ybottom), (x,ytop), 0.1,
+            events.append(self._getDragEvents((x,ybottom), (x,ytop), duration,
                                               int(numsteps)))
         return events
 
-    def _getScrollUpEvents(self, numtimes=1, numsteps=10):
+    def _getScrollUpEvents(self, numtimes=1, numsteps=10, duration=100):
         events = []
         x = int(self.dimensions[0] / 2)
         ybottom = self.dimensions[1] - 100
         ytop = 240
         for i in range(int(numtimes)):
-            events.append(self._getDragEvents((x,ytop), (x,ybottom), 0.1,
+            events.append(self._getDragEvents((x,ytop), (x,ybottom), duration,
                                               int(numsteps)))
         return events
 
     def _getPinchEvent(self, touch1_x1, touch1_y1, touch1_x2, touch1_y2,
                        touch2_x1, touch2_y1, touch2_x2, touch2_y2,
-                       numsteps=10, duration=1.0):
+                       numsteps=10, duration=1000):
         return "pinch %s %s %s %s %s %s %s %s %s %s" % (touch1_x1, touch1_y1,
                                                         touch1_x2, touch1_y2,
                                                         touch2_x1, touch2_y1,
                                                         touch2_x2, touch2_y2,
                                                         numsteps,
-                                                        int(duration)*1000)
+                                                        duration)
     def _getCmdEvents(self, cmd, args):
         if cmd == "scroll_down":
             cmdevents = self._getScrollDownEvents(*args)
