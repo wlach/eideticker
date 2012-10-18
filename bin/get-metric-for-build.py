@@ -3,10 +3,8 @@
 import datetime
 import eideticker
 import json
-import mozdevice
 from mozregression.runnightly import FennecNightly
 from mozregression.utils import get_date
-import optparse
 import os
 import re
 import subprocess
@@ -15,7 +13,6 @@ import tempfile
 import time
 import urllib2
 import videocapture
-import zipfile
 
 CAPTURE_DIR = os.path.join(os.path.dirname(__file__), "../captures")
 PROFILE_DIR = os.path.join(os.path.dirname(__file__), "../profiles")
@@ -118,7 +115,6 @@ def run_test(device, outputdir, outputfile, test, url_params, num_runs,
 
             capture = videocapture.Capture(capture_file)
 
-            framediff_sums = videocapture.get_framediff_sums(capture)
             if startup_test:
                 capture_result['stableframe'] = videocapture.get_stable_frame(capture)
             else:
