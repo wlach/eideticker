@@ -106,13 +106,10 @@ class BrowserRunner(object):
              for filename in dirlist:
                  filename = filename.strip()
                  if filename.endswith(".so"):
-                     try:
-                         lib_path = os.path.join(tmpdir, filename)
-                         results = self.dm.getFile(libpath + '/' + filename, lib_path)
-                         if results != None:
-                             files_to_package.append(lib_path);
-                     except subprocess.CalledProcessError:
-                         print "failed to fetch: %s" % filename
+                     lib_path = os.path.join(tmpdir, filename)
+                     remotefilename = libpath + '/' + filename
+                     self.dm.getFile(remotefilename, lib_path)
+                     files_to_package.append(lib_path);
 
         with zipfile.ZipFile(target_zip, "w") as zip_file:
             for file_to_package in files_to_package:
