@@ -2,15 +2,12 @@
 
 import eideticker
 import json
-import mozdevice
-import optparse
 import os
 import subprocess
 import sys
 import time
 import videocapture
 import uuid
-import zipfile
 from eideticker.products import default_products
 
 class NestedDict(dict):
