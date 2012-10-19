@@ -83,7 +83,7 @@ for TEST in $TESTS; do
   ./bin/cleanup-phone.py
 
   echo "Running $TEST"
-  timeout $UPDATE_TIMEOUT ./bin/update-dashboard.py --product $PRODUCT --num-runs $NUM_RUNS $EXTRA_UPDATE_DASHBOARD_ARGS $TEST src/dashboard
+  timeout $UPDATE_TIMEOUT ./bin/update-dashboard.py --apk downloads/$PRODUCT-$DATE.apk --num-runs $NUM_RUNS $EXTRA_UPDATE_DASHBOARD_ARGS $PRODUCT $TEST src/dashboard
   RET=$?
   if [ $RET == 124 ]; then
       echo "ERROR: Timed out when updating dashboard (TEST: $TEST)"

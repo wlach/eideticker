@@ -162,7 +162,7 @@ def runtest(dm, product, appname, appinfo, test, capture_name,
         f.write(json.dumps(data))
 
 def main(args=sys.argv[1:]):
-    usage = "usage: %prog [options] <test> <output dir>"
+    usage = "usage: %prog [options] <product> <test> <output dir>"
 
     parser = eideticker.OptionParser(usage=usage)
     parser.add_option("--enable-profiling",
@@ -170,19 +170,18 @@ def main(args=sys.argv[1:]):
                       help = "Create SPS profile to go along with capture")
     parser.add_option("--device-id", action="store", dest="device_id",
                       help="id of device (used in output json)")
-    parser.add_option("--product",
-                      action="store", dest="product",
-                      help = "Restrict testing to product (options: %s)" %
-                      ", ".join([product["name"] for product in eideticker.products]))
+    parser.add_option("--apk", action="store", dest="apk",
+                      help = "Product apk to get metadata from " \
+                          "(Android-specific)")
     parser.add_option("--num-runs", action="store",
                       type = "int", dest = "num_runs",
                       help = "number of runs (default: 1)")
 
     options, args = parser.parse_args()
-    if len(args) != 2:
+    if len(args) != 3:
         parser.error("incorrect number of arguments")
 
-    (testname, outputdir) = args
+    (productname, testname, outputdir) = args
     num_runs = 1
     if options.num_runs:
         num_runs = options.num_runs
@@ -201,12 +200,11 @@ def main(args=sys.argv[1:]):
         print "ERROR: Must specify device id (either with --device-id or with DEVICE_ID environment variable)"
         sys.exit(1)
 
-    products = eideticker.products
-    if options.product:
-        products = [product for product in products if product['name'] == options.product]
-        if not products:
-            print "ERROR: No products matching '%s'" % options.product
-            sys.exit(1)
+    products = [product for product in eideticker.products if product['name'] == productname]
+    if not products:
+        print "ERROR: No products matching '%s'" % options.product
+        sys.exit(1)
+    product = products[0]
 
     current_date = time.strftime("%Y-%m-%d")
     datafile = os.path.join(outputdir, 'data-%s.json' % device_id)
@@ -228,35 +226,25 @@ def main(args=sys.argv[1:]):
     with open(devicefile, 'w') as f:
         f.write(json.dumps({ 'devices': devices }))
 
-    for product in products:
-        if product.get('url'):
-            # this is kind of ridiculous -- we always assume that the apk is
-            # going to be named "<productname>.apk". It would be great if we
-            # could actually incorporate the date name into the apk somehow,
-            # or somehow pass the apk to this program. hm...
-            product_fname = os.path.join(DOWNLOAD_DIR, "%s.apk" % product['name'])
-            appinfo = eideticker.get_fennec_appinfo(product_fname)
-            appname = appinfo['appname']
-            print "Using application name '%s' from apk '%s'" % (appname, product_fname)
-            capture_name = "%s %s" % (product['name'], appinfo['date'])
-        else:
-            appinfo = { }
-            appname = product['appname']
-            capture_name = "%s (taken on %s)" % (product['name'], current_date)
+    if options.apk:
+        appinfo = eideticker.get_fennec_appinfo(options.apk)
+        appname = appinfo['appname']
+        print "Using application name '%s' from apk '%s'" % (appname, options.apk)
+        capture_name = "%s %s" % (product['name'], appinfo['date'])
+    else:
+        # no apk, assume it's something static on the device
+        appinfo = { 'date': 'today' }
+        appname = product['appname']
+        capture_name = "%s (taken on %s)" % (product['name'], current_date)
 
-        if appinfo.get('appname'):
-            appname = appinfo['appname']
-        else:
-            appname = product['appname']
+    # Run the test the specified number of times
+    for i in range(num_runs):
+        # Now run the test
+        runtest(device, product, appname, appinfo, test,
+                capture_name + " #%s" % i, outputdir, datafile, data,
+                enable_profiling=options.enable_profiling, **devicePrefs)
 
-        # Run the test the specified number of times
-        for i in range(num_runs):
-            # Now run the test
-            runtest(device, product, appname, appinfo, test,
-                    capture_name + " #%s" % i, outputdir, datafile, data,
-                    enable_profiling=options.enable_profiling, **devicePrefs)
-
-            # Kill app after test complete
-            device.killProcess(appname)
+        # Kill app after test complete
+        device.killProcess(appname)
 
 main()
