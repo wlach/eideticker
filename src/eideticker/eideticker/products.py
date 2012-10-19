@@ -1,8 +1,112 @@
-default_products = [
+from BeautifulSoup import BeautifulSoup
+import datetime
+import httplib2
+import os
+import re
+import urllib2
+
+DOWNLOAD_DIR = os.path.join(os.path.dirname(__file__), "../../../downloads")
+
+class BuildRetriever(object):
+    """
+    This class helps with retrieving builds of various types
+
+    This class is rather gratuitously copied from mozregression. It would be
+    good if we could consolidate all this code from mozregression/mozdownload
+    into one thing that we could use for fennec, desktop builds, etc.
+    """
+    _monthlinks = {}
+    _baseurl = "http://ftp.mozilla.org/pub/mozilla.org/mobile/nightly/"
+
+    @staticmethod
+    def _url_links(url):
+        res = [] # do not return a generator but an array, so we can store it for later use
+
+        h = httplib2.Http();
+        resp, content = h.request(url, "GET")
+        if resp.status != 200:
+            return res
+
+        soup = BeautifulSoup(content)
+        for link in soup.findAll('a'):
+            res.append(link)
+        return res
+
+    @staticmethod
+    def get_date(datestr):
+        p = re.compile('(\d{4})\-(\d{1,2})\-(\d{1,2})')
+        m = p.match(datestr)
+        if not m:
+            raise Exception("Incorrect date format")
+        return datetime.date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
+
+    @staticmethod
+    def _format_date_part(part):
+        if part < 10:
+            part = "0" + str(part)
+        return str(part)
+
+    def _get_build_url(self, product, date):
+        url = self._baseurl
+        year = str(date.year)
+        month = self._format_date_part(date.month)
+        day = self._format_date_part(date.day)
+        url += year + "/" + month + "/"
+
+        linkregex = '^' + year + '-' + month + '-' + day + '-' + '[\d-]+' + product['reponame'] + '/$'
+        cachekey = year + '-' + month
+        if cachekey in self._monthlinks:
+            monthlinks = self._monthlinks[cachekey]
+        else:
+            monthlinks = self._url_links(url)
+            self._monthlinks[cachekey] = monthlinks
+
+        # first parse monthly list to get correct directory
+        for dirlink in monthlinks:
+            dirhref = dirlink.get("href")
+            if re.match(linkregex, dirhref):
+                # now parse the page for the correct build url
+                for link in self._url_links(url + dirhref):
+                    href = link.get("href")
+                    if re.match(product['buildregex'], href):
+                        return url + dirhref + href
+
+        return None
+
+    def _get_latest_build_url(self, product):
+        baseurl =  product['latest']
+        for link in self._url_links(baseurl):
+            href = link.get("href")
+            if re.match(product['buildregex'], href):
+                return baseurl + href
+
+    def get_build(self, product, datestr):
+        if datestr == 'latest':
+            url = self._get_latest_build_url(product)
+        else:
+            url = self._get_build_url(product, datestr)
+
+        fname = os.path.join(DOWNLOAD_DIR,
+                                     "%s-%s.apk" % (product['name'],
+                                                    datestr))
+        if datestr != "latest" and os.path.exists(fname):
+            print "Build already exists for %s. Skipping download." % datestr
+            return fname
+
+        print "Downloading '%s' to '%s'" % (url, fname)
+        dl = urllib2.urlopen(url)
+        with open(fname, 'w') as f:
+            f.write(dl.read())
+
+        return fname
+
+products = [
     {
         "name": "nightly",
         "platform": "android",
-        "url": "http://ftp.mozilla.org/pub/mozilla.org/mobile/nightly/latest-mozilla-central-android/fennec-19.0a1.multi.android-arm.apk",
+        "buildregex": ".*android-arm.apk",
+        "reponame": "mozilla-central-android",
+        "latest": "http://ftp.mozilla.org/pub/mozilla.org/mobile/nightly/latest-mozilla-central-android/",
         "appname": "org.mozilla.fennec"
     },
     {

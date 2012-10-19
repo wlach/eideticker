@@ -8,7 +8,6 @@ import sys
 import time
 import videocapture
 import uuid
-from eideticker.products import default_products
 
 class NestedDict(dict):
     def __getitem__(self, key):
@@ -75,7 +74,7 @@ def kill_app(dm, appname):
       if name == appname:
         dm.runCmd(["shell", "echo kill %s | su" % pid])
 
-def runtest(dm, product, current_date, appname, appinfo, test, capture_name,
+def runtest(dm, product, appname, appinfo, test, capture_name,
             outputdir, datafile, data, enable_profiling=False,
             dmtype="adb", host=None, port=None, devicetype="android"):
     capture_file = os.path.join(CAPTURE_DIR,
@@ -133,8 +132,11 @@ def runtest(dm, product, current_date, appname, appinfo, test, capture_name,
     if not data[test['name']].get(product['name']):
         data[test['name']][product['name']] = {}
 
-    if not data[test['name']][product['name']].get(current_date):
-        data[test['name']][product['name']][current_date] = []
+    # app date
+    appdate = appinfo.get('date')
+
+    if not data[test['name']][product['name']].get(appdate):
+        data[test['name']][product['name']][appdate] = []
 
     datapoint = { 'uuid': uuid.uuid1().hex,
                   'video': video_path,
@@ -153,7 +155,7 @@ def runtest(dm, product, current_date, appname, appinfo, test, capture_name,
     if enable_profiling:
         datapoint['profile'] = profile_path
 
-    data[test['name']][product['name']][current_date].append(datapoint)
+    data[test['name']][product['name']][appdate].append(datapoint)
 
     # Write the data to disk immediately (so we don't lose it if we fail later)
     with open(datafile, 'w') as f:
@@ -171,7 +173,7 @@ def main(args=sys.argv[1:]):
     parser.add_option("--product",
                       action="store", dest="product",
                       help = "Restrict testing to product (options: %s)" %
-                      ", ".join([product["name"] for product in default_products]))
+                      ", ".join([product["name"] for product in eideticker.products]))
     parser.add_option("--num-runs", action="store",
                       type = "int", dest = "num_runs",
                       help = "number of runs (default: 1)")
@@ -199,9 +201,9 @@ def main(args=sys.argv[1:]):
         print "ERROR: Must specify device id (either with --device-id or with DEVICE_ID environment variable)"
         sys.exit(1)
 
-    products = default_products
+    products = eideticker.products
     if options.product:
-        products = [product for product in default_products if product['name'] == options.product]
+        products = [product for product in products if product['name'] == options.product]
         if not products:
             print "ERROR: No products matching '%s'" % options.product
             sys.exit(1)
@@ -228,6 +230,10 @@ def main(args=sys.argv[1:]):
 
     for product in products:
         if product.get('url'):
+            # this is kind of ridiculous -- we always assume that the apk is
+            # going to be named "<productname>.apk". It would be great if we
+            # could actually incorporate the date name into the apk somehow,
+            # or somehow pass the apk to this program. hm...
             product_fname = os.path.join(DOWNLOAD_DIR, "%s.apk" % product['name'])
             appinfo = eideticker.get_fennec_appinfo(product_fname)
             appname = appinfo['appname']
@@ -246,7 +252,7 @@ def main(args=sys.argv[1:]):
         # Run the test the specified number of times
         for i in range(num_runs):
             # Now run the test
-            runtest(device, product, current_date, appname, appinfo, test,
+            runtest(device, product, appname, appinfo, test,
                     capture_name + " #%s" % i, outputdir, datafile, data,
                     enable_profiling=options.enable_profiling, **devicePrefs)
 

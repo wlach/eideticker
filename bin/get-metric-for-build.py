@@ -3,20 +3,16 @@
 import datetime
 import eideticker
 import json
-from mozregression.runnightly import FennecNightly
-from mozregression.utils import get_date
 import os
 import re
 import subprocess
 import sys
 import tempfile
 import time
-import urllib2
 import videocapture
 
 CAPTURE_DIR = os.path.join(os.path.dirname(__file__), "../captures")
 PROFILE_DIR = os.path.join(os.path.dirname(__file__), "../profiles")
-DOWNLOAD_DIR = os.path.join(os.path.dirname(__file__), "../downloads")
 CHECKERBOARD_REGEX = re.compile('.*GeckoLayerRendererProf.*1000ms:.*\ '
                                 '([0-9]+\.[0-9]+)\/([0-9]+).*')
 
@@ -30,28 +26,6 @@ def parse_checkerboard_log(fname):
                 checkerboarding_percent_totals += (total - amount)
 
     return checkerboarding_percent_totals
-
-def get_build_for_date(date):
-    fname = os.path.join(DOWNLOAD_DIR,
-                         "nightly-%s-%s-%s.apk" % (date.year,
-                                                   date.month,
-                                                   date.day))
-    if os.path.exists(fname):
-        print "Build already exists for %s. Skipping download." % date
-        return fname
-
-    fennec = FennecNightly()
-    build_url = fennec.getBuildUrl(date)
-    if not build_url:
-        print "ERROR: Couldn't get build url for date %s" % date
-        return None
-
-    print "Downloading %s" % build_url
-    dl = urllib2.urlopen(build_url)
-    with open(fname, 'w') as f:
-        f.write(dl.read())
-
-    return fname
 
 def run_test(device, outputdir, outputfile, test, url_params, num_runs,
              startup_test, no_capture, get_internal_checkerboard_stats,
@@ -255,14 +229,14 @@ def main(args=sys.argv[1:]):
     apks = []
     if options.start_date and options.end_date and len(args) == 1:
         test = args[0]
-        start_date = get_date(options.start_date)
-        end_date = get_date(options.end_date)
+        start_date = eideticker.BuildRetriever.get_date(options.start_date)
+        end_date = eideticker.BuildRetriever.get_date(options.end_date)
         days=(end_date-start_date).days
         for numdays in range(days+1):
             dates.append(start_date+datetime.timedelta(days=numdays))
     elif options.date and len(args) == 1:
         test = args[0]
-        dates = [get_date(options.date)]
+        dates = [eideticker.BuildRetriever.get_date(options.date)]
     elif not options.date and len(args) >= 2:
         test = args[0]
         if options.use_apks:
@@ -305,8 +279,12 @@ def main(args=sys.argv[1:]):
                      extra_prefs=options.extra_prefs,
                      **devicePrefs)
     else:
+        br = eideticker.BuildRetriever()
+        productname = "nightly"
+        product = [product for product in eideticker.products if \
+                   product['name'] == productname][0]
         for date in dates:
-            apk = get_build_for_date(date)
+            apk = br.get_build(product, date)
             run_test(device, options.outputdir,
                      outputfile, test,
                      options.url_params,

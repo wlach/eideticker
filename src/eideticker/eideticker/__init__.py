@@ -6,3 +6,4 @@ from runner import BrowserRunner, B2GRunner
 from options import OptionParser
 from device import getDevicePrefs, getDevice
 from apk import get_fennec_appinfo
+from products import products, BuildRetriever

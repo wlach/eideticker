@@ -45,6 +45,10 @@ if [ -z $PRODUCT ]; then
     PRODUCT=nightly
 fi
 
+if [ -z $DATE ]; then
+    DATE="latest"
+fi
+
 if [ $# -gt 0 ]; then
     TESTS=$@
 else
@@ -63,7 +67,7 @@ cd $EIDETICKER
 ./bin/expire.py --max-age $EXPIRY_THRESHOLD
 
 # Update app on the phone to the latest
-./bin/update-phone.py $PRODUCT
+./bin/update-phone.py $PRODUCT $DATE
 
 # We want to allow failures when updating the dashboard, so we can be more
 # verbose about errors before exiting
