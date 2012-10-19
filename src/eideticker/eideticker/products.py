@@ -80,16 +80,17 @@ class BuildRetriever(object):
             if re.match(product['buildregex'], href):
                 return baseurl + href
 
-    def get_build(self, product, datestr):
-        if datestr == 'latest':
+    def get_build(self, product, date=None):
+        if not date:
             url = self._get_latest_build_url(product)
+            datestr = "latest"
         else:
-            url = self._get_build_url(product, datestr)
+            url = self._get_build_url(product, date)
+            datestr = "%s-%s-%s" % (date.year, date.month, date.day)
 
         fname = os.path.join(DOWNLOAD_DIR,
-                                     "%s-%s.apk" % (product['name'],
-                                                    datestr))
-        if datestr != "latest" and os.path.exists(fname):
+                             "%s-%s.apk" % (product['name'], datestr))
+        if date and os.path.exists(fname):
             print "Build already exists for %s. Skipping download." % datestr
             return fname
 

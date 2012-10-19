@@ -36,7 +36,11 @@ def main(args=sys.argv[1:]):
     else:
         print "Downloading %s" % product['name']
         br = eideticker.BuildRetriever()
-        filename = br.get_build(product, datestr)
+        if datestr == 'latest':
+            date = None
+        else:
+            date = eideticker.BuildRetriever.get_date(datestr)
+        filename = br.get_build(product, date)
 
         print "Installing %s (%s)" % (product['name'], filename)
         device.updateApp(filename)
