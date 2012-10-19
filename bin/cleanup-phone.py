@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import sys
-from eideticker.products import default_products
 import eideticker
 
 def main(args=sys.argv[1:]):
@@ -17,7 +16,7 @@ def main(args=sys.argv[1:]):
         print "No cleanup presently required on b2g"
         return
 
-    for product in default_products:
+    for product in eideticker.products:
         if product['platform'] == device.type:
             device.killProcess(product['appname'])
 
