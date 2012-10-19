@@ -111,6 +111,14 @@ products = [
         "appname": "org.mozilla.fennec"
     },
     {
+        "name": "nightly-armv6",
+        "platform": "android",
+        "buildregex": ".*android-arm-armv6.apk",
+        "reponame": "mozilla-central-android-armv6",
+        "latest": "http://ftp.mozilla.org/pub/mozilla.org/mobile/nightly/latest-mozilla-central-android-armv6/",
+        "appname": "org.mozilla.fennec"
+    },
+    {
         "name": "stock",
         "platform": "android",
         "url": None,
