@@ -77,16 +77,10 @@ class EidetickerMixin(object):
         # we support two locations for the orng executable: /data/local
         # and /system/xbin
         for dir in ["/data/local", "/system/xbin", "/system/bin"]:
-            # we use ls instead of fileExists because fileExists doesn't
-            # handle directories which we can't read like /data/local :(
-            try:
-                potentialLocation = posixpath.join(dir, "orng")
-                if self.shellCheckOutput(["ls", potentialLocation]).strip() \
-                        == potentialLocation:
-                    self.orngLocation = potentialLocation
-                    break
-            except mozdevice.DMError:
-                pass
+            potentialLocation = posixpath.join(dir, "orng")
+            if self.fileExists(potentialLocation):
+                self.orngLocation = potentialLocation
+                break
 
         if not self.orngLocation:
             raise mozdevice.DMError("Could not find a copy of Orangutan (orng) to run")
