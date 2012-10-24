@@ -287,7 +287,9 @@ def main(args=sys.argv[1:]):
         runner = eideticker.B2GRunner(device, url, EIDETICKER_TEMP_DIR)
         runner.start()
     else:
-        runner = eideticker.BrowserRunner(device, appname, url, extra_prefs=extra_prefs)
+        runner = eideticker.BrowserRunner(device, appname, url,
+                                          EIDETICKER_TEMP_DIR,
+                                          extra_prefs=extra_prefs)
         runner.start(profile_file=temp_profile_file_name)
 
     # Keep on capturing until we timeout

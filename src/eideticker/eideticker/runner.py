@@ -5,6 +5,7 @@
 import mozdevice
 import mozprofile
 import os
+import shutil
 import tempfile
 import time
 import subprocess
@@ -42,10 +43,11 @@ class BrowserRunner(object):
     remote_profile_dir = None
     intent = "android.intent.action.VIEW"
 
-    def __init__(self, dm, appname, url, extra_prefs={}):
+    def __init__(self, dm, appname, url, tmpdir, extra_prefs={}):
         self.dm = dm
         self.appname = appname
         self.url = url
+        self.tmpdir = tmpdir
         self.extra_prefs = extra_prefs
 
         activity_mappings = {
@@ -70,10 +72,10 @@ class BrowserRunner(object):
         files_to_package = []
 
         # create a temporary directory to place the profile and shared libraries
-        tmpdir = tempfile.mkdtemp()
+        profiledir = tempfile.mkdtemp(dir=self.tmpdir)
 
         # remove previous profiles if there is one
-        sps_profile_path = os.path.join(tmpdir, "fennec_profile.txt")
+        sps_profile_path = os.path.join(profiledir, "fennec_profile.txt")
         if os.path.exists(sps_profile_path):
             os.remove(sps_profile_path)
 
@@ -83,7 +85,7 @@ class BrowserRunner(object):
 
         print "Fetching app symbols"
         try:
-            local_apk_path = os.path.join(tmpdir, "symbol.apk")
+            local_apk_path = os.path.join(profiledir, "symbol.apk")
             self.dm.getAPK(self.appname, local_apk_path)
             files_to_package.append(local_apk_path)
         except:
@@ -106,7 +108,7 @@ class BrowserRunner(object):
              for filename in dirlist:
                  filename = filename.strip()
                  if filename.endswith(".so"):
-                     lib_path = os.path.join(tmpdir, filename)
+                     lib_path = os.path.join(profiledir, filename)
                      remotefilename = libpath + '/' + filename
                      self.dm.getFile(remotefilename, lib_path)
                      files_to_package.append(lib_path);
@@ -114,6 +116,8 @@ class BrowserRunner(object):
         with zipfile.ZipFile(target_zip, "w") as zip_file:
             for file_to_package in files_to_package:
                 zip_file.write(file_to_package, os.path.basename(file_to_package))
+
+        shutil.rmtree(profiledir)
 
     def start(self, profile_file=None):
         print "Starting %s... " % self.appname
