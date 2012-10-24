@@ -83,14 +83,12 @@ class BrowserRunner(object):
         self.dm.getFile(remote_sps_profile_location, sps_profile_path)
         files_to_package.append(sps_profile_path)
 
+        # FIXME: We still get a useful profile without the symbols from the apk
+        # make doing this optional so we don't require a rooted device
         print "Fetching app symbols"
-        try:
-            local_apk_path = os.path.join(profiledir, "symbol.apk")
-            self.dm.getAPK(self.appname, local_apk_path)
-            files_to_package.append(local_apk_path)
-        except:
-            print "WARNING: Failed to fetch app symbols"
-            pass # We still get a useful profile without the symbols from the apk
+        local_apk_path = os.path.join(profiledir, "symbol.apk")
+        self.dm.getAPK(self.appname, local_apk_path)
+        files_to_package.append(local_apk_path)
 
         # get all the symbols library for symbolication
         print "Fetching system libraries"

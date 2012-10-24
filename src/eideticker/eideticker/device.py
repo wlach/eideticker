@@ -125,24 +125,26 @@ class EidetickerMixin(object):
         if pids:
             self.shellCheckOutput(['kill', '-s', '12', str(pids[0])], root=True)
 
+    def fileExists(self, filepath):
+        ret = self.shellCheckOutput(['sh', '-c', 'ls -a %s || true' % filepath],
+                                    root=True)
+        return ret.strip() == filepath
+
     def getAPK(self, appname, localfile):
-        remote_tempfile = '/data/local/apk-tmp-%s' % time.time()
+        remote_tempfile = posixpath.join(self.getDeviceRoot(),
+                                         'apk-tmp-%s' % time.time())
         for remote_apk_path in [ '/data/app/%s-1.apk' % appname,
                                  '/data/app/%s-2.apk' % appname ]:
-            try:
+            if self.fileExists(remote_apk_path):
                 self.shellCheckOutput(['dd', 'if=%s' % remote_apk_path,
                                        'of=%s' % remote_tempfile], root=True)
                 self.shellCheckOutput(['chmod', '0666', remote_tempfile],
                                       root=True)
+                self.getFile(remote_tempfile, localfile)
                 self.removeFile(remote_tempfile)
-            except:
-                continue
-
-            if self.getFile(remote_tempfile, localfile):
                 return
 
-        raise Exception("Unable to get remote APK for %s!" % appname)
-
+        raise mozdevice.DMError("Unable to get APK for %s" % appname)
 
     def getprop(self, prop):
         return self.shellCheckOutput(["getprop", str(prop)])
@@ -243,7 +245,7 @@ class EidetickerMixin(object):
             cmdevents.extend(self._getCmdEvents(cmd, args))
         self._executeScript(cmdevents, executeCallback=executeCallback)
 
-class DroidADB(mozdevice.DroidADB, EidetickerMixin):
+class DroidADB(EidetickerMixin, mozdevice.DroidADB):
 
     def __init__(self, **kwargs):
         mozdevice.DroidADB.__init__(self, **kwargs)
@@ -271,7 +273,7 @@ class DroidADB(mozdevice.DroidADB, EidetickerMixin):
     def rotation(self):
         return 0 # No way to find real rotation, assume 0
 
-class DroidSUT(mozdevice.DroidSUT, EidetickerMixin):
+class DroidSUT(EidetickerMixin, mozdevice.DroidSUT):
 
     cached_dimensions = None
     cached_rotation = None
