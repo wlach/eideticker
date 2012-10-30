@@ -94,6 +94,8 @@ for TEST in $TESTS; do
       cleanup
       exit 1
   fi
+
+  ./bin/sync-dashboard.sh
 done
 
 cleanup
