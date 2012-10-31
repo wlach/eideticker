@@ -5,7 +5,7 @@ if [ -z $DASHBOARD_SERVER ]; then
         echo "Usage $0 <destination server>"
         exit 1
     else
-        $DASHBOARD_SERVER=$1
+        DASHBOARD_SERVER=$1
     fi
 fi
 
