@@ -309,7 +309,7 @@ class DroidSUT(EidetickerMixin, mozdevice.DroidSUT):
         self.installApp(pathOnDevice)
         self.removeFile(pathOnDevice)
 
-class B2GADB(mozb2g.DeviceADB, EidetickerMixin):
+class B2GADB(EidetickerMixin, mozb2g.DeviceADB):
     def __init__(self, **kwargs):
         mozb2g.DeviceADB.__init__(self, **kwargs)
         self._init() # custom eideticker init steps
@@ -319,7 +319,14 @@ class B2GADB(mozb2g.DeviceADB, EidetickerMixin):
     def type(self):
         return "b2g"
 
-class B2GSUT(mozb2g.DeviceSUT, EidetickerMixin):
+    @property
+    def dimensions(self):
+        return self.deviceProperties['dimensions']
+
+    def rotation(self):
+        return 90 # Assume landscape orientation for now
+
+class B2GSUT(EidetickerMixin, mozb2g.DeviceSUT):
     def __init__(self, **kwargs):
         mozb2g.DeviceSUT.__init__(self, **kwargs)
         self._init() # custom eideticker init steps

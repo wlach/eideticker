@@ -14,10 +14,10 @@ import zipfile
 class B2GRunner(object):
     remote_profile_dir = None
 
-    def __init__(self, dm, url, tmpdir, mode=None, marionette_host=None, marionette_port=None):
+    def __init__(self, dm, url, tmpdir, mode='landscape', marionette_host=None, marionette_port=None):
         self.dm = dm
         self.url = url
-        self.mode = mode or 'portrait'
+        self.mode = mode
 
     def start(self):
         self.dm.setupDHCP()
