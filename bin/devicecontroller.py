@@ -1,15 +1,6 @@
 #!/usr/bin/env python
 
-import StringIO
-import optparse
-import os
-import select
-import socket
-import subprocess
 import sys
-import tempfile
-import time
-
 import eideticker
 
 
