@@ -51,6 +51,12 @@ if [ ! -e /usr/include/python2.7/Python.h ]; then
     exit 1
 fi
 
+which g++ > /dev/null
+if [ $? != 0 ]; then
+    echo "Please install g++ ('sudo apt-get install -y g++' on Ubuntu)"
+    exit 1
+fi
+
 set -e
 
 # Check out git submodules
