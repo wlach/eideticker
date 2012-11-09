@@ -49,6 +49,11 @@ DEVICE_PROPERTIES = {
             "inputDevice": "/dev/input/event2",
             "dimensions": (720, 1280)
             },
+        "unagi1": {
+            "hdmiResolution": None,
+            "inputDevice": "/dev/input/event0",
+            "dimensions": (320, 480)
+            }
         }
 }
 
