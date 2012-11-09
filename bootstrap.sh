@@ -39,21 +39,16 @@
 
 BASEDIR=$PWD
 
-
-which virtualenv > /dev/null
-if [ $? != 0 ]; then
-    echo "Please install virtualenv ('sudo apt-get install -y python-virtualenv' on Ubuntu)"
-    exit 1
-fi
+for PROG in virtualenv g++ ffmpeg; do
+    which $PROG > /dev/null
+    if [ $? != 0 ]; then
+        echo "Required dep $PROG not found. Please install ('sudo apt-get install -y python-virtualenv g++ ffmpeg' on Ubuntu gets them all)"
+        exit 1
+    fi
+done
 
 if [ ! -e /usr/include/python2.7/Python.h ]; then
     echo "Please install Python 2.7 development files ('sudo apt-get install -y python2.7-dev' on Ubuntu)"
-    exit 1
-fi
-
-which g++ > /dev/null
-if [ $? != 0 ]; then
-    echo "Please install g++ ('sudo apt-get install -y g++' on Ubuntu)"
     exit 1
 fi
 
