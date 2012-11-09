@@ -6,18 +6,10 @@
 
 import datetime
 import json
-import mozhttpd
-import mozprofile
-import optparse
 import os
-import subprocess
 import sys
-import tempfile
-import time
 import urllib
-import urlparse
 import videocapture
-import StringIO
 import eideticker
 
 BINDIR = os.path.dirname(__file__)
@@ -25,83 +17,6 @@ CAPTURE_DIR = os.path.abspath(os.path.join(BINDIR, "../captures"))
 TEST_DIR = os.path.abspath(os.path.join(BINDIR, "../src/tests"))
 EIDETICKER_TEMP_DIR = "/tmp/eideticker"
 GECKO_PROFILER_ADDON_DIR = os.path.join(os.path.dirname(__file__), "../src/GeckoProfilerAddon")
-
-capture_controller = videocapture.CaptureController(custom_tempdir=EIDETICKER_TEMP_DIR)
-
-class CaptureServer(object):
-    finished = False
-    controller_finishing = False
-    start_frame = None
-    end_frame = None
-
-    def __init__(self, capture_metadata, capture_file,
-                 checkerboard_log_file, capture_controller, device, actions):
-        self.capture_metadata = capture_metadata
-        self.capture_file = capture_file
-        self.checkerboard_log_file = checkerboard_log_file
-        self.capture_controller = capture_controller
-        self.device = device
-        self.actions = actions
-
-    def terminate_capture(self):
-        if self.capture_file and self.capture_controller.capturing:
-            self.capture_controller.terminate_capture()
-
-    @mozhttpd.handlers.json_response
-    def start_capture(self, request):
-        if self.capture_file:
-            print "Starting capture on device '%s' with mode: '%s'" % (self.capture_metadata['device'],
-                                                                       self.device.hdmiResolution)
-            self.capture_controller.start_capture(self.capture_file,
-                                                  self.device.hdmiResolution,
-                                                  self.capture_metadata)
-
-        return (200, {'capturing': True})
-
-    @mozhttpd.handlers.json_response
-    def end_capture(self, request):
-        self.finished = True
-        self.terminate_capture()
-        return (200, {'capturing': False})
-
-    @mozhttpd.handlers.json_response
-    def input(self, request):
-        if self.actions: # startup test currently indicated by no actions
-            commandset = urlparse.parse_qs(request.body)['commands'][0]
-
-            if not self.actions.get(commandset) or not \
-                    self.actions[commandset].get(self.device.model):
-                print "Could not get actions for commandset '%s', model " \
-                    "'%s'" % (commandset, self.device.model)
-                sys.exit(1)
-
-            def executeCallback():
-                if self.checkerboard_log_file:
-                    self.device.clear_logcat()
-                if self.capture_file:
-                    self.start_frame = self.capture_controller.capture_framenum()
-                print "Executing commands '%s' for device '%s' (time: %s, framenum: %s)" % (
-                    commandset, self.device.model, time.time(), self.start_frame)
-
-            self.device.executeCommands(self.actions[commandset][self.device.model],
-                                        executeCallback=executeCallback)
-
-        if self.capture_file:
-            self.end_frame = self.capture_controller.capture_framenum()
-
-        print "Finished (time: %s, framenum: %s)" % (time.time(),
-                                                     self.end_frame)
-
-        if self.checkerboard_log_file:
-            # sleep a bit to make sure we get all the checkerboard stats from
-            # test
-            time.sleep(1)
-            with open(self.checkerboard_log_file, 'w') as f:
-                output = self.device.get_logcat(["GeckoLayerRendererProf:D",
-                                                 "*:S"])
-                f.write(output)
-
-        return (200, {})
 
 def main(args=sys.argv[1:]):
     usage = "usage: %prog [options] [appname] <test path>"
@@ -168,16 +83,6 @@ def main(args=sys.argv[1:]):
             print "Test must be relative to %s" % TEST_DIR
             sys.exit(1)
 
-    actions = None
-    if not options.startup_test:
-        actions_path = os.path.join(os.path.dirname(testpath), "actions.json")
-        try:
-            with open(actions_path) as f:
-                actions = json.loads(f.read())
-        except EnvironmentError:
-            print "Couldn't open actions file '%s'" % actions_path
-            sys.exit(1)
-
     if not os.path.exists(EIDETICKER_TEMP_DIR):
         os.mkdir(EIDETICKER_TEMP_DIR)
     if not os.path.isdir(EIDETICKER_TEMP_DIR):
@@ -196,149 +101,63 @@ def main(args=sys.argv[1:]):
     devicePrefs = eideticker.getDevicePrefs(options)
     device = eideticker.getDevice(**devicePrefs)
 
-    if appname and device.processExist(appname):
-        print "An instance of %s is running. Please stop it before running Eideticker." % appname
-        sys.exit(1)
-
-    # If we're logging checkerboard stats, set that up here (seems like it
-    # takes a second or so to accept the new setting, so let's do that here --
-    # ideally we would detect when that's working, but I'm not sure how to do
-    # so trivially)
-    if options.checkerboard_log_file:
-        old_log_val = device.getprop("log.tag.GeckoLayerRendererProf")
-        device.setprop("log.tag.GeckoLayerRendererProf", "DEBUG")
-
     print "Creating webserver..."
     capture_metadata = {
         'name': capture_name,
         'testpath': testpath_rel,
         'app': appname,
         'device': device.model,
+        'devicetype': options.devicetype,
         'startupTest': options.startup_test
         }
-
-    # something of a hack. if profiling is enabled, carve off an area to
-    # ignore in the capture
-    if options.profile_file:
-        capture_metadata['ignoreAreas'] = [ [ 0, 0, 3*64, 3 ] ]
-
-    capture_server = CaptureServer(capture_metadata,
-                                   capture_file,
-                                   options.checkerboard_log_file,
-                                   capture_controller, device, actions)
-    host = mozhttpd.iface.get_lan_ip()
-    http = mozhttpd.MozHttpd(docroot=TEST_DIR,
-                             host=host, port=0,
-                             urlhandlers = [ { 'method': 'GET',
-                                               'path': '/api/captures/start/?',
-                                               'function': capture_server.start_capture },
-                                             { 'method': 'GET',
-                                               'path': '/api/captures/end/?',
-                                               'function': capture_server.end_capture },
-                                             { 'method': 'POST',
-                                               'path': '/api/captures/input/?',
-                                               'function': capture_server.input } ])
-    http.start(block=False)
-
-    connected = False
-    tries = 0
-    while not connected and tries < 20:
-        tries+=1
-        import socket
-        s = socket.socket()
-        try:
-            s.connect((host, http.httpd.server_port))
-            connected = True
-        except Exception:
-            print "Can't connect to %s:%s, retrying..." % (host, http.httpd.server_port)
-
-    if not connected:
-        print "Could not open webserver. Error!"
-        sys.exit(1)
 
     # note: url params for startup tests currently not supported
     if options.url_params:
         testpath_rel += "?%s" % urllib.quote_plus(options.url_params)
 
+    capture_controller = videocapture.CaptureController(custom_tempdir=EIDETICKER_TEMP_DIR)
+
     if options.startup_test:
-        if testpath == "about:home":
-            url = testpath
-        else:
-            url = "http://%s:%s/%s?startup_test=1" % (host, http.httpd.server_port, testpath_rel)
+        testtype = 'startup'
+    elif options.devicetype == 'b2g' and testpath.endswith('.py'):
+        testtype = 'b2g'
     else:
-        url = "http://%s:%s/start.html?testpath=%s" % (host,
-                                                       http.httpd.server_port,
-                                                       testpath_rel)
+        testtype = 'web'
 
-    temp_profile_file_name = None
-    if options.profile_file:
-        temp_profile_file = tempfile.NamedTemporaryFile()
-        temp_profile_file_name = temp_profile_file.name
+    # get actions for web tests
+    actions = None
+    if testtype == 'web':
+        actions_path = os.path.join(os.path.dirname(testpath), "actions.json")
+        try:
+            with open(actions_path) as f:
+                actions = json.loads(f.read())
+        except EnvironmentError:
+            print "Couldn't open actions file '%s'" % actions_path
+            sys.exit(1)
 
-    # FIXME: currently start capture before launching app because we wait until app is
-    # launched -- would be better to make waiting optional and then start capture
-    # after triggering app launch to reduce latency?
-    if options.startup_test and not options.no_capture:
-        capture_controller.start_capture(capture_file, device.hdmiResolution,
-                                         capture_metadata)
-
-    print "Test URL is: %s" % url
-    if options.devicetype == 'b2g':
-        runner = eideticker.B2GRunner(device, url, EIDETICKER_TEMP_DIR)
-        runner.start()
-    else:
-        runner = eideticker.BrowserRunner(device, appname, url,
-                                          EIDETICKER_TEMP_DIR,
-                                          extra_prefs=extra_prefs)
-        runner.start(profile_file=temp_profile_file_name)
-
-    # Keep on capturing until we timeout
-    if capture_timeout:
-        timeout = capture_timeout
-    else:
-        timeout = 100
-    timer = 0
-    interval = 0.1
-
-    try:
-        while not capture_server.finished and timer < timeout:
-            time.sleep(interval)
-            timer += interval
-    except KeyboardInterrupt:
-        print "Aborting"
-        runner.stop()
-        capture_server.terminate_capture()
-        sys.exit(1)
-
-    if capture_timeout and not capture_server.finished:
-        capture_server.terminate_capture()
-    elif not capture_server.finished:
-        print "Did not finish test! Error!"
-        runner.stop()
-        capture_server.terminate_capture()
-        sys.exit(1)
-
-    runner.stop()
-
-    # Clean up checkerboard logging preferences
-    if options.checkerboard_log_file:
-        device.setprop("log.tag.GeckoLayerRendererProf", old_log_val)
+    test = eideticker.get_test(devicetype = options.devicetype, testtype = testtype,
+                               testpath = testpath,
+                               testpath_rel = testpath_rel, device = device,
+                               actions = actions, extra_prefs = extra_prefs,
+                               capture_file = capture_file,
+                               capture_controller = capture_controller,
+                               capture_metadata = capture_metadata,
+                               capture_timeout = capture_timeout,
+                               appname = appname,
+                               checkerboard_log_file = options.checkerboard_log_file,
+                               profile_file = options.profile_file,
+                               gecko_profiler_addon_dir=GECKO_PROFILER_ADDON_DIR,
+                               docroot = TEST_DIR,
+                               tempdir = EIDETICKER_TEMP_DIR)
+    test.run()
+    test.cleanup()
 
     if capture_file:
         print "Converting capture..."
         try:
-            capture_controller.convert_capture(capture_server.start_frame, capture_server.end_frame)
+            capture_controller.convert_capture(test.start_frame, test.end_frame)
         except KeyboardInterrupt:
             print "Aborting"
             sys.exit(1)
-
-    # profile file
-    if options.profile_file:
-        subprocess.check_call(["./symbolicate.sh",
-                         os.path.abspath(temp_profile_file_name),
-                         os.path.abspath(options.profile_file)],
-                        cwd=GECKO_PROFILER_ADDON_DIR)
-
-
 
 main()

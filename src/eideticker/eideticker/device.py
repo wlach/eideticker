@@ -153,12 +153,6 @@ class EidetickerMixin(object):
             value = "\"\""
         self.shellCheckOutput(["setprop", str(prop), str(value)])
 
-    def clear_logcat(self):
-        self.shellCheckOutput(["logcat", "-c"], root=True)
-
-    def get_logcat(self, args):
-        return self.shellCheckOutput(["logcat", "-d"] + args, root=True)
-
     def _transformXY(self, coords):
         # FIXME: Only handling 90 degrees for now, everything else falls back
         # to default

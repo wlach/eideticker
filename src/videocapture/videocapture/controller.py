@@ -73,7 +73,6 @@ class CaptureProcess(multiprocessing.Process):
         self.capture_proc.terminate()
         for i in range(2):
             rc = self.capture_proc.poll()
-            print 'rc: %s' % str(rc)
             if rc != None:
                 print 'terminated'
                 self.capture_proc.wait()  # necessary?
@@ -128,7 +127,9 @@ class CaptureController(object):
 
     def terminate_capture(self):
         # should not call this when no capture is ongoing
-        assert self.capture_process
+        if not self.capturing:
+            print "Terminated capture, but no capture ongoing"
+            return
 
         self.capture_process.stop()
         self.capture_process.join()

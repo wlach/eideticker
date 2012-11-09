@@ -6,48 +6,23 @@ import mozdevice
 import mozprofile
 import os
 import shutil
+import subprocess
 import tempfile
 import time
-import subprocess
 import zipfile
 
-class B2GRunner(object):
-    remote_profile_dir = None
-
-    def __init__(self, dm, url, tmpdir, mode='landscape', marionette_host=None, marionette_port=None):
-        self.dm = dm
-        self.url = url
-        self.mode = mode
-
-    def start(self):
-        self.dm.setupDHCP()
-
-        #launch app
-        self.dm.setupMarionette()
-        session = self.dm.marionette.session
-        if 'b2g' not in session:
-            raise Exception("bad session value %s returned by start_session" % session)
-
-        print "launching test"
-        #set landscape or portrait mode
-        self.dm.marionette.execute_script("screen.mozLockOrientation('%s');" % self.mode)
-        # start the tests by navigating to the url
-        self.dm.marionette.execute_script("window.location.href='%s';" % self.url)
-
-    def stop(self):
-        self.dm.marionette.delete_session()
-        self.dm.cleanup()
-
-class BrowserRunner(object):
+class AndroidBrowserRunner(object):
 
     remote_profile_dir = None
     intent = "android.intent.action.VIEW"
 
-    def __init__(self, dm, appname, url, tmpdir, extra_prefs={}):
+    def __init__(self, dm, appname, url, tmpdir, gecko_profiler_addon_dir=None,
+                 extra_prefs={}):
         self.dm = dm
         self.appname = appname
         self.url = url
         self.tmpdir = tmpdir
+        self.gecko_profiler_addon_dir = gecko_profiler_addon_dir
         self.extra_prefs = extra_prefs
 
         activity_mappings = {
@@ -66,7 +41,7 @@ class BrowserRunner(object):
             self.activity = activity_mappings[self.appname]
 
     def get_profile_and_symbols(self, remote_sps_profile_location, target_zip):
-        if self.is_profiling == False:
+        if not self.is_profiling:
            raise Exception("Can't get profile if it isn't started with the profiling option")
 
         files_to_package = []
@@ -117,13 +92,13 @@ class BrowserRunner(object):
 
         shutil.rmtree(profiledir)
 
-    def start(self, profile_file=None):
+    def start(self, enable_profiling=False):
         print "Starting %s... " % self.appname
 
         # for fennec only, we create and use a profile
         if self.appname.startswith('org.mozilla'):
             args = []
-            self.is_profiling = profile_file != None
+            self.is_profiling = enable_profiling
             preferences = { 'gfx.show_checkerboard_pattern': False,
                             'browser.firstrun.show.uidiscovery': False,
                             'toolkit.telemetry.prompted': 2 }
@@ -139,7 +114,6 @@ class BrowserRunner(object):
             self.dm.pushDir(profile.profile, self.remote_profile_dir)
 
             if self.is_profiling:
-                self.profile_file = profile_file
                 mozEnv = { "MOZ_PROFILER_STARTUP": "true" }
             else:
                 mozEnv = None
@@ -160,21 +134,31 @@ class BrowserRunner(object):
             self.dm.launchApplication(self.appname, self.activity, self.intent,
                                       url=self.url)
 
-    def stop(self):
-        # Dump the profile
-        if self.is_profiling:
-            print "Saving sps performance profile"
-            self.dm.sendSaveProfileSignal(self.appname)
-            remote_sps_profile_location = "/mnt/sdcard/profile_0_%s.txt" % self.dm.getPIDs(self.appname)[0]
-            # Saving goes through the main event loop so give it time to flush
-            time.sleep(10)
+    def save_profile(self):
+        # Dump the profile (don't process it yet because we need to cleanup
+        # the capture first)
+        print "Saving sps performance profile"
+        appPID = self.dm.getPIDs(self.appname)[0]
+        self.dm.sendSaveProfileSignal(self.appname)
+        self.remote_sps_profile_location = "/mnt/sdcard/profile_0_%s.txt" % appPID
+        # Saving goes through the main event loop so give it time to flush
+        time.sleep(10)
 
+    def process_profile(self, profile_file):
+        with tempfile.NamedTemporaryFile() as temp_profile_file:
+            self.get_profile_and_symbols(self.remote_sps_profile_location,
+                                         temp_profile_file.name)
+            self.dm.removeFile(self.remote_sps_profile_location)
+            subprocess.check_call(["./symbolicate.sh",
+                                   os.path.abspath(temp_profile_file.name),
+                                   os.path.abspath(profile_file)],
+                                  cwd=self.gecko_profiler_addon_dir)
+
+
+
+    def cleanup(self):
+        # stops the process and cleans up after a run
         self.dm.killProcess(self.appname)
-
-        # Process the profile
-        if self.is_profiling:
-            self.get_profile_and_symbols(remote_sps_profile_location, self.profile_file)
-            self.dm.removeFile(remote_sps_profile_location)
 
         # Remove the Mozilla profile from the sdcard (not to be confused with
         # the sampling profile)
