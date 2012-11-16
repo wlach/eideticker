@@ -196,6 +196,17 @@ class EidetickerMixin(object):
                                               int(numsteps)))
         return events
 
+    def _getSwipeEvents(self, direction, numtimes=1, numsteps=10, duration=100):
+        events = []
+        y = (self.dimensions[1] / 2)
+        (x1, x2) = (20, self.dimensions[0] - 20)
+        if direction == "left":
+            (x1, x2) = (x2, x1)
+        for i in range(int(numtimes)):
+            events.append(self._getDragEvents((x1, y), (x2, y), duration,
+                                              int(numsteps)))
+        return events
+
     def _getPinchEvent(self, touch1_x1, touch1_y1, touch1_x2, touch1_y2,
                        touch2_x1, touch2_y1, touch2_x2, touch2_y2,
                        numsteps=10, duration=1000):
@@ -209,7 +220,11 @@ class EidetickerMixin(object):
         if cmd == "scroll_down":
             cmdevents = self._getScrollDownEvents(*args)
         elif cmd == "scroll_up":
-            cmdevents = self._getScrollUpEvents(*args)
+            cmdevents = self._getScrollEvents(*args)
+        elif cmd == "swipe_left":
+            cmdevents = self._getSwipeEvents("left", *args)
+        elif cmd == "swipe_right":
+            cmdevents = self._getSwipeEvents("right", *args)
         elif cmd == "tap":
             cmdevents = [self._getTapEvent(*args)]
         elif cmd == "double_tap":
