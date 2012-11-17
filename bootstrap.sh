@@ -64,7 +64,7 @@ virtualenv .
 # Build up videocapture utility (FIXME: should be part of the egg building process)
 make -C src/videocapture/videocapture/decklink
 
-# Install videocapture and jsbridge python eggs (and their deps)
+# Install local deps
 ./bin/pip install -e src/eideticker
 ./bin/pip install -e src/videocapture
 ./bin/pip install -e src/mozbase/mozhttpd
