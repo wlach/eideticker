@@ -101,6 +101,7 @@ class AndroidBrowserRunner(object):
             self.is_profiling = enable_profiling
             preferences = { 'gfx.show_checkerboard_pattern': False,
                             'browser.firstrun.show.uidiscovery': False,
+                            'layers.low-precision-buffer': False, # bug 815175
                             'toolkit.telemetry.prompted': 2 }
             preferences.update(self.extra_prefs)
 
