@@ -20,27 +20,26 @@ DEVICE_PROPERTIES = {
         "Galaxy Nexus": {
             "hdmiResolution": "720p",
             "inputDevice": "/dev/input/event1",
-            "dimensions": (1180, 720)
+            "dimensions": (1180, 720),
+            "swipePadding": (240, 40, 100, 40)
             },
         "Panda": {
             "hdmiResolution": "720p",
             "inputDevice": "/dev/input/event0",
-            "dimensions": (1280, 672)
-            },
-        "Panda": {
-            "hdmiResolution": "720p",
-            "inputDevice": "/dev/input/event0",
-            "dimensions": (1280, 672)
+            "dimensions": (1280, 672),
+            "swipePadding": (240, 40, 100, 40)
             },
         "LG-P999": {
             "hdmiResolution": "1080p",
             "inputDevice": "/dev/input/event1",
-            "dimensions": (480, 800)
+            "dimensions": (480, 800),
+            "swipePadding": (240, 40, 100, 40)
             },
         "MID": {
             "hdmiResolution": None,
             "inputDevice": "/dev/input/event2",
-            "dimensions": (480, 800)
+            "dimensions": (480, 800),
+            "swipePadding": (240, 40, 100, 40)
             },
         },
     "b2g": {
@@ -48,13 +47,15 @@ DEVICE_PROPERTIES = {
             "hdmiResolution": "720p",
             "inputDevice": "/dev/input/event2",
             "defaultOrientation": "landscape",
-            "dimensions": (1280, 720)
+            "dimensions": (1280, 720),
+            "swipePadding": (40, 40, 40, 40)
             },
         "unagi1": {
             "hdmiResolution": None,
             "inputDevice": "/dev/input/event0",
             "defaultOrientation": "portrait",
-            "dimensions": (320, 480)
+            "dimensions": (320, 480),
+            "swipePadding": (40, 40, 40, 40)
             }
         }
 }
@@ -178,30 +179,24 @@ class EidetickerMixin(object):
         coords = self._transformXY((x,y))
         return "tap %s %s %s" % (int(coords[0]), int(coords[1]), times)
 
-    def _getScrollDownEvents(self, numtimes=1, numsteps=10, duration=100):
+    def _getScrollEvents(self, direction, numtimes=1, numsteps=10, duration=100):
         events = []
         x = int(self.dimensions[0] / 2)
-        ybottom = self.dimensions[1] - 200
-        ytop = 240
+        ybottom = self.dimensions[1] - self.deviceProperties['swipePadding'][2]
+        ytop = self.deviceProperties['swipePadding'][0]
+        (p1, p2) = ((x, ybottom), (x, ytop))
+        if direction == "up":
+            (p1, p2) = (p2, p1)
         for i in range(int(numtimes)):
-            events.append(self._getDragEvents((x,ybottom), (x,ytop), duration,
-                                              int(numsteps)))
-        return events
-
-    def _getScrollUpEvents(self, numtimes=1, numsteps=10, duration=100):
-        events = []
-        x = int(self.dimensions[0] / 2)
-        ybottom = self.dimensions[1] - 100
-        ytop = 240
-        for i in range(int(numtimes)):
-            events.append(self._getDragEvents((x,ytop), (x,ybottom), duration,
+            events.append(self._getDragEvents(p1, p2, duration,
                                               int(numsteps)))
         return events
 
     def _getSwipeEvents(self, direction, numtimes=1, numsteps=10, duration=100):
         events = []
         y = (self.dimensions[1] / 2)
-        (x1, x2) = (20, self.dimensions[0] - 20)
+        (x1, x2) = (self.deviceProperties['swipePadding'][3],
+                    self.dimensions[0] - self.deviceProperties['swipePadding'][2])
         if direction == "left":
             (x1, x2) = (x2, x1)
         for i in range(int(numtimes)):
@@ -220,9 +215,9 @@ class EidetickerMixin(object):
                                                         duration)
     def _getCmdEvents(self, cmd, args):
         if cmd == "scroll_down":
-            cmdevents = self._getScrollDownEvents(*args)
+            cmdevents = self._getScrollEvents("down", *args)
         elif cmd == "scroll_up":
-            cmdevents = self._getScrollEvents(*args)
+            cmdevents = self._getScrollEvents("up", *args)
         elif cmd == "swipe_left":
             cmdevents = self._getSwipeEvents("left", *args)
         elif cmd == "swipe_right":

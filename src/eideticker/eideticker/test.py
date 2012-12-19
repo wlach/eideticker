@@ -184,9 +184,9 @@ class WebTest(Test):
                 commandset, self.device.model, time.time(), self.start_frame)
             if not self.actions.get(commandset) or not \
                         self.actions[commandset].get(self.device.model):
-                    raise "Could not get actions for commandset '%s', model " \
-                        "'%s'" % (commandset, self.device.model)
-                    sys.exit(1)
+                    raise Exception("Could not get actions for commandset "
+                                    "'%s', model '%s'" % (commandset,
+                                                          self.device.model))
             device_actions = self.actions[commandset][self.device.model]
 
             def executeCallback():
