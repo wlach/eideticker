@@ -305,7 +305,7 @@ class AndroidStartupTest(AndroidWebTest):
 
 class B2GTest(Test):
 
-    def __init__(self, mode="portrait", **kwargs):
+    def __init__(self, **kwargs):
         super(B2GTest, self).__init__(**kwargs)
         print "Setting up device"
         self.device.setupDHCP()
@@ -317,15 +317,14 @@ class B2GTest(Test):
 
         # unlock device, so it doesn't go to sleep
         self.device.unlock()
-        print "Device unlocked?"
 
         # Wait for device to properly recognize network
         # (FIXME: this timeout is terrible, can we do check for network
         # connectivity with marionette somehow?)
         time.sleep(5)
 
-        # set landscape or portrait mode
-        self.device.marionette.execute_script("screen.mozLockOrientation('%s');" % mode)
+        # reset orientation to default for this type of device
+        self.device.resetOrientation()
 
     def cleanup(self):
         self.device.marionette.delete_session()

@@ -16,6 +16,11 @@ class Test(B2GTest):
 
         # open cards view
         self.device.marionette.execute_script("window.dispatchEvent(new Event('holdhome'));")
+
+        # launching apps can reset orientation to the wrong value, since some
+        # apps only support portrait mode. reset it here.
+        self.device.resetOrientation()
+
         self.start_capture()
         self.test_started()
         for i in range(3):

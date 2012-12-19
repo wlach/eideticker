@@ -47,11 +47,13 @@ DEVICE_PROPERTIES = {
         "Panda": {
             "hdmiResolution": "720p",
             "inputDevice": "/dev/input/event2",
-            "dimensions": (720, 1280)
+            "defaultOrientation": "landscape",
+            "dimensions": (1280, 720)
             },
         "unagi1": {
             "hdmiResolution": None,
             "inputDevice": "/dev/input/event0",
+            "defaultOrientation": "portrait",
             "dimensions": (320, 480)
             }
         }
@@ -323,7 +325,18 @@ class DroidSUT(EidetickerMixin, mozdevice.DroidSUT):
         self.installApp(pathOnDevice)
         self.removeFile(pathOnDevice)
 
-class B2GADB(EidetickerMixin, mozb2g.DeviceADB):
+class EidetickerB2GMixin(EidetickerMixin):
+    """B2G-specific extensions to the eideticker mixin"""
+
+    def resetOrientation(self):
+        self.setOrientation(self.deviceProperties['defaultOrientation'])
+
+    def setOrientation(self, orientation):
+        # set landscape or portrait mode
+        print "Setting orientation: %s" % orientation
+        self.marionette.execute_script("screen.mozLockOrientation('%s');" % orientation)
+
+class B2GADB(EidetickerB2GMixin, mozb2g.DeviceADB):
     def __init__(self, **kwargs):
         mozb2g.DeviceADB.__init__(self, **kwargs)
         self._init() # custom eideticker init steps
@@ -338,9 +351,9 @@ class B2GADB(EidetickerMixin, mozb2g.DeviceADB):
         return self.deviceProperties['dimensions']
 
     def rotation(self):
-        return 90 # Assume landscape orientation for now
+        return 90 # Assume portrait orientation for now
 
-class B2GSUT(EidetickerMixin, mozb2g.DeviceSUT):
+class B2GSUT(EidetickerB2GMixin, mozb2g.DeviceSUT):
     def __init__(self, **kwargs):
         mozb2g.DeviceSUT.__init__(self, **kwargs)
         self._init() # custom eideticker init steps
