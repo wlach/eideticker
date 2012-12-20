@@ -21,18 +21,19 @@ var measures = {
 }
 
 function updateContent(testInfo, deviceId, testId, measureId) {
-  $.getJSON('data-' + deviceId + '.json', function(graphDataForDevice) {
-    var testDataForDevice = graphDataForDevice[testInfo.key];
-    if (!testDataForDevice) {
+  $.getJSON(deviceId + '/' + testId + '.json', function(dict) {
+    if (!dict || !dict['testdata']) {
       $('#content').html("<p><b>No data for that device/test combination. :(</b></p>");
       return;
     }
 
+    var testData = dict['testdata'];
+
     // figure out which measures could apply to this graph
     var availableMeasures = [];
-    Object.keys(testDataForDevice).forEach(function(type) {
-      Object.keys(testDataForDevice[type]).forEach(function(datestr) {
-        testDataForDevice[type][datestr].forEach(function(sample) {
+    Object.keys(testData).forEach(function(type) {
+      Object.keys(testData[type]).forEach(function(datestr) {
+        testData[type][datestr].forEach(function(sample) {
           Object.keys(measures).forEach(function(measure) {
             if (jQuery.inArray(measure, Object.keys(sample)) !== -1 &&
                 jQuery.inArray(measure, availableMeasures) === -1) {
@@ -43,7 +44,7 @@ function updateContent(testInfo, deviceId, testId, measureId) {
       });
     });
 
-    $('#content').html(ich.graph({'title': testInfo.graphTitle,
+    $('#content').html(ich.graph({'title': testInfo.shortDesc,
                                   'measureDescription': measures[measureId].longDesc,
                                   'measures': availableMeasures.map(
                                     function(measureId) {
@@ -54,7 +55,7 @@ function updateContent(testInfo, deviceId, testId, measureId) {
                                  }));
 
     // update graph
-    updateGraph(testDataForDevice, measureId);
+    updateGraph(testData, measureId);
 
     $('#measure-'+measureId).attr("selected", "true");
     $('#measure').change(function() {
@@ -220,87 +221,55 @@ function updateGraph(rawdata, measure) {
 }
 
 $(function() {
-  var testInfoDict = {
-    'taskjs-scrolling': {
-      'key': 'taskjs',
-      'graphTitle': 'Scrolling on taskjs.org',
-      'defaultMeasure': 'checkerboard'
-    },
-    'nightly-zooming': {
-      'key': 'nightly',
-      'graphTitle': 'Mozilla Nightly Zooming Test',
-      'defaultMeasure': 'checkerboard'
-    },
-    'nytimes-scrolling': {
-      'key': 'nytimes-scroll',
-      'graphTitle': 'New York Times Scrolling Test',
-      'defaultMeasure': 'checkerboard'
-    },
-    'nytimes-zooming': {
-      'key': 'nytimes-zoom',
-      'graphTitle': 'New York Times Zooming Test',
-      'defaultMeasure': 'checkerboard'
-    },
-    'cnn': {
-      'key': 'cnn',
-      'graphTitle': 'CNN.com Test',
-      'defaultMeasure': 'checkerboard'
-    },
-    'canvas-clock': {
-      'key': 'clock',
-      'graphTitle': 'Canvas Clock Test',
-      'defaultMeasure': 'fps'
-    },
-    'reddit': {
-      'key': 'reddit',
-      'graphTitle': 'Reddit test',
-      'defaultMeasure': 'checkerboard'
-    },
-    'imgur': {
-      'key': 'imgur',
-      'graphTitle': 'imgur test',
-      'defaultMeasure': 'checkerboard'
-    },
-    'wikipedia': {
-      'key': 'wikipedia',
-      'graphTitle': 'wikipedia test',
-      'defaultMeasure': 'checkerboard'
-    },
-    'timecube': {
-      'key': 'timecube',
-      'graphTitle': 'timecube test',
-      'defaultMeasure': 'checkerboard'
-    },
-    'startup-abouthome-cold': {
-      'key': 'startup-abouthome-cold',
-      'graphTitle': 'Cold startup to about:home',
-      'defaultMeasure': 'timetostableframe'
-    }
-
-  }
-
-  Object.keys(testInfoDict).forEach(function(testkey) {
-    $('<li id="' + testkey + '-li" testid = ' + testkey + '><a>' + testkey + '</a></li>').appendTo($('#test-chooser'));
-  });
-
   var graphData = {};
-  $.getJSON('devices.json', function(rawData) {
-    var devices = rawData['devices'];
+  $.getJSON('devices.json', function(deviceData) {
+    var devices = deviceData['devices'];
     var deviceIds = Object.keys(devices);
-    var routes = {};
+
     deviceIds.forEach(function(deviceId) {
       $('<li id="device-' + deviceId + '-li" deviceid= ' + deviceId + '><a>'+devices[deviceId].name+'</a></li>').appendTo($('#device-chooser'));
 
-      var baseRoute = "/(" + deviceId + ")/(" + Object.keys(testInfoDict).join("|") + ")";
-      routes[baseRoute] = {
-        '/(checkerboard|fps|uniqueframes|timetostableframe)': {
+      $.getJSON([deviceId, 'tests.json'].join('/'), function(testData) {
+        var tests = testData['tests'];
+        devices[deviceId]['tests'] = tests;
+      });
+
+    });
+
+    // FIXME: should probably have some kind of maximum timeout here...
+    function setupRoutes() {
+      deviceIds.forEach(function(deviceId) {
+        // not ready, call again shortly
+        if (!devices[deviceId]['tests']) {
+          setTimeout(setupRoutes, 100);
+          return;
+        }
+      });
+
+      var routes = {
+        '/:deviceId/:testId/:measureId': {
           on: function(deviceId, testId, measure) {
+            if (!devices[deviceId] || !devices[deviceId]['tests'][testId]) {
+              $('#content').html("<p><b>That device/test/measure combination does not seem to exist. Maybe you're using an expired link? <a href=''>Reload page</a>?</b></p>");
+              return;
+            }
+
+            // update list of tests to be consistent with those of this
+            // particular device (in case it changed)
+            $('#test-chooser').empty();
+
+            var tests = devices[deviceId]['tests'];
+            var testKeys = Object.keys(tests).sort();
+            testKeys.forEach(function(testKey) {
+              $('<li id="' + testKey + '-li" testid = ' + testKey + '><a>' + testKey + '</a></li>').appendTo($('#test-chooser'));
+            });
+
             // update all links to be relative to the new test or device
             $('#device-chooser').children('li').removeClass("active");
             $('#device-chooser').children('#device-'+deviceId+'-li').addClass("active");
             $('#device-chooser').children('li').each(function() {
               $(this).children('a').attr('href', '#/' + [ $(this).attr('deviceid'),
-                                                          testId,
+                                                          testKeys[0],
                                                           measure ].join('/'));
             });
 
@@ -310,28 +279,31 @@ $(function() {
             $('#test-chooser').children('li').each(function() {
               var testIdAttr = $(this).attr('testid');
               if (testIdAttr) {
-                var defaultMeasure = testInfoDict[testIdAttr].defaultMeasure;
+                var defaultMeasure = tests[testIdAttr].defaultMeasure;
                 $(this).children('a').attr('href', '#/' +
                                            [ deviceId, testIdAttr,
                                              defaultMeasure ].join('/'));
               }
             });
 
-            var testInfo = testInfoDict[testId];
+            var testInfo = tests[testId];
             updateContent(testInfo, deviceId, testId, measure);
           }
         }
-      }
-    });
+      };
 
-    var defaultDeviceId = deviceIds[0];
-    // HACK: try to default to the LG-P999 for now
-    deviceIds.forEach(function(deviceId) {
-      if (devices[deviceId].name === "LG-P999") {
-        defaultDeviceId = deviceId;
-      }
-    });
+      var defaultDeviceId = deviceIds[0];
+      // HACK: try to default to the LG-P999 for now
+      deviceIds.forEach(function(deviceId) {
+        if (devices[deviceId].name === "lg-p999") {
+          defaultDeviceId = deviceId;
+        }
+      });
 
-    var router = Router(routes).init('/' + defaultDeviceId + '/taskjs-scrolling/checkerboard');
+      // FIXME: somehow point at the actual first test in the list here
+      var router = Router(routes).init('/' + defaultDeviceId + '/taskjs/checkerboard');
+    }
+
+    setTimeout(setupRoutes, 100);
   });
 });

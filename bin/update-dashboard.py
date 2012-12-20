@@ -8,62 +8,13 @@ import sys
 import time
 import videocapture
 import uuid
+import manifestparser
 
 class NestedDict(dict):
     def __getitem__(self, key):
         if key in self:
             return self.get(key)
         return self.setdefault(key, NestedDict())
-
-default_tests = [
-    {
-        'name': 'clock',
-        'path': 'src/tests/ep1/clock/index.html'
-    },
-    {
-        'name': 'taskjs',
-        'path': 'src/tests/ep1/taskjs.org/index.html'
-    },
-    {
-        'name': 'nightly',
-        'path': 'src/tests/ep1/nightly.mozilla.org/index.html'
-    },
-    {
-        'name': 'nytimes-scroll',
-        'path': 'src/tests/ep1/nytimes/nytimes.com/index.html',
-        'urlparams': 'testtype=scroll'
-    },
-    {
-        'name': 'nytimes-zoom',
-        'path': 'src/tests/ep1/nytimes/nytimes.com/index.html',
-        'urlparams': 'testtype=zoom'
-    },
-    {
-        'name': 'cnn',
-        'path': 'src/tests/ep1/cnn/cnn.com/index.html'
-    },
-    {
-        'name': 'reddit',
-        'path': 'src/tests/ep1/reddit.com/www.reddit.com/index.html'
-    },
-    {
-        'name': 'imgur',
-        'path': 'src/tests/ep1/imgur.com/imgur.com/gallery/index.html'
-    },
-    {
-        'name': 'wikipedia',
-        'path': 'src/tests/ep1/en.wikipedia.org/en.wikipedia.org/wiki/Rorschach_test.html'
-    },
-    {
-        'name': 'timecube',
-        'path': 'src/tests/ep1/timecube/timecube.html'
-    },
-    {
-        'name': 'startup-abouthome-cold',
-        'path': 'about:home',
-        'startup_test': True
-    }
-]
 
 DOWNLOAD_DIR = os.path.join(os.path.dirname(__file__), "../downloads")
 CAPTURE_DIR = os.path.join(os.path.dirname(__file__), "../captures")
@@ -74,19 +25,17 @@ def kill_app(dm, appname):
       if name == appname:
         dm.runCmd(["shell", "echo kill %s | su" % pid])
 
-def runtest(dm, product, appname, appinfo, test, capture_name,
+def runtest(dm, product, appname, appinfo, testinfo, capture_name,
             outputdir, datafile, data, enable_profiling=False,
             dmtype="adb", host=None, port=None, devicetype="android"):
     capture_file = os.path.join(CAPTURE_DIR,
-                                "%s-%s-%s-%s.zip" % (test['name'],
+                                "%s-%s-%s-%s.zip" % (testinfo['key'],
                                                      appname,
                                                      appinfo.get('date'),
                                                      int(time.time())))
     if enable_profiling:
         profile_path = os.path.join('profiles', 'sps-profile-%s.zip' % time.time())
         profile_file = os.path.join(outputdir, profile_path)
-
-    urlparams = test.get('urlparams', '')
 
     test_completed = False
     for i in range(3):
@@ -95,10 +44,8 @@ def runtest(dm, product, appname, appinfo, test, capture_name,
         # Kill any existing instances of the processes before starting
         dm.killProcess(appname)
 
-        args = ["runtest.py", "--url-params", urlparams,
-                "--name", capture_name, "--capture-file", capture_file ]
-        if test.get('startup_test'):
-            args.append("--startup-test")
+        args = [ "runtest.py", "--name", capture_name, "--capture-file",
+                 capture_file ]
         if dmtype:
             args.extend(["-m", dmtype])
         if devicetype:
@@ -109,7 +56,7 @@ def runtest(dm, product, appname, appinfo, test, capture_name,
             args.extend(["--port", port])
         if enable_profiling:
             args.extend(["--profile-file", profile_file])
-        retval = subprocess.call(args + [ appname, test['path'] ])
+        retval = subprocess.call(args + [ appname, testinfo['key'] ])
         if retval == 0:
             test_completed = True
             break
@@ -118,8 +65,7 @@ def runtest(dm, product, appname, appinfo, test, capture_name,
 
     if not test_completed:
         raise Exception("Failed to run test %s for %s (after 3 tries). "
-                        "Aborting." % (test['name'], product['name']))
-
+                        "Aborting." % (testinfo['key'], product['name']))
 
     capture = videocapture.Capture(capture_file)
 
@@ -129,14 +75,14 @@ def runtest(dm, product, appname, appinfo, test, capture_name,
     open(video_file, 'w').write(capture.get_video().read())
 
     # need to initialize dict for product if not there already
-    if not data[test['name']].get(product['name']):
-        data[test['name']][product['name']] = {}
+    if not data['testdata'].get(product['name']):
+        data['testdata'][product['name']] = {}
 
     # app date
     appdate = appinfo.get('date')
 
-    if not data[test['name']][product['name']].get(appdate):
-        data[test['name']][product['name']][appdate] = []
+    if not data['testdata'][product['name']].get(appdate):
+        data['testdata'][product['name']][appdate] = []
 
     datapoint = { 'uuid': uuid.uuid1().hex,
                   'video': video_path,
@@ -144,7 +90,7 @@ def runtest(dm, product, appname, appinfo, test, capture_name,
                   'buildid': appinfo.get('buildid'),
                   'revision': appinfo.get('revision') }
 
-    if test.get('startup_test'):
+    if testinfo['type'] == 'startup':
         datapoint['timetostableframe'] = videocapture.get_stable_frame_time(capture)
     else:
         # standard test metrics
@@ -155,9 +101,12 @@ def runtest(dm, product, appname, appinfo, test, capture_name,
     if enable_profiling:
         datapoint['profile'] = profile_path
 
-    data[test['name']][product['name']][appdate].append(datapoint)
+    data['testdata'][product['name']][appdate].append(datapoint)
 
     # Write the data to disk immediately (so we don't lose it if we fail later)
+    datafile_dir = os.path.dirname(datafile)
+    if not os.path.exists(datafile_dir):
+        os.mkdir(datafile_dir)
     with open(datafile, 'w') as f:
         f.write(json.dumps(data))
 
@@ -181,17 +130,21 @@ def main(args=sys.argv[1:]):
     if len(args) != 3:
         parser.error("incorrect number of arguments")
 
-    (productname, testname, outputdir) = args
+    (productname, testkey, outputdir) = args
     num_runs = 1
     if options.num_runs:
         num_runs = options.num_runs
 
-    testnames = [test["name"] for test in default_tests]
-    if testname not in testnames:
-        print "ERROR: No tests matching '%s' (options: %s)" % (testname, ", ".join(testnames))
+    manifest = manifestparser.TestManifest(manifests=[os.path.join(
+                os.path.dirname(__file__), '../src/tests/manifest.ini')])
+
+    # sanity check... does the test match a known test key?
+    testkeys = [test["key"] for test in manifest.active_tests()]
+    if testkey not in testkeys:
+        print "ERROR: No tests matching '%s' (options: %s)" % (testkey, ", ".join(testkeys))
         sys.exit(1)
-    else:
-        test = [test for test in default_tests if test['name'] == testname][0]
+
+    testinfo = [test for test in manifest.active_tests() if test['key'] == testkey][0]
 
     device_id = options.device_id
     if not device_id:
@@ -207,7 +160,7 @@ def main(args=sys.argv[1:]):
     product = products[0]
 
     current_date = time.strftime("%Y-%m-%d")
-    datafile = os.path.join(outputdir, 'data-%s.json' % device_id)
+    datafile = os.path.join(outputdir, device_id, '%s.json' % testkey)
 
     data = NestedDict()
     if os.path.isfile(datafile):
@@ -221,10 +174,19 @@ def main(args=sys.argv[1:]):
     devicefile = os.path.join(outputdir, 'devices.json')
     if os.path.isfile(devicefile):
         devices = json.loads(open(devicefile).read())['devices']
+    testfile = os.path.join(outputdir, '%s' % device_id, 'tests.json')
+    if os.path.isfile(testfile):
+        tests = json.loads(open(testfile).read())['tests']
+    else:
+        tests = {}
+    tests[testkey] = { 'shortDesc': test['shortDesc'],
+                       'defaultMeasure': test['defaultMeasure'] }
     devices[device_id] = { 'name': device.model,
                            'version': device.getprop('ro.build.version.release') }
     with open(devicefile, 'w') as f:
         f.write(json.dumps({ 'devices': devices }))
+    with open(testfile, 'w') as f:
+        f.write(json.dumps({ 'tests': tests }))
 
     if options.apk:
         appinfo = eideticker.get_fennec_appinfo(options.apk)
@@ -240,7 +202,7 @@ def main(args=sys.argv[1:]):
     # Run the test the specified number of times
     for i in range(num_runs):
         # Now run the test
-        runtest(device, product, appname, appinfo, test,
+        runtest(device, product, appname, appinfo, testinfo,
                 capture_name + " #%s" % i, outputdir, datafile, data,
                 enable_profiling=options.enable_profiling, **devicePrefs)
 
