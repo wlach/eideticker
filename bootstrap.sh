@@ -65,8 +65,7 @@ virtualenv .
 make -C src/videocapture/videocapture/decklink
 
 # Install local deps
-./bin/pip install -e src/eideticker
-./bin/pip install -e src/videocapture
+./bin/pip install -e src/mozbase/manifestdestiny
 ./bin/pip install -e src/mozbase/mozhttpd
 ./bin/pip install -e src/mozbase/mozprocess
 ./bin/pip install -e src/mozbase/mozprofile
@@ -74,3 +73,5 @@ make -C src/videocapture/videocapture/decklink
 ./bin/pip install -e src/mozbase/mozb2g
 ./bin/pip install -e src/templeton
 ./bin/pip install -e src/marionette_client
+./bin/pip install -e src/eideticker
+./bin/pip install -e src/videocapture

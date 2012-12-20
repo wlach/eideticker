@@ -11,6 +11,7 @@ import sys
 import urllib
 import videocapture
 import eideticker
+import manifestparser
 
 BINDIR = os.path.dirname(__file__)
 CAPTURE_DIR = os.path.abspath(os.path.join(BINDIR, "../captures"))
@@ -19,7 +20,7 @@ EIDETICKER_TEMP_DIR = "/tmp/eideticker"
 GECKO_PROFILER_ADDON_DIR = os.path.join(os.path.dirname(__file__), "../src/GeckoProfilerAddon")
 
 def main(args=sys.argv[1:]):
-    usage = "usage: %prog [options] [appname] <test path>"
+    usage = "usage: %prog [options] [appname] <test key>"
     parser = eideticker.OptionParser(usage=usage)
     parser.add_option("--url-params", action="store",
                       dest="url_params",
@@ -37,31 +38,29 @@ def main(args=sys.argv[1:]):
     parser.add_option("--checkerboard-log-file", action="store",
                       type = "string", dest = "checkerboard_log_file",
                       help = "name to give checkerboarding stats file")
-    parser.add_option("--startup-test", action="store_true",
-                      dest="startup_test",
-                      help="do a startup test: full capture, no actions")
     parser.add_option("--extra-prefs", action="store", dest="extra_prefs",
                       default="{}",
                       help="Extra profile preference for Firefox browsers. " \
                           "Must be passed in as a JSON dictionary")
     parser.add_option("--profile-file", action="store",
                       type="string", dest = "profile_file",
-                      help="Collect a performance profile using the built in profiler.")
+                      help="Collect a performance profile using the built in "
+                      "profiler (fennec only).")
 
     options, args = parser.parse_args()
     testpath, appname = None, None
     if options.devicetype == 'b2g':
         if len(args) != 1:
-            parser.error("You must specify (only) a test path on b2g")
+            parser.error("You must specify (only) a test key on b2g")
             sys.exit(1)
-        testpath = args[0]
+        testkey = args[0]
     else:
         if len(args) != 2:
             parser.error("You must specify (only) an application name "
-                         "(e.g. org.mozilla.fennec) and a test path")
+                         "(e.g. org.mozilla.fennec) and a test key")
             sys.exit(1)
 
-        (appname, testpath) = args
+        (appname, testkey) = args
 
     try:
         extra_prefs = json.loads(options.extra_prefs)
@@ -69,19 +68,17 @@ def main(args=sys.argv[1:]):
         parser.error("Error processing extra preferences: not valid JSON!")
         raise
 
-    # Tests must be in src/tests/... unless it is a startup test and the
-    # path is about:home (indicating we want to measure startup to the
-    # home screen)
-    if options.startup_test and testpath == "about:home":
-        testpath_rel = testpath
-        capture_timeout = 5 # 5 seconds to wait for fennec to start after it claims to have started
-    else:
-        capture_timeout = None
-        try:
-            testpath_rel = os.path.abspath(testpath).split(TEST_DIR)[1][1:]
-        except:
-            print "Test must be relative to %s" % TEST_DIR
-            sys.exit(1)
+    manifest = manifestparser.TestManifest(manifests=[os.path.join(
+                BINDIR, '../src/tests/manifest.ini')])
+
+    # sanity check... does the test match a known test key?
+    testkeys = [test["key"] for test in manifest.active_tests()]
+    if testkey not in testkeys:
+        print "ERROR: No tests matching '%s' (options: %s)" % (testkey, ", ".join(testkeys))
+        sys.exit(1)
+
+    testinfo = [test for test in manifest.active_tests() if test['key'] == testkey][0]
+    print "Testinfo: %s" % testinfo
 
     if not os.path.exists(EIDETICKER_TEMP_DIR):
         os.mkdir(EIDETICKER_TEMP_DIR)
@@ -91,7 +88,7 @@ def main(args=sys.argv[1:]):
 
     capture_name = options.capture_name
     if not capture_name:
-        capture_name = testpath_rel
+        capture_name = testinfo['shortDesc']
     capture_file = options.capture_file
     if not capture_file and not options.no_capture:
         capture_file = os.path.join(CAPTURE_DIR, "capture-%s.zip" %
@@ -104,30 +101,29 @@ def main(args=sys.argv[1:]):
     print "Creating webserver..."
     capture_metadata = {
         'name': capture_name,
-        'testpath': testpath_rel,
+        'testpath': testinfo['relpath'],
         'app': appname,
         'device': device.model,
         'devicetype': options.devicetype,
-        'startupTest': options.startup_test
+        'startupTest': testinfo['type'] == 'startup'
         }
 
     # note: url params for startup tests currently not supported
-    if options.url_params:
-        testpath_rel += "?%s" % urllib.quote_plus(options.url_params)
+    if testinfo.get('urlOverride'):
+        testpath_rel = testinfo['urlOverride']
+    else:
+        testpath_rel = testinfo['relpath']
+    if testinfo.get('urlparams'):
+        testpath_rel += "?%s" % urllib.quote_plus(testinfo.get('urlparams'))
 
     capture_controller = videocapture.CaptureController(custom_tempdir=EIDETICKER_TEMP_DIR)
 
-    if options.startup_test:
-        testtype = 'startup'
-    elif options.devicetype == 'b2g' and testpath.endswith('.py'):
-        testtype = 'b2g'
-    else:
-        testtype = 'web'
+    testtype = testinfo['type']
 
     # get actions for web tests
     actions = None
     if testtype == 'web':
-        actions_path = os.path.join(os.path.dirname(testpath), "actions.json")
+        actions_path = os.path.join(testinfo['here'], "actions.json")
         try:
             with open(actions_path) as f:
                 actions = json.loads(f.read())
@@ -135,14 +131,14 @@ def main(args=sys.argv[1:]):
             print "Couldn't open actions file '%s'" % actions_path
             sys.exit(1)
 
-    test = eideticker.get_test(devicetype = options.devicetype, testtype = testtype,
-                               testpath = testpath,
+    test = eideticker.get_test(devicetype = options.devicetype, testtype = testinfo['type'],
+                               testpath = testinfo['path'],
                                testpath_rel = testpath_rel, device = device,
                                actions = actions, extra_prefs = extra_prefs,
                                capture_file = capture_file,
                                capture_controller = capture_controller,
                                capture_metadata = capture_metadata,
-                               capture_timeout = capture_timeout,
+                               capture_timeout = int(testinfo['captureTimeout']),
                                appname = appname,
                                checkerboard_log_file = options.checkerboard_log_file,
                                profile_file = options.profile_file,

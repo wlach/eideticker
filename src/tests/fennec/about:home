@@ -1,0 +1,2 @@
+# this is a dummy file which we use to fool our manifest parser, which can't
+# conceive of a test without a physical file on disk

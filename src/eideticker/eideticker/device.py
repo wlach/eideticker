@@ -110,7 +110,7 @@ class EidetickerMixin(object):
             if executeCallback:
                 executeCallback()
             self.shellCheckOutput([self.orngLocation, self.inputDevice,
-                                   remotefilename], root=True)
+                                   remotefilename], root=self._logcatNeedsRoot)
             self.removeFile(remotefilename)
 
     def getPIDs(self, appname):
@@ -125,11 +125,10 @@ class EidetickerMixin(object):
     def sendSaveProfileSignal(self, appName):
         pids = self.getPIDs(appName)
         if pids:
-            self.shellCheckOutput(['kill', '-s', '12', str(pids[0])], root=True)
+            self.shellCheckOutput(['kill', '-s', '12', str(pids[0])])
 
     def fileExists(self, filepath):
-        ret = self.shellCheckOutput(['sh', '-c', 'ls -a %s || true' % filepath],
-                                    root=True)
+        ret = self.shellCheckOutput(['sh', '-c', 'ls -a %s || true' % filepath])
         return ret.strip() == filepath
 
     def getAPK(self, appname, localfile):

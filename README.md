@@ -168,8 +168,9 @@ checkout the ep1 submodule before you can find this file).
 
 Writing your own tests is a matter of adding a subdirectory to `src/tests`,
 creating/copying an HTML page of your choice, adding the relevant JavaScript
-code to start/stop the test as appropriate, and then making an actions.json
-file with whatever actions you want to simulate during the test.
+code to start/stop the test as appropriate, creating a test manifest and then
+making an actions.json file with whatever actions you want to simulate during
+the test.
 
 The JavaScript code is encapsulated in the file: `src/tests/js/eideticker.js`.
 Much of the code in there is just used by the harness. From the point of view
@@ -244,3 +245,22 @@ follows (using jQuery):
 
 Obviously you should replace "default" in the above example with the set of
 commands that you actually want to run.
+
+--
+
+The last part of adding a new test is creating a new manifest, so the command
+line tools can get the testname and we have the correct metadata to add to the
+dashboard. A manifest is just a simple file like this:
+
+    [index.html]
+    key = clock
+    shortDesc = Canvas Clock Test
+    defaultMeasure = fps
+
+The "key" is a short alphanumeric key used to identify the test. The shortDesc and
+defaultMeasure are for the dashboard: the description is the graph title, the
+defaultMeasure indicates what metric we should display by default when the user
+clicks on the entry in the dashboard web UI.
+
+Usually with a manifest, you just create an ini file, then link to it from
+its parent directory. See "manifest.ini" in the ep1 testset for an example.

@@ -43,7 +43,6 @@ def get_test(devicetype="android", testtype="web", testpath=None, **kwargs):
             return B2GWebTest(**kwargs)
         else:
             (basepath, testfile) = os.path.split(testpath)
-            print "%s; %s" % (testfile, basepath)
             (file, pathname, description) = imp.find_module(testfile[0:-3],
                                                             [basepath])
             module = imp.load_module('test', file, pathname, description)
@@ -81,7 +80,7 @@ class Test(object):
     def wait(self):
         # Keep on capturing until we finish or timeout
         if self.capture_timeout:
-            timeout = self.capture_timeout
+            timeout = int(self.capture_timeout)
         else:
             timeout = 100
         timer = 0
