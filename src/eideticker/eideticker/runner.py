@@ -102,7 +102,8 @@ class AndroidBrowserRunner(object):
             preferences = { 'gfx.show_checkerboard_pattern': False,
                             'browser.firstrun.show.uidiscovery': False,
                             'layers.low-precision-buffer': False, # bug 815175
-                            'toolkit.telemetry.prompted': 2 }
+                            'toolkit.telemetry.prompted': 2,
+                            'toolkit.telemetry.rejected': True }
             preferences.update(self.extra_prefs)
 
             # Add frame counter to correlate video capture with profile
