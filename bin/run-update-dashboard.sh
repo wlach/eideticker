@@ -95,7 +95,9 @@ for TEST in $TESTS; do
       exit 1
   fi
 
-  ./bin/sync-dashboard.sh
+  if [ $DASHBOARD_SERVER ]; then
+      ./bin/sync-dashboard.sh
+  fi
 done
 
 cleanup
