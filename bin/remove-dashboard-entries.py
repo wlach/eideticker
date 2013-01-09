@@ -14,14 +14,15 @@ def main(args=sys.argv[1:]):
     filename = args[0]
     with open(filename) as f:
         data = json.loads(f.read())
+    testdata = data['testdata']
+
     dates = args[1:]
 
     # If there are no dates, then just print all dates in the json
     if not dates:
-        for (testname, testdata) in data.iteritems():
-            for (platform, platformdata) in testdata.iteritems():
-                for date in platformdata:
-                    dates.append(date)
+        for (platform, platformdata) in testdata.iteritems():
+            for date in platformdata:
+                dates.append(date)
         for date in set(dates):
             print date
         return
@@ -32,14 +33,13 @@ def main(args=sys.argv[1:]):
         f.write(json.dumps(data))
 
     data_to_remove = []
-    for (testname, testdata) in data.iteritems():
-        for (platform, platformdata) in testdata.iteritems():
-            for date in platformdata:
-                if date in dates:
-                    data_to_remove.append((testname, platform, date))
+    for (platform, platformdata) in testdata.iteritems():
+        for date in platformdata:
+            if date in dates:
+                data_to_remove.append((platform, date))
 
-    for (testname, platform, date) in data_to_remove:
-        del data[testname][platform][date]
+    for (platform, date) in data_to_remove:
+        del testdata[platform][date]
 
     with open(filename, 'w+') as f:
         f.write(json.dumps(data))
