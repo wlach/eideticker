@@ -281,8 +281,7 @@ def main(args=sys.argv[1:]):
     else:
         br = eideticker.BuildRetriever()
         productname = "nightly"
-        product = [product for product in eideticker.products if \
-                   product['name'] == productname][0]
+        product = eideticker.get_product(productname)
         for date in dates:
             apk = br.get_build(product, date)
             run_test(device, options.outputdir,

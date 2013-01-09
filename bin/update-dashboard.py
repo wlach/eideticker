@@ -153,11 +153,7 @@ def main(args=sys.argv[1:]):
         print "ERROR: Must specify device id (either with --device-id or with DEVICE_ID environment variable)"
         sys.exit(1)
 
-    products = [product for product in eideticker.products if product['name'] == productname]
-    if not products:
-        print "ERROR: No products matching '%s'" % options.product
-        sys.exit(1)
-    product = products[0]
+    product = eideticker.get_product(productname)
 
     current_date = time.strftime("%Y-%m-%d")
     datafile = os.path.join(outputdir, device_id, '%s.json' % testkey)

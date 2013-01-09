@@ -75,10 +75,18 @@ class BuildRetriever(object):
 
     def _get_latest_build_url(self, product):
         baseurl =  product['latest']
+        matches = []
         for link in self._url_links(baseurl):
             href = link.get("href")
+            # sometimes there will be multiple matching products between
+            # merges. in that case, we grab the greater of them (as the
+            # latest has a higher version number)
             if re.match(product['buildregex'], href):
-                return baseurl + href
+                matches.append(href)
+        if not matches:
+            raise Exception("Could not find matching build!")
+
+        return baseurl + sorted(matches)[-1]
 
     def get_build(self, product, date=None):
         if not date:
@@ -131,3 +139,13 @@ products = [
         "appname": None
     }
 ]
+
+def get_product(productname):
+    matching_products = [product for product in products if \
+                             product['name'] == productname]
+    if not matching_products:
+        raise Exception("No products matching '%s'" % productname)
+    if len(matching_products) > 1:
+        raise Exception("More than one product matching '%s'" % productname)
+
+    return matching_products[0]

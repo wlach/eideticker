@@ -16,13 +16,7 @@ def main(args=sys.argv[1:]):
 
     (productname, datestr) = args
 
-    products = [product for product in eideticker.products if \
-               product['name'] == productname]
-    if len(products) == 0:
-        print "No products matching '%s'" % productname
-        sys.exit(1)
-
-    product = products[0]
+    product = eideticker.get_product(productname)
 
     devicePrefs = eideticker.getDevicePrefs(options)
     device = eideticker.getDevice(**devicePrefs)
