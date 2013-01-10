@@ -6,5 +6,5 @@ from runner import AndroidBrowserRunner
 from options import OptionParser
 from device import getDevicePrefs, getDevice
 from apk import get_fennec_appinfo
-from products import get_product, BuildRetriever
+from products import get_product, products, BuildRetriever
 from test import get_test
