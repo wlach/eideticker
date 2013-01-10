@@ -125,7 +125,7 @@ class EidetickerMixin(object):
     def sendSaveProfileSignal(self, appName):
         pids = self.getPIDs(appName)
         if pids:
-            self.shellCheckOutput(['kill', '-s', '12', str(pids[0])])
+            self.shellCheckOutput(['kill', '-s', '12', str(pids[0])], root=True)
 
     def fileExists(self, filepath):
         ret = self.shellCheckOutput(['sh', '-c', 'ls -a %s || true' % filepath])
