@@ -94,7 +94,7 @@ class BuildRetriever(object):
             datestr = "latest"
         else:
             url = self._get_build_url(product, date)
-            datestr = "%s-%s-%s" % (date.year, date.month, date.day)
+            datestr = date.strftime("%Y-%m-%d")
 
         fname = os.path.join(DOWNLOAD_DIR,
                              "%s-%s.apk" % (product['name'], datestr))
