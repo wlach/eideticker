@@ -113,8 +113,8 @@ def main(args=sys.argv[1:]):
         testpath_rel = testinfo['urlOverride']
     else:
         testpath_rel = testinfo['relpath']
-    if testinfo.get('urlparams'):
-        testpath_rel += "?%s" % urllib.quote_plus(testinfo.get('urlparams'))
+    if testinfo.get('urlParams'):
+        testpath_rel += "?%s" % urllib.quote_plus(testinfo.get('urlParams'))
 
     capture_controller = videocapture.CaptureController(custom_tempdir=EIDETICKER_TEMP_DIR)
 
