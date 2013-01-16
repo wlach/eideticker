@@ -12,12 +12,18 @@ import os
 
 class CaptureServer(object):
 
+    start_capture_called = False
+    end_capture_called = False
+    input_called = False
+
     def __init__(self, test):
         self.test = test
 
     @mozhttpd.handlers.json_response
     def start_capture(self, request):
         print "Received start capture callback from test"
+        assert not self.start_capture_called
+        self.start_capture_called = True
         self.test.start_capture()
 
         return (200, {'capturing': True})
@@ -25,6 +31,8 @@ class CaptureServer(object):
     @mozhttpd.handlers.json_response
     def end_capture(self, request):
         print "Received end capture callback from test"
+        assert not self.end_capture_called
+        self.end_capture_called = True
         self.test.end_capture()
 
         return (200, {'capturing': False})
@@ -33,6 +41,8 @@ class CaptureServer(object):
     def input(self, request):
         commandset = urlparse.parse_qs(request.body)['commands'][0]
         print "Received input callback from test"
+        assert not self.input_called
+        self.input_called = True
         self.test.execute_actions(commandset)
 
         return (200, {})
