@@ -12,6 +12,7 @@ import urllib
 import videocapture
 import eideticker
 import manifestparser
+import mozdevice
 
 BINDIR = os.path.dirname(__file__)
 CAPTURE_DIR = os.path.abspath(os.path.join(BINDIR, "../captures"))
@@ -46,6 +47,8 @@ def main(args=sys.argv[1:]):
                       type="string", dest = "profile_file",
                       help="Collect a performance profile using the built in "
                       "profiler (fennec only).")
+    parser.add_option("--debug", action="store_true",
+                      dest="debug", help="show verbose debugging information")
 
     options, args = parser.parse_args()
     testpath, appname = None, None
@@ -97,6 +100,8 @@ def main(args=sys.argv[1:]):
     # Create a device object to interface with the phone
     devicePrefs = eideticker.getDevicePrefs(options)
     device = eideticker.getDevice(**devicePrefs)
+    if options.debug:
+        mozdevice.DeviceManagerSUT.debug = 4
 
     print "Creating webserver..."
     capture_metadata = {
