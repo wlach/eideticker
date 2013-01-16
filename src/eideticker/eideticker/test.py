@@ -63,7 +63,7 @@ class Test(object):
     def __init__(self, testpath=None, testpath_rel=None, device=None, capture_file = None,
                  capture_controller=None,
                  capture_metadata={}, capture_timeout=None, tempdir=None,
-                 no_capture=False, **kwargs):
+                 no_capture=False, track_start_end_frames=False, **kwargs):
         self.testpath = testpath
         self.testpath_rel = testpath_rel
         self.device = device
@@ -73,6 +73,7 @@ class Test(object):
         self.capture_timeout = capture_timeout
         self.tempdir = tempdir
         self.no_capture = no_capture
+        self.track_start_end_frames = track_start_end_frames
 
     def cleanup(self):
         pass
