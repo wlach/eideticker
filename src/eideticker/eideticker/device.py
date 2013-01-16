@@ -302,7 +302,7 @@ class DroidSUT(EidetickerMixin, mozdevice.DroidSUT):
     @property
     def rotation(self):
         # for now we assume rotation never changes
-        if self.cached_rotation:
+        if self.cached_rotation is not None:
             return self.cached_rotation
 
         rot_string = self.getInfo('rotation')['rotation'][0]
