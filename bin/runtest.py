@@ -36,9 +36,12 @@ def main(args=sys.argv[1:]):
                       dest = "no_capture",
                       help = "run through the test, but don't actually "
                       "capture anything")
+    parser.add_option("--app-name", action="store",
+                      type="string", dest="appname",
+                      help="Specify an application name (android only)")
     parser.add_option("--checkerboard-log-file", action="store",
                       type = "string", dest = "checkerboard_log_file",
-                      help = "name to give checkerboarding stats file")
+                      help = "name to give checkerboarding stats file (fennec only)")
     parser.add_option("--extra-prefs", action="store", dest="extra_prefs",
                       default="{}",
                       help="Extra profile preference for Firefox browsers. " \
@@ -51,19 +54,10 @@ def main(args=sys.argv[1:]):
                       dest="debug", help="show verbose debugging information")
 
     options, args = parser.parse_args()
-    testpath, appname = None, None
-    if options.devicetype == 'b2g':
-        if len(args) != 1:
-            parser.error("You must specify (only) a test key on b2g")
-            sys.exit(1)
-        testkey = args[0]
-    else:
-        if len(args) != 2:
-            parser.error("You must specify (only) an application name "
-                         "(e.g. org.mozilla.fennec) and a test key")
-            sys.exit(1)
-
-        (appname, testkey) = args
+    if len(args) != 1:
+        parser.error("You must specify (only) a test key")
+        sys.exit(1)
+    testkey = args[0]
 
     try:
         extra_prefs = json.loads(options.extra_prefs)
@@ -83,11 +77,19 @@ def main(args=sys.argv[1:]):
     testinfo = [test for test in manifest.active_tests() if test['key'] == testkey][0]
     print "Testinfo: %s" % testinfo
 
+    if options.devicetype == 'android' and not options.appname and \
+            not testinfo.get('appname'):
+        print "ERROR: Must specify an appname (with --app-name) on Android " \
+                     "when not spec'd by test"
+        sys.exit(1)
+
     if not os.path.exists(EIDETICKER_TEMP_DIR):
         os.mkdir(EIDETICKER_TEMP_DIR)
     if not os.path.isdir(EIDETICKER_TEMP_DIR):
         print "Could not open eideticker temporary directory"
         sys.exit(1)
+
+    appname = testinfo.get('appname') or options.appname
 
     capture_name = options.capture_name
     if not capture_name:
@@ -103,7 +105,6 @@ def main(args=sys.argv[1:]):
     if options.debug:
         mozdevice.DeviceManagerSUT.debug = 4
 
-    print "Creating webserver..."
     capture_metadata = {
         'name': capture_name,
         'testpath': testinfo['relpath'],
@@ -145,6 +146,8 @@ def main(args=sys.argv[1:]):
                                capture_metadata = capture_metadata,
                                capture_timeout = int(testinfo['captureTimeout']),
                                appname = appname,
+                               activity = testinfo.get('activity'),
+                               intent = testinfo.get('intent'),
                                checkerboard_log_file = options.checkerboard_log_file,
                                profile_file = options.profile_file,
                                gecko_profiler_addon_dir=GECKO_PROFILER_ADDON_DIR,

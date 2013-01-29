@@ -56,7 +56,9 @@ def runtest(dm, product, appname, appinfo, testinfo, capture_name,
             args.extend(["--port", port])
         if enable_profiling:
             args.extend(["--profile-file", profile_file])
-        retval = subprocess.call(args + [ appname, testinfo['key'] ])
+        if appname:
+            args.extend(["--app-name", appname])
+        retval = subprocess.call(args + [ testinfo['key'] ])
         if retval == 0:
             test_completed = True
             break

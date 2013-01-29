@@ -59,9 +59,12 @@ def get_test(devicetype="android", testtype="web", testpath=None, **kwargs):
             test = module.Test(**kwargs)
             return test
     else:
-        if testtype == 'startup':
-            return AndroidStartupTest(**kwargs)
-        return AndroidWebTest(**kwargs)
+        if testtype == 'webstartup':
+            return AndroidWebStartupTest(**kwargs)
+        elif testtype == 'appstartup':
+            return AndroidAppStartupTest(**kwargs)
+        elif testtype == "web":
+            return AndroidWebTest(**kwargs)
 
 class Test(object):
 
@@ -209,12 +212,12 @@ class WebTest(Test):
             self.test_started()
             self.test_finished()
 
-class AndroidTest(Test):
+class AndroidWebTest(WebTest):
 
     def __init__(self, appname = None, extra_prefs = {}, profile_file = None,
                  gecko_profiler_addon_dir = None, checkerboard_log_file = None,
                  **kwargs):
-        super(AndroidTest, self).__init__(**kwargs)
+        super(AndroidWebTest, self).__init__(**kwargs)
 
         self.appname = appname
         self.extra_prefs = extra_prefs
@@ -254,7 +257,7 @@ class AndroidTest(Test):
         self.runner.cleanup()
 
     def test_started(self):
-        super(AndroidTest, self).test_started()
+        super(AndroidWebTest, self).test_started()
 
         if self.checkerboard_log_file:
             self.device.recordLogcat()
@@ -273,7 +276,7 @@ class AndroidTest(Test):
         if self.profile_file:
             self.runner.save_profile()
 
-        super(AndroidTest, self).test_finished()
+        super(AndroidWebTest, self).test_finished()
 
     def run(self):
         self.runner.start(enable_profiling=bool(self.profile_file))
@@ -285,15 +288,10 @@ class AndroidTest(Test):
 
         self.runner.cleanup()
 
-class AndroidWebTest(AndroidTest, WebTest):
+class AndroidWebStartupTest(AndroidWebTest):
 
     def __init__(self, **kwargs):
-        super(AndroidWebTest, self).__init__(**kwargs)
-
-class AndroidStartupTest(AndroidWebTest):
-
-    def __init__(self, **kwargs):
-        super(AndroidStartupTest, self).__init__(**kwargs)
+        super(AndroidWebStartupTest, self).__init__(**kwargs)
 
     def run(self):
         # FIXME: currently start capture before launching app because we wait until app is
@@ -302,7 +300,7 @@ class AndroidStartupTest(AndroidWebTest):
         if not self.no_capture:
             self.start_capture()
 
-        super(AndroidStartupTest, self).run()
+        super(AndroidWebStartupTest, self).run()
 
     @property
     def url(self):
@@ -312,6 +310,28 @@ class AndroidStartupTest(AndroidWebTest):
             return "http://%s:%s/%s?startup_test=1" % (self.host,
                                                        self.http.httpd.server_port,
                                                        self.testpath_rel)
+
+class AndroidAppStartupTest(Test):
+
+    def __init__(self, appname=None, activity=None, intent=None, **kwargs):
+        super(AndroidAppStartupTest, self).__init__(**kwargs)
+        self.appname = appname
+        self.activity = activity
+        self.intent = intent
+
+        # precondition: app should not be running. abort if it is
+        if self.device.processExist(self.appname):
+            raise Exception("An instance of %s is running. Please stop it "
+                            "before running Eideticker." % self.appname)
+
+    def run(self):
+        # FIXME: currently start capture before launching app because we wait until app is
+        # launched -- would be better to make waiting optional and then start capture
+        # after triggering app launch to reduce latency?
+        if not self.no_capture:
+            self.start_capture()
+        self.device.launchApplication(self.appname, self.activity, self.intent)
+        self.wait()
 
 class B2GTest(Test):
 
