@@ -21,7 +21,7 @@ EIDETICKER_TEMP_DIR = "/tmp/eideticker"
 GECKO_PROFILER_ADDON_DIR = os.path.join(os.path.dirname(__file__), "../src/GeckoProfilerAddon")
 
 def main(args=sys.argv[1:]):
-    usage = "usage: %prog [options] [appname] <test key>"
+    usage = "usage: %prog [options] <test key>"
     parser = eideticker.OptionParser(usage=usage)
     parser.add_option("--url-params", action="store",
                       dest="url_params",
