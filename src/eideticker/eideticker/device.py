@@ -41,6 +41,12 @@ DEVICE_PROPERTIES = {
             "dimensions": (480, 800),
             "swipePadding": (240, 40, 100, 40)
             },
+        "Turkcell Maxi Plus 5": {
+            "hdmiResolution": None,
+            "inputDevice": "/dev/input/event0",
+            "dimensions": (320, 480),
+            "swipePadding": (40, 40, 40, 40)
+            }
         },
     "b2g": {
         "Panda": {
