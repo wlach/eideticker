@@ -7,7 +7,7 @@ class Test(B2GTest):
     def run(self):
         apps = GaiaApps(self.device.marionette)
         # open two apps
-        for name in [ 'Calculator', 'Clock', 'Music' ]:
+        for name in [ 'Contacts', 'Clock', 'Music' ]:
             app = apps.launch(name)
             assert app.frame_id is not None
 
