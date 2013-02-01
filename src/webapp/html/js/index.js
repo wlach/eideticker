@@ -15,18 +15,23 @@ $(function() {
       },
       '/([^\/]*)': {
         on: function(capture_id) {
-          $.getJSON('api/captures/' + capture_id, function(data) {
+          $.getJSON('api/captures/' + capture_id, function(captureSummary) {
             $("#"+capture_id.replace(/(:|\.)/g,'\\$1')).addClass('blue');
 
-            var num_frames = data.numFrames;
+            var num_frames = captureSummary.numFrames;
             var image_url = "";
             if (num_frames > 0) {
               var im_w = parseInt(240);
-              var im_h = parseInt((im_w / data.frameDimensions[0]) * data.frameDimensions[1]);
+              var im_h = parseInt((im_w / captureSummary.frameDimensions[0]) * captureSummary.frameDimensions[1]);
               image_url = "api/captures/" + capture_id + "/images/" + parseInt(num_frames/2) + "?width= " + im_w + "&height=" + im_h;
             }
             $('#capture-detail').html(ich.capture_detail({
-              image_url: image_url
+              image_url: image_url,
+              date: captureSummary.date,
+              num_frames: captureSummary.numFrames,
+              device: captureSummary.device,
+              application: captureSummary.app,
+              length_str: getTimeStr(captureSummary.length)
             }));
 
             $('#open-capture').click(function() {
