@@ -274,7 +274,8 @@ $(function() {
               num_frames: captureSummary.numFrames,
               device: captureSummary.device,
               application: captureSummary.app,
-              length_str: getTimeStr(captureSummary.length)
+              length_str: getTimeStr(captureSummary.length),
+              filename: captureSummary.filename
             }));
           });
         }

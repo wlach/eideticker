@@ -22,9 +22,11 @@ class CapturesHandler:
             try:
                 capture = videocapture.Capture(os.path.join(CAPTURE_DIR, fname))
                 if capture.num_frames > 0:
+                    print "filename: %s" % fname
                     captures.append(dict({ "id": fname,
                                            "length": capture.num_frames/60.0,
-                                           "numFrames": capture.num_frames },
+                                           "numFrames": capture.num_frames,
+                                           "filename": fname },
                                          **capture.metadata))
             except videocapture.BadCapture, error:
                 print "File %s unreadable: %s" % (fname, str(error))
@@ -38,10 +40,11 @@ class CaptureHandler:
     @templeton.handlers.json_response
     def GET(self, name):
         try:
-            capture = videocapture.Capture(os.path.join(CAPTURE_DIR, name))
+            fname = os.path.join(CAPTURE_DIR, name)
+            capture = videocapture.Capture(fname)
 
             return dict({ "id": name, "length": capture.num_frames/60.0,
-                          "numFrames": capture.num_frames },
+                          "numFrames": capture.num_frames, "filename": fname },
                         **capture.metadata)
         except:
             raise web.notfound()
