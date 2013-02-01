@@ -1,12 +1,9 @@
 import templeton
 import os
-import json
 import web
 import videocapture
 
-import zipfile
 from PIL import Image
-import tempfile
 
 CAPTURE_DIR=os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../captures"))
 
