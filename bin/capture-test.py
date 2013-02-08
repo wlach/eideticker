@@ -5,18 +5,22 @@
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import optparse
-import os
-import sys
 import videocapture
 
-usage = "usage: %prog [options] <capture name> <capture file>"
+usage = "usage: %prog [options] <capture name> <mode> <capture file>"
 parser = optparse.OptionParser(usage)
 options, args = parser.parse_args()
-if len(args) != 2:
+if len(args) != 3:
     parser.error("incorrect number of arguments")
 
-controller = videocapture.CaptureController("Unknown")
-controller.launch(args[0], args[1])
+(capture_name, mode, capture_file) = args
+
+if mode != "720p" and mode != "1080p":
+    parser.error("Mode must be 720p or 1080p")
+
+controller = videocapture.CaptureController()
+controller.start_capture(capture_file, mode, capture_metadata={
+        'name': capture_name })
 
 print "Should be capturing. Press enter to stop!"
 raw_input()
