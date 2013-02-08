@@ -66,6 +66,7 @@ make -C src/videocapture/videocapture/decklink
 
 # Install local deps
 ./bin/pip install -e src/mozbase/manifestdestiny
+./bin/pip install -e src/mozbase/moznetwork
 ./bin/pip install -e src/mozbase/mozhttpd
 ./bin/pip install -e src/mozbase/mozprocess
 ./bin/pip install -e src/mozbase/mozprofile
