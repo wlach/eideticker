@@ -263,6 +263,8 @@ class AndroidWebTest(WebTest):
             self.device.recordLogcat()
 
     def test_finished(self):
+        super(AndroidWebTest, self).test_finished()
+
         if self.checkerboard_log_file:
             # sleep a bit to make sure we get all the checkerboard stats from
             # test
@@ -275,8 +277,6 @@ class AndroidWebTest(WebTest):
 
         if self.profile_file:
             self.runner.save_profile()
-
-        super(AndroidWebTest, self).test_finished()
 
     def run(self):
         self.runner.start(enable_profiling=bool(self.profile_file))
