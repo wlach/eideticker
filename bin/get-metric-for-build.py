@@ -58,7 +58,7 @@ def run_test(device, outputdir, outputfile, test, url_params, num_runs,
                                         "profile-%s-%s.zip" % (appname, curtime))
 
         args = ["runtest.py", "--url-params", url_params,
-                "--extra-prefs", extra_prefs, appname, test]
+                "--extra-prefs", extra_prefs, "--app-name", appname, test]
         if get_internal_checkerboard_stats:
             checkerboard_logfile = tempfile.NamedTemporaryFile()
             args.extend(["--checkerboard-log-file", checkerboard_logfile.name])
