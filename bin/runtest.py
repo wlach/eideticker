@@ -28,6 +28,8 @@ def main(args=sys.argv[1:]):
     parser.add_option("--app-name", action="store",
                       type="string", dest="appname",
                       help="Specify an application name (android only)")
+    parser.add_option("--test-type", action="store", type="string",
+                      dest="test_type", help="override test type")
     parser.add_option("--checkerboard-log-file", action="store",
                       type = "string", dest = "checkerboard_log_file",
                       help = "name to give checkerboarding stats file (fennec only)")
@@ -62,6 +64,7 @@ def main(args=sys.argv[1:]):
     eideticker.run_test(testkey, options.devicetype, options.appname,
                         options.capture_name, device_prefs,
                         extra_prefs=extra_prefs,
+                        test_type=options.test_type,
                         profile_file=options.profile_file,
                         checkerboard_log_file=options.checkerboard_log_file,
                         no_capture=options.no_capture,

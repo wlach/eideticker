@@ -14,7 +14,8 @@ GECKO_PROFILER_ADDON_DIR = os.path.join(SRC_DIR, "../src/GeckoProfilerAddon")
 EIDETICKER_TEMP_DIR = "/tmp/eideticker"
 
 def run_test(testkey, devicetype, appname, capture_name, device_prefs,
-             extra_prefs={}, profile_file=None, checkerboard_log_file=None,
+             extra_prefs={}, test_type=None, profile_file=None,
+             checkerboard_log_file=None,
              no_capture=False, capture_file=None):
     manifest = manifestparser.TestManifest(manifests=[os.path.join(
                 TEST_DIR, 'manifest.ini')])
@@ -68,7 +69,7 @@ def run_test(testkey, devicetype, appname, capture_name, device_prefs,
 
     capture_controller = videocapture.CaptureController(custom_tempdir=EIDETICKER_TEMP_DIR)
 
-    testtype = testinfo['type']
+    testtype = test_type or testinfo['type']
 
     # get actions for web tests
     actions = None
@@ -80,7 +81,7 @@ def run_test(testkey, devicetype, appname, capture_name, device_prefs,
         except EnvironmentError:
             raise Exception("Couldn't open actions file '%s'" % actions_path)
 
-    test = get_test(devicetype = devicetype, testtype = testinfo['type'],
+    test = get_test(devicetype = devicetype, testtype = testtype,
                     testpath = testinfo['path'],
                     testpath_rel = testpath_rel, device = device,
                     actions = actions, extra_prefs = extra_prefs,
