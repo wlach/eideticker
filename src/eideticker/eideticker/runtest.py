@@ -92,11 +92,13 @@ def run_test(testkey, devicetype, appname, capture_name, device_prefs,
                     appname = appname,
                     activity = testinfo.get('activity'),
                     intent = testinfo.get('intent'),
+                    preinitialize_user_profile = int(testinfo.get('preInitializeProfile', 0)),
                     checkerboard_log_file = checkerboard_log_file,
                     profile_file = profile_file,
                     gecko_profiler_addon_dir=GECKO_PROFILER_ADDON_DIR,
                     docroot = TEST_DIR,
                     tempdir = EIDETICKER_TEMP_DIR)
+
     test.run()
     test.cleanup()
 

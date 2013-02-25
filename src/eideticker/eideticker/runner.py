@@ -16,14 +16,18 @@ class AndroidBrowserRunner(object):
     remote_profile_dir = None
     intent = "android.intent.action.VIEW"
 
-    def __init__(self, dm, appname, url, tmpdir, gecko_profiler_addon_dir=None,
+    def __init__(self, dm, appname, url, tmpdir, preinitialize_user_profile=False,
+                 enable_profiling=False, gecko_profiler_addon_dir=None,
                  extra_prefs={}):
         self.dm = dm
         self.appname = appname
         self.url = url
         self.tmpdir = tmpdir
+        self.preinitialize_user_profile = preinitialize_user_profile
+        self.enable_profiling = enable_profiling
         self.gecko_profiler_addon_dir = gecko_profiler_addon_dir
         self.extra_prefs = extra_prefs
+        self.remote_profile_dir = None
 
         activity_mappings = {
             'com.android.browser': '.BrowserActivity',
@@ -41,7 +45,7 @@ class AndroidBrowserRunner(object):
             self.activity = activity_mappings[self.appname]
 
     def get_profile_and_symbols(self, remote_sps_profile_location, target_zip):
-        if not self.is_profiling:
+        if not self.enable_profiling:
            raise Exception("Can't get profile if it isn't started with the profiling option")
 
         files_to_package = []
@@ -92,49 +96,67 @@ class AndroidBrowserRunner(object):
 
         shutil.rmtree(profiledir)
 
-    def start(self, enable_profiling=False):
+    def initialize_user_profile(self):
+        # This is broken out from start() so we can call it explicitly if
+        # we want to initialize the user profile by starting the app seperate
+        # from the test itself
+        if not self.appname.startswith('org.mozilla'):
+            return
+
+        preferences = { 'gfx.show_checkerboard_pattern': False,
+                        'browser.firstrun.show.uidiscovery': False,
+                        'layers.low-precision-buffer': False, # bug 815175
+                        'toolkit.telemetry.prompted': 2,
+                        'toolkit.telemetry.rejected': True }
+        # Add frame counter to correlate video capture with profile
+        if self.enable_profiling:
+            preferences['layers.acceleration.frame-counter'] = True
+
+        preferences.update(self.extra_prefs)
+        profile = mozprofile.Profile(preferences = preferences)
+        self.remote_profile_dir = "/".join([self.dm.getDeviceRoot(),
+                                            os.path.basename(profile.profile)])
+        self.dm.pushDir(profile.profile, self.remote_profile_dir)
+        if self.preinitialize_user_profile:
+            # initialize user profile by launching to about:home then
+            # waiting for 10 seconds
+            self.launch_fennec(None, "about:home")
+            time.sleep(10)
+            self.dm.killProcess(self.appname)
+
+    def start(self):
         print "Starting %s... " % self.appname
 
         # for fennec only, we create and use a profile
         if self.appname.startswith('org.mozilla'):
-            args = []
-            self.is_profiling = enable_profiling
-            preferences = { 'gfx.show_checkerboard_pattern': False,
-                            'browser.firstrun.show.uidiscovery': False,
-                            'layers.low-precision-buffer': False, # bug 815175
-                            'toolkit.telemetry.prompted': 2,
-                            'toolkit.telemetry.rejected': True }
-            preferences.update(self.extra_prefs)
+            if not self.remote_profile_dir:
+                self.initialize_user_profile()
 
-            # Add frame counter to correlate video capture with profile
-            if self.is_profiling:
-                preferences['layers.acceleration.frame-counter'] = True
-
-            profile = mozprofile.Profile(preferences = preferences)
-            self.remote_profile_dir = "/".join([self.dm.getDeviceRoot(),
-                                                os.path.basename(profile.profile)])
-            self.dm.pushDir(profile.profile, self.remote_profile_dir)
-
-            if self.is_profiling:
+            if self.enable_profiling:
                 mozEnv = { "MOZ_PROFILER_STARTUP": "true" }
             else:
                 mozEnv = None
 
-            args.extend(["-profile", self.remote_profile_dir])
-
-            # sometimes fennec fails to start, so we'll try three times...
-            for i in range(3):
-                print "Launching %s (try %s of 3)" % (self.appname, i+1)
-                try:
-                    self.dm.launchFennec(self.appname, url=self.url, mozEnv=mozEnv, extraArgs=args)
-                except mozdevice.DMError:
-                    continue
-                return # Ok!
-            raise Exception("Failed to start Fennec after three tries")
+            # launch fennec for reals
+            self.launch_fennec(mozEnv, self.url)
         else:
             self.is_profiling = False # never profiling with non-fennec browsers
             self.dm.launchApplication(self.appname, self.activity, self.intent,
                                       url=self.url)
+
+    def launch_fennec(self, mozEnv, url):
+        # sometimes fennec fails to start, so we'll try three times...
+        for i in range(3):
+            print "Launching %s (try %s of 3)" % (self.appname, i+1)
+            try:
+                self.dm.launchFennec(self.appname, url=url, mozEnv=mozEnv,
+                                     extraArgs=["-profile",
+                                                self.remote_profile_dir])
+            except mozdevice.DMError:
+                continue
+            return # Ok!
+        raise Exception("Failed to start Fennec after three tries")
+
 
     def save_profile(self):
         # Dump the profile (don't process it yet because we need to cleanup

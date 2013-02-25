@@ -215,6 +215,7 @@ class WebTest(Test):
 class AndroidWebTest(WebTest):
 
     def __init__(self, appname = None, extra_prefs = {}, profile_file = None,
+                 preinitialize_user_profile = False,
                  gecko_profiler_addon_dir = None, checkerboard_log_file = None,
                  **kwargs):
         super(AndroidWebTest, self).__init__(**kwargs)
@@ -224,6 +225,7 @@ class AndroidWebTest(WebTest):
         self.checkerboard_log_file = checkerboard_log_file
         self.profile_file = profile_file
         self.gecko_profiler_addon_dir = gecko_profiler_addon_dir
+        self.preinitialize_user_profile = preinitialize_user_profile
 
         # If we're logging checkerboard stats, set that up here (seems like it
         # takes a second or so to accept the new setting, so let's do that here --
@@ -245,6 +247,8 @@ class AndroidWebTest(WebTest):
 
         self.runner = eideticker.AndroidBrowserRunner(self.device, self.appname,
                                                       self.url, self.tempdir,
+                                                      preinitialize_user_profile=self.preinitialize_user_profile,
+                                                      enable_profiling=bool(self.profile_file),
                                                       gecko_profiler_addon_dir=gecko_profiler_addon_dir,
                                                       extra_prefs=self.extra_prefs)
 
@@ -279,7 +283,7 @@ class AndroidWebTest(WebTest):
             self.runner.save_profile()
 
     def run(self):
-        self.runner.start(enable_profiling=bool(self.profile_file))
+        self.runner.start()
 
         self.wait()
 
@@ -297,6 +301,7 @@ class AndroidWebStartupTest(AndroidWebTest):
         # FIXME: currently start capture before launching app because we wait until app is
         # launched -- would be better to make waiting optional and then start capture
         # after triggering app launch to reduce latency?
+        self.runner.initialize_user_profile()
         if not self.no_capture:
             self.start_capture()
 
