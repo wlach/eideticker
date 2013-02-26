@@ -103,7 +103,6 @@ def run_test(testkey, devicetype, appname, capture_name, device_prefs,
     test.cleanup()
 
     if capture_file:
-        print "Converting capture..."
         try:
             capture_controller.convert_capture(test.start_frame, test.end_frame)
         except KeyboardInterrupt:

@@ -61,7 +61,6 @@ class CaptureProcess(multiprocessing.Process):
                 self.output_raw_filename)
 
         self.capture_proc = subprocess.Popen(args, stdout=subprocess.PIPE)
-        print "Opening!"
 
         while not self.finished_semaphore.value:
             try:
@@ -103,6 +102,9 @@ class CaptureController(object):
         self.capture_name = None
         self.custom_tempdir = custom_tempdir
 
+    def log(self, msg):
+        print "%s Capture Controller | %s" % (datetime.datetime.now().strftime("%b %d %H:%M:%S %Z"), msg)
+
     def start_capture(self, output_filename, mode, capture_metadata = {}, debug=False):
         # should not call this more than once
         assert not self.capture_process
@@ -121,6 +123,7 @@ class CaptureController(object):
                                               self.frame_counter,
                                               self.finished_semaphore,
                                               custom_tempdir=self.custom_tempdir)
+        self.log("Starting capture...")
         self.capture_process.start()
 
     @property
@@ -134,7 +137,7 @@ class CaptureController(object):
     def terminate_capture(self):
         # should not call this when no capture is ongoing
         if not self.capturing:
-            print "Terminated capture, but no capture ongoing"
+            self.log("Terminated capture, but no capture ongoing")
             return
 
         self.capture_process.stop()
@@ -142,13 +145,14 @@ class CaptureController(object):
         self.capture_process = None
 
     def convert_capture(self, start_frame, end_frame):
+        self.log("Converting capture...")
         imagedir = tempfile.mkdtemp(dir=self.custom_tempdir)
 
         subprocess.Popen((os.path.join(DECKLINK_DIR, 'decklink-convert.sh'),
                           self.output_raw_file.name, imagedir, self.mode),
                          close_fds=True).wait()
 
-        print "Gathering capture dimensions and cropping to start/end of capture..."
+        self.log("Gathering capture dimensions and cropping to start/end of capture...")
         imagefiles = [os.path.join(imagedir, path) for path in sorted(os.listdir(imagedir),
                                                                      key=_natural_key)]
         num_frames = len(imagefiles)
@@ -160,7 +164,7 @@ class CaptureController(object):
             frame_dimensions = im.size
 
         # start frame
-        print "Searching for start of capture signal ..."
+        self.log("Searching for start of capture signal ...")
         squares = []
         capture_area = None
         for (i, imagefile) in enumerate(imagefiles):
@@ -177,7 +181,7 @@ class CaptureController(object):
             start_frame = 1
 
         # end frame
-        print "Searching for end of capture signal ..."
+        self.log("Searching for end of capture signal ...")
         squares = []
         for i in range(num_frames-1, 0, -1):
             imgarray = numpy.array(Image.open(imagefiles[i]), dtype=numpy.int16)
@@ -196,7 +200,7 @@ class CaptureController(object):
             end_frame = num_frames
 
 
-        print "Rewriting images ..."
+        self.log("Rewriting images ...")
         rewritten_imagedir = tempfile.mkdtemp(dir=self.custom_tempdir)
 
         def _rewrite_frame(framenum, dirname, imagefilename):
@@ -229,14 +233,14 @@ class CaptureController(object):
         for p in multiprocesses:
             p.join()
 
-        print "Creating movie ..."
+        self.log("Creating movie ...")
         moviefile = tempfile.NamedTemporaryFile(dir=self.custom_tempdir,
                                                 suffix=".webm")
         subprocess.Popen(('ffmpeg', '-y', '-r', '60', '-i',
                           os.path.join(rewritten_imagedir, '%d.png'),
                           moviefile.name), close_fds=True).wait()
 
-        print "Writing final capture '%s'..." % self.output_filename
+        self.log("Writing final capture '%s'..." % self.output_filename)
         zipfile = ZipFile(self.output_filename, 'a')
 
         zipfile.writestr('metadata.json',
