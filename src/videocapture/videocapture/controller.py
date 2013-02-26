@@ -26,6 +26,13 @@ def _natural_key(str):
     """See http://www.codinghorror.com/blog/archives/001018.html"""
     return [int(s) if s.isdigit() else s for s in re.split(r'(\d+)', str)]
 
+supported_formats = {
+    "1080p": { "decklink_mode": 13 },
+    "1080i": { "decklink_mode": 9 },
+    "720p": { "decklink_mode": 16 },
+    "720p@59.94": { "decklink_mode": 12 }
+ }
+
 class CaptureProcess(multiprocessing.Process):
 
     def __init__(self, output_raw_filename, video_format, frame_counter, finished_semaphore, custom_tempdir=None):
@@ -40,10 +47,7 @@ class CaptureProcess(multiprocessing.Process):
         self.finished_semaphore.value = True
 
     def run(self):
-        if self.video_format == "1080p":
-            mode = 13
-        else:
-            mode = 16
+        mode = supported_formats[self.video_format]["decklink_mode"]
 
         args = (os.path.join(DECKLINK_DIR, 'decklink-capture'),
                 '-o',
@@ -102,6 +106,8 @@ class CaptureController(object):
     def start_capture(self, output_filename, mode, capture_metadata = {}, debug=False):
         # should not call this more than once
         assert not self.capture_process
+        if mode not in supported_formats.keys():
+            raise Exception("Unsupported video format %s" % mode)
 
         self.output_raw_file = tempfile.NamedTemporaryFile(dir=self.custom_tempdir)
         self.mode = mode

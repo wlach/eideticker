@@ -15,9 +15,6 @@ if len(args) != 3:
 
 (capture_name, mode, capture_file) = args
 
-if mode != "720p" and mode != "1080p":
-    parser.error("Mode must be 720p or 1080p")
-
 controller = videocapture.CaptureController()
 controller.start_capture(capture_file, mode, capture_metadata={
         'name': capture_name })
