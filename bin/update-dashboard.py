@@ -92,7 +92,7 @@ def runtest(dm, product, appname, appinfo, testinfo, capture_name,
                   'buildid': appinfo.get('buildid'),
                   'revision': appinfo.get('revision') }
 
-    if testinfo['type'] == 'startup':
+    if testinfo['type'] == 'startup' or testinfo['type'] == 'webstartup':
         datapoint['timetostableframe'] = videocapture.get_stable_frame_time(capture)
     else:
         # standard test metrics
