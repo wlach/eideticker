@@ -54,7 +54,7 @@ if [ $# -gt 0 ]; then
 else
     if [ -z $TESTS ]; then
         # Default set of tests
-        TESTS="taskjs cnn nightly nytimes-scroll nytimes-zoom reddit wikipedia imgur timecube clock startup-abouthome-cold"
+        TESTS="taskjs cnn nightly nytimes-scroll nytimes-zoom reddit wikipedia imgur timecube clock startup-abouthome-fresh startup-abouthome-dirty"
     fi
 fi
 
