@@ -4,6 +4,7 @@
 
 import eideticker
 import mozhttpd
+import moznetwork
 import urlparse
 import time
 import imp
@@ -153,7 +154,7 @@ class WebTest(Test):
         self.actions = actions
 
         self.capture_server = CaptureServer(self)
-        self.host = mozhttpd.iface.get_lan_ip()
+        self.host = moznetwork.get_ip()
         self.http = mozhttpd.MozHttpd(docroot=docroot,
                                       host=self.host, port=0,
                                       urlhandlers = [
