@@ -303,8 +303,7 @@ class AndroidWebStartupTest(AndroidWebTest):
         # launched -- would be better to make waiting optional and then start capture
         # after triggering app launch to reduce latency?
         self.runner.initialize_user_profile()
-        if not self.no_capture:
-            self.start_capture()
+        self.start_capture()
 
         super(AndroidWebStartupTest, self).run()
 
@@ -334,8 +333,7 @@ class AndroidAppStartupTest(Test):
         # FIXME: currently start capture before launching app because we wait until app is
         # launched -- would be better to make waiting optional and then start capture
         # after triggering app launch to reduce latency?
-        if not self.no_capture:
-            self.start_capture()
+        self.start_capture()
         self.device.launchApplication(self.appname, self.activity, self.intent)
         self.wait()
 
