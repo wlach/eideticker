@@ -28,7 +28,6 @@ def main(args=sys.argv[1:]):
     if not product.get('reponame'):
         print "No download / installation needed for %s" % product['name']
     else:
-        print "Downloading %s" % product['name']
         br = eideticker.BuildRetriever()
         if datestr == 'latest':
             date = None
