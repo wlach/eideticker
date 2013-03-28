@@ -2,8 +2,10 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 
-from capture import *
 import numpy
+from PIL import Image
+import cPickle as pickle
+
 
 # Note: we consider frame differences to be the number of pixels with an rgb
 # component > 5 components (out of 255) different from the previous frame.

@@ -3,7 +3,7 @@
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 
 from runner import AndroidBrowserRunner
-from options import OptionParser
+from options import OptionParser, CaptureOptionParser
 from device import getDevicePrefs, getDevice
 from apk import get_fennec_appinfo
 from products import get_product, products, BuildRetriever

@@ -10,7 +10,6 @@ import tempfile
 import time
 import datetime
 import os
-import capture
 from square import get_biggest_square
 import re
 import multiprocessing
@@ -21,6 +20,10 @@ import numpy
 from zipfile import ZipFile
 
 DECKLINK_DIR = os.path.join(os.path.dirname(__file__), 'decklink')
+POINTGREY_DIR = os.path.join(os.path.dirname(__file__), 'pointgrey')
+
+valid_capture_devices = [ "decklink", "pointgrey" ]
+valid_decklink_modes = [ "720p", "1080p" ]
 
 def _natural_key(str):
     """See http://www.codinghorror.com/blog/archives/001018.html"""
@@ -28,12 +31,16 @@ def _natural_key(str):
 
 class CaptureProcess(multiprocessing.Process):
 
-    def __init__(self, output_raw_filename, video_format, frame_counter, finished_semaphore, custom_tempdir=None):
-        multiprocessing.Process.__init__(self, args=(frame_counter,finished_semaphore,))
+    def __init__(self, capture_device, video_format, frame_counter,
+                 finished_semaphore, output_raw_filename=None,
+                 outputdir=None):
+        multiprocessing.Process.__init__(self, args=(frame_counter,
+                                                     finished_semaphore,))
         self.frame_counter = frame_counter
         self.output_raw_filename = output_raw_filename
+        self.outputdir = outputdir
+        self.capture_device = capture_device
         self.video_format = video_format
-        self.custom_tempdir = custom_tempdir
         self.finished_semaphore = finished_semaphore
 
     def stop(self):
@@ -45,16 +52,27 @@ class CaptureProcess(multiprocessing.Process):
         else:
             mode = 16
 
-        args = (os.path.join(DECKLINK_DIR, 'decklink-capture'),
-                '-o',
-                '-m',
-                '%s' % mode,
-                '-p',
-                '0',
-                '-n',
-                '6000',
-                '-f',
-                self.output_raw_filename)
+        timeout = 10
+        if self.capture_device == "decklink":
+            args = (os.path.join(DECKLINK_DIR, 'decklink-capture'),
+                    '-o',
+                    '-m',
+                    '%s' % mode,
+                    '-p',
+                    '0',
+                    '-n',
+                    '6000',
+                    '-f',
+                    self.output_raw_filename)
+        elif self.capture_device == "pointgrey":
+            args = (os.path.join(POINTGREY_DIR, 'pointgrey-capture'),
+                    '-n',
+                    '1200',
+                    '-f',
+                    self.outputdir)
+            timeout = 300 # pointgrey devices need an extra long timeout
+        else:
+            raise Exception("Unknown capture device '%s'" % self.capture_device)
 
         self.capture_proc = subprocess.Popen(args, stdout=subprocess.PIPE)
         print "Opening!"
@@ -70,15 +88,18 @@ class CaptureProcess(multiprocessing.Process):
 
             self.frame_counter.value=int(line.rstrip())
 
+        print "Terminating capture proc..."
         self.capture_proc.terminate()
-        for i in range(2):
+        waitstart = time.time()
+        while (time.time() - waitstart) < timeout:
             rc = self.capture_proc.poll()
+            time.sleep(0.5)
             if rc != None:
-                print 'terminated'
+                print "Capture proc terminated"
                 self.capture_proc.wait()  # necessary?
                 return
 
-        print 'still running!'
+        print "WARNING: Capture still running!"
         # terminate failed; try forcibly killing it
         try:
             self.capture_proc.kill()
@@ -89,32 +110,42 @@ class CaptureProcess(multiprocessing.Process):
 
 class CaptureController(object):
 
-    def __init__(self, custom_tempdir=None):
+    def __init__(self, capture_device, capture_area = None, custom_tempdir=None):
         self.capture_process = None
         self.null_read = file('/dev/null', 'r')
         self.null_write = file('/dev/null', 'w')
         self.output_filename = None
         self.output_raw_file = None
+        self.outputdir = None
         self.capture_time = None
         self.capture_name = None
         self.custom_tempdir = custom_tempdir
+        self.capture_device = capture_device
+        self.capture_area = capture_area
 
-    def start_capture(self, output_filename, mode, capture_metadata = {}, debug=False):
+    def start_capture(self, output_filename, mode,
+                      capture_metadata = {}, debug=False):
         # should not call this more than once
         assert not self.capture_process
 
-        self.output_raw_file = tempfile.NamedTemporaryFile(dir=self.custom_tempdir)
+        output_raw_filename = None
+        if self.capture_device == "decklink":
+            self.output_raw_file = tempfile.NamedTemporaryFile(dir=self.custom_tempdir)
+            output_raw_filename = self.output_raw_file.name
+
+        self.outputdir = tempfile.mkdtemp(dir=self.custom_tempdir)
         self.mode = mode
         self.output_filename = output_filename
         self.capture_time = datetime.datetime.now()
         self.capture_metadata = capture_metadata
         self.frame_counter = multiprocessing.RawValue('i', 0)
         self.finished_semaphore = multiprocessing.RawValue('b', False)
-        self.capture_process = CaptureProcess(self.output_raw_file.name,
+        self.capture_process = CaptureProcess(self.capture_device,
                                               mode,
                                               self.frame_counter,
                                               self.finished_semaphore,
-                                              custom_tempdir=self.custom_tempdir)
+                                              output_raw_filename=output_raw_filename,
+                                              outputdir=self.outputdir)
         self.capture_process.start()
 
     @property
@@ -133,18 +164,24 @@ class CaptureController(object):
 
         self.capture_process.stop()
         self.capture_process.join()
+        print "Capture process terminated!!!LOL"
         self.capture_process = None
 
     def convert_capture(self, start_frame, end_frame):
-        imagedir = tempfile.mkdtemp(dir=self.custom_tempdir)
+        # wait for capture to finish if it has not already
+        if self.capturing:
+            print "Capture not finished... waiting"
+            while self.capturing:
+                time.sleep(0.5)
 
-        subprocess.Popen((os.path.join(DECKLINK_DIR, 'decklink-convert.sh'),
-                          self.output_raw_file.name, imagedir, self.mode),
-                         close_fds=True).wait()
+        if self.capture_device == "decklink":
+            subprocess.Popen((os.path.join(DECKLINK_DIR, 'decklink-convert.sh'),
+                              self.output_raw_file.name, self.outputdir, self.mode),
+                             close_fds=True).wait()
 
         print "Gathering capture dimensions and cropping to start/end of capture..."
-        imagefiles = [os.path.join(imagedir, path) for path in sorted(os.listdir(imagedir),
-                                                                     key=_natural_key)]
+        imagefiles = [os.path.join(self.outputdir, path) for path in
+                      sorted(os.listdir(self.outputdir), key=_natural_key)]
         num_frames = len(imagefiles)
 
         # full image dimensions
@@ -153,50 +190,53 @@ class CaptureController(object):
             im = Image.open(imagefiles[0])
             frame_dimensions = im.size
 
-        # start frame
-        print "Searching for start of capture signal ..."
-        squares = []
-        capture_area = None
-        for (i, imagefile) in enumerate(imagefiles):
-            imgarray = numpy.array(Image.open(imagefile), dtype=numpy.int16)
-            squares.append(get_biggest_square((0,255,0), imgarray))
+        # searching for start/end frames and capture dimensions only really
+        # makes sense on the decklink cards, which have a clean HDMI signal.
+        # input from things like the pointgrey cameras is too noisy...
+        if self.capture_device == "decklink":
+            # start frame
+            print "Searching for start of capture signal ..."
+            squares = []
+            for (i, imagefile) in enumerate(imagefiles):
+                imgarray = numpy.array(Image.open(imagefile), dtype=numpy.int16)
+                squares.append(get_biggest_square((0,255,0), imgarray))
 
-            if i > 1 and not squares[-1] and squares[-2]:
-                if not start_frame:
-                    start_frame = i
-                capture_area = squares[-2]
-                break
-        # If we still don't have a start frame, set it to 1
+                if i > 1 and not squares[-1] and squares[-2]:
+                    if not start_frame:
+                        start_frame = i
+                    self.capture_area = squares[-2]
+                    break
+
+            # end frame
+            print "Searching for end of capture signal ..."
+            squares = []
+            for i in range(num_frames-1, 0, -1):
+                imgarray = numpy.array(Image.open(imagefiles[i]), dtype=numpy.int16)
+                squares.append(get_biggest_square((255,0,0), imgarray))
+
+                if len(squares) > 1 and not squares[-1] and squares[-2]:
+                    if not end_frame:
+                        end_frame = (i-1)
+                    if not self.capture_area:
+                        self.capture_area = squares[-2]
+                    break
+
+        # If we don't have a start frame, set it to 1
         if not start_frame:
             start_frame = 1
-
-        # end frame
-        print "Searching for end of capture signal ..."
-        squares = []
-        for i in range(num_frames-1, 0, -1):
-            imgarray = numpy.array(Image.open(imagefiles[i]), dtype=numpy.int16)
-            squares.append(get_biggest_square((255,0,0), imgarray))
-
-            if len(squares) > 1 and not squares[-1] and squares[-2]:
-                if not end_frame:
-                    end_frame = (i-1)
-                if not capture_area:
-                    capture_area = squares[-2]
-                break
-
-        # still don't have an end frame? make it the entire length of the
+        # Don't have an end frame? make it the entire length of the
         # capture
         if not end_frame:
             end_frame = num_frames
 
-
-        print "Rewriting images ..."
+        print "Rewriting images in %s..." % self.outputdir
         rewritten_imagedir = tempfile.mkdtemp(dir=self.custom_tempdir)
 
         def _rewrite_frame(framenum, dirname, imagefilename):
             im = Image.open(imagefilename)
-            if capture_area:
-                im = im.crop(capture_area)
+            if self.capture_area:
+                im = im.crop(self.capture_area)
+            im.convert("RGB")
             im.save(os.path.join(dirname, '%s.png' % framenum))
 
         # map the frame before the start frame to the zeroth frame (if possible)
@@ -248,8 +288,9 @@ class CaptureController(object):
 
         zipfile.close()
 
-        shutil.rmtree(imagedir)
+        shutil.rmtree(self.outputdir)
         shutil.rmtree(rewritten_imagedir)
 
         self.output_filename = None
+        self.outputdir = None
         self.output_raw_file = None

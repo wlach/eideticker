@@ -11,7 +11,7 @@ import mozdevice
 
 def main(args=sys.argv[1:]):
     usage = "usage: %prog [options] <test key>"
-    parser = eideticker.OptionParser(usage=usage)
+    parser = eideticker.CaptureOptionParser(usage=usage)
     parser.add_option("--url-params", action="store",
                       dest="url_params",
                       help="additional url parameters for test")
@@ -41,10 +41,15 @@ def main(args=sys.argv[1:]):
                       type="string", dest = "profile_file",
                       help="Collect a performance profile using the built in "
                       "profiler (fennec only).")
+    parser.add_option("--capture-area", action="store", default=None,
+                      help="Hardcode capture area. Must be passed in as json "
+                      "array [x1, y1, x2, y2]")
     parser.add_option("--debug", action="store_true",
                       dest="debug", help="show verbose debugging information")
 
     options, args = parser.parse_args()
+    parser.validate_options(options)
+
     if len(args) != 1:
         parser.error("You must specify (only) a test key")
         sys.exit(1)
@@ -56,18 +61,28 @@ def main(args=sys.argv[1:]):
         parser.error("Error processing extra preferences: not valid JSON!")
         raise
 
+    capture_area = None
+    if options.capture_area:
+        try:
+            capture_area = json.loads(options.capture_area)
+        except ValueError:
+            parser.error("Error process capture area: not valid JSON!")
+            raise
+
     device_prefs = eideticker.getDevicePrefs(options)
 
     if options.debug:
         mozdevice.DeviceManagerSUT.debug = 4
 
-    eideticker.run_test(testkey, options.devicetype, options.appname,
+    eideticker.run_test(testkey, options.capture_device, options.devicetype,
+                        options.appname,
                         options.capture_name, device_prefs,
                         extra_prefs=extra_prefs,
                         test_type=options.test_type,
                         profile_file=options.profile_file,
                         checkerboard_log_file=options.checkerboard_log_file,
                         no_capture=options.no_capture,
+                        capture_area=capture_area,
                         capture_file=options.capture_file)
 
 main()
