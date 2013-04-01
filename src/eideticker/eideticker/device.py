@@ -181,7 +181,7 @@ class EidetickerMixin(object):
 
     def _getTapEvent(self, x, y, times=1):
         coords = self._transformXY((x,y))
-        return "tap %s %s %s" % (int(coords[0]), int(coords[1]), times)
+        return "tap %s %s %s 100" % (int(coords[0]), int(coords[1]), times)
 
     def _getScrollEvents(self, direction, numtimes=1, numsteps=10, duration=100):
         events = []
