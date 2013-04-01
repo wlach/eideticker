@@ -44,7 +44,7 @@ class AndroidBrowserRunner(object):
         else:
             self.activity = activity_mappings[self.appname]
 
-    def get_profile_and_symbols(self, remote_sps_profile_location, target_zip):
+    def get_profile_and_symbols(self, target_zip):
         if not self.enable_profiling:
            raise Exception("Can't get profile if it isn't started with the profiling option")
 
@@ -59,7 +59,7 @@ class AndroidBrowserRunner(object):
             os.remove(sps_profile_path)
 
         print "Fetching fennec_profile.txt"
-        self.dm.getFile(remote_sps_profile_location, sps_profile_path)
+        self.dm.getFile(self.remote_sps_profile_location, sps_profile_path)
         files_to_package.append(sps_profile_path)
 
         # FIXME: We still get a useful profile without the symbols from the apk
@@ -170,8 +170,7 @@ class AndroidBrowserRunner(object):
 
     def process_profile(self, profile_file):
         with tempfile.NamedTemporaryFile() as temp_profile_file:
-            self.get_profile_and_symbols(self.remote_sps_profile_location,
-                                         temp_profile_file.name)
+            self.get_profile_and_symbols(temp_profile_file.name)
             self.dm.removeFile(self.remote_sps_profile_location)
             subprocess.check_call(["./symbolicate.sh",
                                    os.path.abspath(temp_profile_file.name),
