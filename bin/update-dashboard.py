@@ -27,7 +27,8 @@ def kill_app(dm, appname):
 
 def runtest(dm, product, appname, appinfo, testinfo, capture_name,
             outputdir, datafile, data, enable_profiling=False,
-            dmtype="adb", host=None, port=None, devicetype="android"):
+            dmtype="adb", host=None, port=None, devicetype="android",
+            baseline=False):
     capture_file = os.path.join(CAPTURE_DIR,
                                 "%s-%s-%s-%s.zip" % (testinfo['key'],
                                                      appname,
@@ -87,10 +88,18 @@ def runtest(dm, product, appname, appinfo, testinfo, capture_name,
         data['testdata'][product['name']][appdate] = []
 
     datapoint = { 'uuid': uuid.uuid1().hex,
-                  'video': video_path,
-                  'appdate': appinfo.get('date'),
-                  'buildid': appinfo.get('buildid'),
-                  'revision': appinfo.get('revision') }
+                  'video': video_path }
+    for (key, value) in [('appdate', appinfo.get('date')),
+                         ('buildid', appinfo.get('buildid')),
+                         ('revision', appinfo.get('revision'))]:
+        if value:
+            datapoint.update({ key: value })
+
+    # only interested in version if we don't have revision
+    if not appinfo.get('revision') and appinfo.get('version'):
+        datapoint.update({ 'version': appinfo['version'] })
+    if baseline:
+        datapoint.update({ 'baseline': True })
 
     if testinfo['type'] == 'startup' or testinfo['type'] == 'webstartup':
         datapoint['timetostableframe'] = videocapture.get_stable_frame_time(capture)
@@ -124,9 +133,13 @@ def main(args=sys.argv[1:]):
     parser.add_option("--apk", action="store", dest="apk",
                       help = "Product apk to get metadata from " \
                           "(Android-specific)")
+    parser.add_option("--baseline", action="store_true", dest="baseline",
+                      help = "Create baseline results for dashboard")
     parser.add_option("--num-runs", action="store",
                       type = "int", dest = "num_runs",
                       help = "number of runs (default: 1)")
+    parser.add_option("--app-version", action="store", dest="app_version",
+                      help="Specify app version (if not automatically available)")
 
     options, args = parser.parse_args()
     if len(args) != 3:
@@ -190,13 +203,18 @@ def main(args=sys.argv[1:]):
         f.write(json.dumps({ 'tests': tests }))
 
     if options.apk:
+        if options.app_version:
+            raise Exception("Should specify either --app-version or --apk, not both!")
         appinfo = eideticker.get_fennec_appinfo(options.apk)
         appname = appinfo['appname']
         print "Using application name '%s' from apk '%s'" % (appname, options.apk)
         capture_name = "%s %s" % (product['name'], appinfo['date'])
     else:
+        if not options.app_version:
+            raise Exception("Should specify --app-version if not --apk!")
+
         # no apk, assume it's something static on the device
-        appinfo = { 'date': 'today' }
+        appinfo = { 'date': time.strftime("%Y-%m-%d"), 'version': options.app_version }
         appname = product['appname']
         capture_name = "%s (taken on %s)" % (product['name'], current_date)
 
@@ -205,7 +223,8 @@ def main(args=sys.argv[1:]):
         # Now run the test
         runtest(device, product, appname, appinfo, testinfo,
                 capture_name + " #%s" % i, outputdir, datafile, data,
-                enable_profiling=options.enable_profiling, **devicePrefs)
+                enable_profiling=options.enable_profiling,
+                baseline=options.baseline, **devicePrefs)
 
         # Kill app after test complete
         device.killProcess(appname)

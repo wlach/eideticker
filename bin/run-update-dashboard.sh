@@ -83,7 +83,12 @@ for TEST in $TESTS; do
   ./bin/cleanup-phone.py
 
   echo "Running $TEST"
-  timeout $UPDATE_TIMEOUT ./bin/update-dashboard.py --apk downloads/$PRODUCT-$DATE.apk --num-runs $NUM_RUNS $EXTRA_UPDATE_DASHBOARD_ARGS $PRODUCT $TEST src/dashboard
+  if [ $PRODUCT = nightly -o $PRODUCT = nightly-armv6 ]; then
+    APK="downloads/$PRODUCT-$DATE.apk"
+    timeout $UPDATE_TIMEOUT ./bin/update-dashboard.py --apk $APK --num-runs $NUM_RUNS $EXTRA_UPDATE_DASHBOARD_ARGS $PRODUCT $TEST src/dashboard
+  else
+    timeout $UPDATE_TIMEOUT ./bin/update-dashboard.py --baseline --app-version $VERSION --num-runs $NUM_RUNS $EXTRA_UPDATE_DASHBOARD_ARGS $PRODUCT $TEST src/dashboard
+  fi
   RET=$?
   if [ $RET == 124 ]; then
       echo "ERROR: Timed out when updating dashboard (TEST: $TEST)"
