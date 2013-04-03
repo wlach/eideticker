@@ -111,8 +111,12 @@ or more "clients" (machines that run the tests) and setting up the server
 * Install nginx, ssh, and rsync if not installed already.
 * Create an "eideticker" user on the machine (with home directory).
 * As the newly-created eideticker user, create a "www" subdirectory.
-* Create an nginx configuration where applicable (on Redhat-based systems,
-`/etc/nginx/conf.d`). It should look something like this:
+* Create an nginx configuration (on Redhat-based systems,
+`/etc/nginx/conf.d`).
+* Restart nginx. You will need to configure the clients before you
+will see anything on the dashboard.
+
+Here's the nginx configuration we currently use in production:
 
     server {
             listen 80; #or change this to your public IP address eg 1.1.1.1:80
@@ -131,8 +135,6 @@ or more "clients" (machines that run the tests) and setting up the server
 Note the Access-Control-Origin header, which allows us to integrate the SPS
 profiler to request eideticker resources directly (useful for direct linking
 to capture analysis).
-* Finally, restart nginx. You will need to configure the clients before you
-will see anything on the dashboard.
 
 #### Dashboard Client Setup
 

@@ -4,6 +4,7 @@
 
 import eideticker
 import mozhttpd
+import moznetwork
 import urlparse
 import time
 import imp
@@ -71,12 +72,12 @@ class Test(object):
     finished_capture = False
     start_frame = None
     end_frame = None
-    track_start_end_frames = False
 
     def __init__(self, testpath=None, testpath_rel=None, device=None, capture_file = None,
                  capture_controller=None,
                  capture_metadata={}, capture_timeout=None, tempdir=None,
-                 no_capture=False, track_start_end_frames=False, **kwargs):
+                 no_capture=False, track_start_frame=False,
+                 track_end_frame=False, **kwargs):
         self.testpath = testpath
         self.testpath_rel = testpath_rel
         self.device = device
@@ -86,7 +87,8 @@ class Test(object):
         self.capture_timeout = capture_timeout
         self.tempdir = tempdir
         self.no_capture = no_capture
-        self.track_start_end_frames = track_start_end_frames
+        self.track_start_frame = track_start_frame
+        self.track_end_frame = track_end_frame
 
     def cleanup(self):
         pass
@@ -133,14 +135,14 @@ class Test(object):
 
     def test_started(self):
         # callback indicating test has started
-        if self.capture_file and self.track_start_end_frames:
+        if self.capture_file and self.track_start_frame:
             self.start_frame = self.capture_controller.capture_framenum()
 
         print "Test started callback (time: %s, framenum: %s)" % (time.time(), self.start_frame)
 
     def test_finished(self):
         # callback indicating test has finished
-        if self.capture_file and self.track_start_end_frames:
+        if self.capture_file and self.track_end_frame:
             self.end_frame = self.capture_controller.capture_framenum()
 
         print "Test finished callback (time: %s, framenum: %s)" % (time.time(), self.end_frame)
@@ -148,12 +150,13 @@ class Test(object):
 class WebTest(Test):
 
     def __init__(self, actions={}, docroot=None, **kwargs):
-        super(WebTest, self).__init__(track_start_end_frames = True, **kwargs)
+        super(WebTest, self).__init__(track_start_frame = True,
+                                      track_end_frame = True, **kwargs)
 
         self.actions = actions
 
         self.capture_server = CaptureServer(self)
-        self.host = mozhttpd.iface.get_lan_ip()
+        self.host = moznetwork.get_ip()
         self.http = mozhttpd.MozHttpd(docroot=docroot,
                                       host=self.host, port=0,
                                       urlhandlers = [
@@ -296,14 +299,15 @@ class AndroidWebStartupTest(AndroidWebTest):
 
     def __init__(self, **kwargs):
         super(AndroidWebStartupTest, self).__init__(**kwargs)
+        # don't want to track start frames for startup tests
+        self.track_start_frame = False
 
     def run(self):
         # FIXME: currently start capture before launching app because we wait until app is
         # launched -- would be better to make waiting optional and then start capture
         # after triggering app launch to reduce latency?
         self.runner.initialize_user_profile()
-        if not self.no_capture:
-            self.start_capture()
+        self.start_capture()
 
         super(AndroidWebStartupTest, self).run()
 
@@ -333,8 +337,7 @@ class AndroidAppStartupTest(Test):
         # FIXME: currently start capture before launching app because we wait until app is
         # launched -- would be better to make waiting optional and then start capture
         # after triggering app launch to reduce latency?
-        if not self.no_capture:
-            self.start_capture()
+        self.start_capture()
         self.device.launchApplication(self.appname, self.activity, self.intent)
         self.wait()
 

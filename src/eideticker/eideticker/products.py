@@ -133,6 +133,18 @@ products = [
         "appname": "com.android.browser"
     },
     {
+        "name": "stock-ics",
+        "platform": "android",
+        "url": None,
+        "appname": "com.google.android.browser"
+    },
+    {
+        "name": "chrome",
+        "platform": "android",
+        "url": None,
+        "appname": "com.android.chrome"
+    },
+    {
         "name": "b2g-nightly",
         "platform": "b2g",
         "url": None,

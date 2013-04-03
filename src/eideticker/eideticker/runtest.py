@@ -13,9 +13,9 @@ TEST_DIR = os.path.abspath(os.path.join(SRC_DIR, "tests"))
 GECKO_PROFILER_ADDON_DIR = os.path.join(SRC_DIR, "../src/GeckoProfilerAddon")
 EIDETICKER_TEMP_DIR = "/tmp/eideticker"
 
-def run_test(testkey, devicetype, appname, capture_name, device_prefs,
-             extra_prefs={}, test_type=None, profile_file=None,
-             checkerboard_log_file=None,
+def run_test(testkey, capture_device, devicetype, appname, capture_name,
+             device_prefs, extra_prefs={}, test_type=None, profile_file=None,
+             checkerboard_log_file=None, capture_area=None,
              no_capture=False, capture_file=None):
     manifest = manifestparser.TestManifest(manifests=[os.path.join(
                 TEST_DIR, 'manifest.ini')])
@@ -67,7 +67,8 @@ def run_test(testkey, devicetype, appname, capture_name, device_prefs,
     if testinfo.get('urlParams'):
         testpath_rel += "?%s" % urllib.quote_plus(testinfo.get('urlParams'))
 
-    capture_controller = videocapture.CaptureController(custom_tempdir=EIDETICKER_TEMP_DIR)
+    capture_controller = videocapture.CaptureController(capture_device, capture_area,
+                                                        custom_tempdir=EIDETICKER_TEMP_DIR)
 
     testtype = test_type or testinfo['type']
 

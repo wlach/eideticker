@@ -4,13 +4,13 @@
 
 import optparse
 import os
+import videocapture
 
 class OptionParser(optparse.OptionParser):
     '''Custom version of the optionparser class with a few eideticker-specific
        parameters to set device information'''
 
-    def __init__(self, **kwargs):
-        optparse.OptionParser.__init__(self, **kwargs)
+    def _add_options(self):
         self.add_option("--host", action="store",
                         type = "string", dest = "host",
                         help = "Device hostname (only if using TCP/IP)", default=None)
@@ -28,3 +28,16 @@ class OptionParser(optparse.OptionParser):
                         help = "Device type (android or b2g, default to "
                         "android). If B2G, you do not need to pass in an "
                         "appname")
+
+    def __init__(self, **kwargs):
+        optparse.OptionParser.__init__(self, **kwargs)
+        self._add_options()
+
+class CaptureOptionParser(OptionParser, videocapture.OptionParser):
+    '''Custom version of the optionparser with eideticker-specific parameters
+    to set device information + video capture related settings'''
+
+    def __init__(self, **kwargs):
+        videocapture.OptionParser.__init__(self, **kwargs)
+        OptionParser._add_options(self)
+

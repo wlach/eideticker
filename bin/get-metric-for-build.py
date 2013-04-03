@@ -62,8 +62,6 @@ def run_test(device, outputdir, outputfile, test, url_params, num_runs,
         if get_internal_checkerboard_stats:
             checkerboard_logfile = tempfile.NamedTemporaryFile()
             args.extend(["--checkerboard-log-file", checkerboard_logfile.name])
-        if startup_test:
-            args.extend(["--startup-test"])
         if no_capture:
             args.extend(["--no-capture"])
         else:

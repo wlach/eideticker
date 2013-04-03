@@ -8,8 +8,6 @@ import os
 from zipfile import ZipFile, BadZipfile
 import json
 import numpy
-import tempfile
-import cPickle as pickle
 
 class CaptureException(Exception):
     def __init__(self, msg):

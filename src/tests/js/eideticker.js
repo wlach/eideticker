@@ -53,7 +53,7 @@ if (Eideticker.getParameterByName('testpath') === null) {
       http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
       http.setRequestHeader("Content-length", params.length);
       http.onreadystatechange = function () {
-        if (this.readyState == 4) Eideticker.finish();
+        if (this.readyState === 4 && this.status === 200) Eideticker.finish();
       };
       http.send(params);
     }, 1000);
