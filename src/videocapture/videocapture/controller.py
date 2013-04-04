@@ -152,7 +152,7 @@ class CaptureController(object):
                                               mode,
                                               self.frame_counter,
                                               self.finished_semaphore,
-                                              custom_tempdir=self.custom_tempdir)
+                                              custom_tempdir=self.custom_tempdir,
                                               output_raw_filename=output_raw_filename,
                                               outputdir=self.outputdir)
         self.log("Starting capture...")
