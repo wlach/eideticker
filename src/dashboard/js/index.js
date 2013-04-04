@@ -73,7 +73,14 @@ function updateGraph(rawdata, measure) {
   var metadataHash = {};
 
   var seriesIndex = 0;
-  var minMaxDates;
+
+  // get global maximum date (for baselining)
+  var globalMaxDate = 0;
+  Object.keys(rawdata).forEach(function(type) {
+    var dates = Object.keys(rawdata[type]).map(parseDate);
+    globalMaxDate = Math.max(globalMaxDate, Math.max.apply(null, dates));
+  });
+
   Object.keys(rawdata).sort().forEach(function(type) {
     metadataHash[seriesIndex] = [];
 
@@ -88,25 +95,26 @@ function updateGraph(rawdata, measure) {
     var prevRevision = null;
     Object.keys(rawdata[type]).sort().forEach(function(datestr) {
       rawdata[type][datestr].forEach(function(sample) {
-        series1.data.push([ parseDate(datestr), sample[measure] ]);
-        metadataHash[seriesIndex].push({
-          'videoURL': sample.video,
-          'dateStr': datestr,
-          'appDate': sample.appdate,
-          'revision': sample.revision,
-          'prevRevision': prevRevision,
-          'buildId': sample.buildid,
-          'profileURL': sample.profile
-        });
+        if (sample[measure]) {
+          series1.data.push([ parseDate(datestr), sample[measure] ]);
+          metadataHash[seriesIndex].push({
+            'videoURL': sample.video,
+            'dateStr': datestr,
+            'appDate': sample.appdate,
+            'revision': sample.revision,
+            'prevRevision': prevRevision,
+            'buildId': sample.buildid,
+            'profileURL': sample.profile
+          });
+        }
       });
       prevRevision = rawdata[type][datestr][0].revision;
     });
     graphdata.push(series1);
 
     var dates = series1.data.map(function(d) { return d[0]; });
-    minMaxDates = [ Math.min.apply(null, dates), Math.max.apply(null, dates) ];
 
-    // line graph (aggregate average per day)
+    // line graph (aggregate average per day + baseline results if appropriate)
     var series2 = {
       hoverLabel: "Average per day for " + type,
       lines: { show: true },
@@ -115,17 +123,27 @@ function updateGraph(rawdata, measure) {
       clickable: false,
       hoverable: false
     };
-    Object.keys(rawdata[type]).forEach(function(datestr) {
+
+    var lastSample;
+    var lastData;
+    Object.keys(rawdata[type]).sort().forEach(function(datestr) {
       var numSamples = 0;
       var total = 0;
       rawdata[type][datestr].forEach(function(sample) {
-        total += sample[measure];
-        numSamples++;
+        lastSample = sample;
+        if (sample[measure]) {
+          total += sample[measure];
+          numSamples++;
+        }
       });
-
-      series2.data.push([parseDate(datestr), total/numSamples]);
+      lastData = [parseDate(datestr), total/numSamples];
+      series2.data.push(lastData);
     });
-    series2.data.sort();
+    // if last sample was a baseline and there's a great data, extend
+    // the baseline of the graph up to today
+    if (lastSample.baseline === true && lastData[0] < globalMaxDate) {
+      series2.data.push([globalMaxDate, lastData[1]]);
+    }
     graphdata.push(series2);
 
     color++;
