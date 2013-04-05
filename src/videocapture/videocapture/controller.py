@@ -113,7 +113,9 @@ class CaptureProcess(multiprocessing.Process):
 
 class CaptureController(object):
 
-    def __init__(self, capture_device, capture_area = None, custom_tempdir=None):
+    def __init__(self, capture_device, capture_area = None,
+                 find_start_signal=True, find_end_signal=True,
+                 custom_tempdir=None):
         self.capture_process = None
         self.null_read = file('/dev/null', 'r')
         self.null_write = file('/dev/null', 'w')
@@ -125,6 +127,8 @@ class CaptureController(object):
         self.custom_tempdir = custom_tempdir
         self.capture_device = capture_device
         self.capture_area = capture_area
+        self.find_start_signal = find_start_signal
+        self.find_end_signal = find_end_signal
 
     def log(self, msg):
         print "%s Capture Controller | %s" % (datetime.datetime.now().strftime("%b %d %H:%M:%S %Z"), msg)
@@ -205,31 +209,32 @@ class CaptureController(object):
         # input from things like the pointgrey cameras is too noisy...
         if self.capture_device == "decklink":
             # start frame
-            self.log("Searching for start of capture signal ...")
-            squares = []
-            for (i, imagefile) in enumerate(imagefiles):
-                imgarray = numpy.array(Image.open(imagefile), dtype=numpy.int16)
-                squares.append(get_biggest_square((0,255,0), imgarray))
-
-                if i > 1 and not squares[-1] and squares[-2]:
-                    if not start_frame:
-                        start_frame = i
-                    self.capture_area = squares[-2]
-                    break
+            if self.find_start_signal:
+                self.log("Searching for start of capture signal ...")
+                squares = []
+                for (i, imagefile) in enumerate(imagefiles):
+                    imgarray = numpy.array(Image.open(imagefile), dtype=numpy.int16)
+                    squares.append(get_biggest_square((0,255,0), imgarray))
+                    if i > 1 and not squares[-1] and squares[-2]:
+                        if not start_frame:
+                            start_frame = i
+                        self.capture_area = squares[-2]
+                        break
 
             # end frame
-            self.log("Searching for end of capture signal ...")
-            squares = []
-            for i in range(num_frames-1, 0, -1):
-                imgarray = numpy.array(Image.open(imagefiles[i]), dtype=numpy.int16)
-                squares.append(get_biggest_square((255,0,0), imgarray))
+            if self.find_end_signal:
+                self.log("Searching for end of capture signal ...")
+                squares = []
+                for i in range(num_frames-1, 0, -1):
+                    imgarray = numpy.array(Image.open(imagefiles[i]), dtype=numpy.int16)
+                    squares.append(get_biggest_square((255,0,0), imgarray))
 
-                if len(squares) > 1 and not squares[-1] and squares[-2]:
-                    if not end_frame:
-                        end_frame = (i-1)
-                    if not self.capture_area:
-                        self.capture_area = squares[-2]
-                    break
+                    if len(squares) > 1 and not squares[-1] and squares[-2]:
+                        if not end_frame:
+                            end_frame = (i-1)
+                        if not self.capture_area:
+                            self.capture_area = squares[-2]
+                        break
 
         # If we don't have a start frame, set it to 1
         if not start_frame:

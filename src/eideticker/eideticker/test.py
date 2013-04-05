@@ -144,6 +144,10 @@ class Test(object):
         # callback indicating test has finished
         if self.capture_file and self.track_end_frame:
             self.end_frame = self.capture_controller.capture_framenum()
+            # we don't need to find the end frame if we're slated to get the
+            # start one...
+            if self.capture_controller.find_start_signal:
+                self.capture_controller.find_end_signal = False
 
         print "Test finished callback (time: %s, framenum: %s)" % (time.time(), self.end_frame)
 
@@ -301,6 +305,14 @@ class AndroidWebStartupTest(AndroidWebTest):
         super(AndroidWebStartupTest, self).__init__(**kwargs)
         # don't want to track start frames for startup tests
         self.track_start_frame = False
+
+        # we never have the green screen tracking frames on startup tests,
+        # but for most page load tests we have an end frame which helps
+        # us get capture dimensions (the exception being about:home)
+        self.capture_controller.find_start_signal = False
+        self.capture_controller.find_end_signal = True
+        if self.testpath_rel == "about:home":
+            self.capture_controller.find_end_signal = False
 
     def run(self):
         # FIXME: currently start capture before launching app because we wait until app is
