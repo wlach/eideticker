@@ -3,7 +3,7 @@
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 
 from controller import CaptureController
-from capture import Capture
+from capture import Capture, BadCapture
 from checkerboard import *
 from framediff import get_framediff_image, get_framediff_sums, get_num_unique_frames, get_fps, get_stable_frame, get_stable_frame_time
 from options import OptionParser
