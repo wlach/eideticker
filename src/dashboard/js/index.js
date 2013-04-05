@@ -95,7 +95,7 @@ function updateGraph(rawdata, measure) {
     var prevRevision = null;
     Object.keys(rawdata[type]).sort().forEach(function(datestr) {
       rawdata[type][datestr].forEach(function(sample) {
-        if (sample[measure]) {
+        if (measure in sample) {
           series1.data.push([ parseDate(datestr), sample[measure] ]);
           metadataHash[seriesIndex].push({
             'videoURL': sample.video,
