@@ -219,6 +219,8 @@ class CaptureController(object):
                         if not start_frame:
                             start_frame = i
                         self.capture_area = squares[-2]
+                        self.log("Found start capture signal at frame %s. Area: %s" %
+                                 (i, self.capture_area))
                         break
 
             # end frame
@@ -234,6 +236,8 @@ class CaptureController(object):
                             end_frame = (i-1)
                         if not self.capture_area:
                             self.capture_area = squares[-2]
+                        self.log("Found end capture signal at frame %s. Area: %s" %
+                                 (i-1, self.capture_area))
                         break
 
         # If we don't have a start frame, set it to 1

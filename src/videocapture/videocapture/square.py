@@ -51,7 +51,12 @@ def get_biggest_square(rgb, imgarray):
        of an RGB color inside an image'''
     squares = get_squares(rgb, imgarray)
 
+    def _get_area(box):
+        return (box[2]-box[0])*(box[3]-box[1])
+
     if squares:
-        return max(squares, key=lambda box: (box[2]-box[0])*(box[3]-box[1]))
-    else:
-        return None
+        biggest_square = max(squares, key=_get_area)
+        if _get_area(biggest_square) > 0:
+            return biggest_square
+
+    return None
