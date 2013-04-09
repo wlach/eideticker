@@ -34,7 +34,9 @@ def runtest(dm, product, appname, appinfo, testinfo, capture_name,
                                                      appname,
                                                      appinfo.get('date'),
                                                      int(time.time())))
+    productname = product['name']
     if enable_profiling:
+        productname += "-profiling"
         profile_path = os.path.join('profiles', 'sps-profile-%s.zip' % time.time())
         profile_file = os.path.join(outputdir, profile_path)
 
@@ -68,7 +70,7 @@ def runtest(dm, product, appname, appinfo, testinfo, capture_name,
 
     if not test_completed:
         raise Exception("Failed to run test %s for %s (after 3 tries). "
-                        "Aborting." % (testinfo['key'], product['name']))
+                        "Aborting." % (testinfo['key'], productname))
 
     capture = videocapture.Capture(capture_file)
 
@@ -78,14 +80,14 @@ def runtest(dm, product, appname, appinfo, testinfo, capture_name,
     open(video_file, 'w').write(capture.get_video().read())
 
     # need to initialize dict for product if not there already
-    if not data['testdata'].get(product['name']):
-        data['testdata'][product['name']] = {}
+    if not data['testdata'].get(productname):
+        data['testdata'][productname] = {}
 
     # app date
     appdate = appinfo.get('date')
 
-    if not data['testdata'][product['name']].get(appdate):
-        data['testdata'][product['name']][appdate] = []
+    if not data['testdata'][productname].get(appdate):
+        data['testdata'][productname][appdate] = []
 
     datapoint = { 'uuid': uuid.uuid1().hex,
                   'video': video_path }
@@ -112,7 +114,7 @@ def runtest(dm, product, appname, appinfo, testinfo, capture_name,
     if enable_profiling:
         datapoint['profile'] = profile_path
 
-    data['testdata'][product['name']][appdate].append(datapoint)
+    data['testdata'][productname][appdate].append(datapoint)
 
     # Write the data to disk immediately (so we don't lose it if we fail later)
     datafile_dir = os.path.dirname(datafile)
