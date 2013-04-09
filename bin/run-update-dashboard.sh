@@ -51,11 +51,9 @@ fi
 
 if [ $# -gt 0 ]; then
     TESTS=$@
-else
-    if [ -z $TESTS ]; then
-        # Default set of tests
-        TESTS="taskjs cnn nightly nytimes-scroll nytimes-zoom reddit wikipedia imgur timecube clock startup-abouthome-fresh startup-abouthome-dirty"
-    fi
+elif [ -z $TESTS ]; then
+    # Default set of tests
+    TESTS="taskjs cnn startup-abouthome-fresh startup-abouthome-dirty nytimes-load nightly nytimes-scroll nytimes-zoom reddit wikipedia imgur timecube clock"
 fi
 
 export PATH=$PATH:$HOME/tools/android-sdk-linux/tools:$HOME/tools/android-sdk-linux/platform-tools:$HOME/bin:$HOME/.local/bin
