@@ -9,6 +9,7 @@ import posixpath
 import re
 import tempfile
 import time
+from gaiatest.gaia_test import LockScreen
 
 # I know specifying resolution manually like this is ugly, but as far as I
 # can tell there is no good, device-independant way of getting this
@@ -334,6 +335,11 @@ class EidetickerB2GMixin(EidetickerMixin):
         # set landscape or portrait mode
         print "Setting orientation: %s" % orientation
         self.marionette.execute_script("screen.mozLockOrientation('%s');" % orientation)
+
+    def unlock(self):
+        # unlock device, so it doesn't go to sleep
+        ls = LockScreen(self.marionette)
+        ls.unlock()
 
 class B2GADB(EidetickerB2GMixin, mozb2g.DeviceADB):
     def __init__(self, **kwargs):

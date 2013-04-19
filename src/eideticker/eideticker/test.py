@@ -9,7 +9,6 @@ import urlparse
 import time
 import imp
 import os
-from gaiatest.gaia_test import LockScreen
 
 class CaptureServer(object):
 
@@ -366,8 +365,7 @@ class B2GTest(Test):
             raise Exception("bad session value %s returned by start_session" % session)
 
         # unlock device, so it doesn't go to sleep
-        ls = LockScreen(self.device.marionette)
-        ls.unlock()
+        self.device.unlock()
 
         # Wait for device to properly recognize network
         # (FIXME: this timeout is terrible, can we do check for network
