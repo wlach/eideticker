@@ -54,10 +54,9 @@ class CaptureProcess(multiprocessing.Process):
         self.finished_semaphore.value = True
 
     def run(self):
-        mode = supported_formats[self.video_format]["decklink_mode"]
-
         timeout = 10
         if self.capture_device == "decklink":
+            mode = supported_formats[self.video_format]["decklink_mode"]
             args = (os.path.join(DECKLINK_DIR, 'decklink-capture'),
                     '-o',
                     '-m',
@@ -133,15 +132,16 @@ class CaptureController(object):
     def log(self, msg):
         print "%s Capture Controller | %s" % (datetime.datetime.now().strftime("%b %d %H:%M:%S %Z"), msg)
 
-    def start_capture(self, output_filename, mode,
+    def start_capture(self, output_filename, mode=None,
                       capture_metadata = {}, debug=False):
         # should not call this more than once
         assert not self.capture_process
-        if mode not in supported_formats.keys():
-            raise Exception("Unsupported video format %s" % mode)
 
         output_raw_filename = None
-        if self.capture_device == "decklink":
+
+        if self.capture_device == 'decklink':
+            if mode not in supported_formats.keys():
+                raise Exception("Unsupported video format %s" % mode)
             self.output_raw_file = tempfile.NamedTemporaryFile(dir=self.custom_tempdir)
             output_raw_filename = self.output_raw_file.name
 
@@ -255,7 +255,7 @@ class CaptureController(object):
             im = Image.open(imagefilename)
             if self.capture_area:
                 im = im.crop(self.capture_area)
-            im.convert("RGB")
+            im = im.convert("RGB")
             im.save(os.path.join(dirname, '%s.png' % framenum))
 
         # map the frame before the start frame to the zeroth frame (if possible)

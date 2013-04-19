@@ -133,6 +133,17 @@ int main(int argc, char *argv[])
   std::vector<Image> vecImages;
   vecImages.resize(maxFrames);
   unsigned long frameCount = 0;
+
+  // the first frame always seems to be overly bright, which can cause issues.
+  // retrieve it without adding it to the array
+  Image rawImage;
+  error = cam.RetrieveBuffer(&rawImage);
+  if (error != PGRERROR_OK)
+    {
+      printError(error);
+      return -1;
+    }
+
   while (!g_finished && frameCount < maxFrames)
     {
       Image rawImage;

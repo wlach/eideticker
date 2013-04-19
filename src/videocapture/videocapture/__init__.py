@@ -5,5 +5,5 @@
 from controller import CaptureController
 from capture import Capture, BadCapture
 from checkerboard import *
-from framediff import get_framediff_image, get_framediff_sums, get_num_unique_frames, get_fps, get_stable_frame, get_stable_frame_time
+from framediff import get_framediff_imgarray, get_framediff_image, get_framediff_sums, get_num_unique_frames, get_fps, get_stable_frame, get_stable_frame_time
 from options import OptionParser
