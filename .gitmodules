@@ -25,3 +25,12 @@
 [submodule "src/GeckoProfilerAddon"]
 	path = src/GeckoProfilerAddon
 	url = https://github.com/bgirard/Gecko-Profiler-Addon.git
+[submodule "src/flot"]
+	path = src/flot
+	url = git://github.com/flot/flot.git
+[submodule "src/flot-axislabels"]
+	path = src/flot-axislabels
+	url = git://github.com/markrcote/flot-axislabels.git
+[submodule "src/flot-hiddengraphs"]
+	path = src/flot-hiddengraphs
+	url = git://github.com/markrcote/flot-hiddengraphs.git
