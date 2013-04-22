@@ -222,7 +222,9 @@ class AndroidWebTest(WebTest):
 
     def __init__(self, appname = None, extra_prefs = {}, profile_file = None,
                  preinitialize_user_profile = False,
-                 gecko_profiler_addon_dir = None, checkerboard_log_file = None,
+                 open_url_after_launch=False,
+                 gecko_profiler_addon_dir = None,
+                 checkerboard_log_file = None,
                  **kwargs):
         super(AndroidWebTest, self).__init__(**kwargs)
 
@@ -232,6 +234,7 @@ class AndroidWebTest(WebTest):
         self.profile_file = profile_file
         self.gecko_profiler_addon_dir = gecko_profiler_addon_dir
         self.preinitialize_user_profile = preinitialize_user_profile
+        self.open_url_after_launch = open_url_after_launch
 
         # If we're logging checkerboard stats, set that up here (seems like it
         # takes a second or so to accept the new setting, so let's do that here --
@@ -254,6 +257,7 @@ class AndroidWebTest(WebTest):
         self.runner = eideticker.AndroidBrowserRunner(self.device, self.appname,
                                                       self.url, self.tempdir,
                                                       preinitialize_user_profile=self.preinitialize_user_profile,
+                                                      open_url_after_launch = self.open_url_after_launch,
                                                       enable_profiling=bool(self.profile_file),
                                                       gecko_profiler_addon_dir=gecko_profiler_addon_dir,
                                                       extra_prefs=self.extra_prefs)
@@ -314,13 +318,29 @@ class AndroidWebStartupTest(AndroidWebTest):
             self.capture_controller.find_end_signal = False
 
     def run(self):
-        # FIXME: currently start capture before launching app because we wait until app is
-        # launched -- would be better to make waiting optional and then start capture
-        # after triggering app launch to reduce latency?
         self.runner.initialize_user_profile()
-        self.start_capture()
 
-        super(AndroidWebStartupTest, self).run()
+        if not self.open_url_after_launch:
+            # FIXME: currently start capture before launching app because we
+            # wait until app is launched -- would be better to make waiting
+            # optional and then start capture after triggering app launch to
+            # reduce latency?
+            self.start_capture()
+            self.runner.start()
+        else:
+            self.runner.start()
+            # make sure fennec has actually started by sleeping for a bit.
+            # this is a fairly arbitrary value but not sure of a better way
+            time.sleep(5)
+            self.start_capture()
+            self.runner.open_url()
+
+        self.wait()
+
+        if self.profile_file:
+            self.runner.process_profile(self.profile_file)
+
+        self.runner.cleanup()
 
     @property
     def url(self):

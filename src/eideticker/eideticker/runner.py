@@ -17,13 +17,14 @@ class AndroidBrowserRunner(object):
     intent = "android.intent.action.VIEW"
 
     def __init__(self, dm, appname, url, tmpdir, preinitialize_user_profile=False,
-                 enable_profiling=False, gecko_profiler_addon_dir=None,
-                 extra_prefs={}):
+                 open_url_after_launch=False, enable_profiling=False,
+                 gecko_profiler_addon_dir=None, extra_prefs={}):
         self.dm = dm
         self.appname = appname
         self.url = url
         self.tmpdir = tmpdir
         self.preinitialize_user_profile = preinitialize_user_profile
+        self.open_url_after_launch = open_url_after_launch
         self.enable_profiling = enable_profiling
         self.gecko_profiler_addon_dir = gecko_profiler_addon_dir
         self.extra_prefs = extra_prefs
@@ -138,11 +139,21 @@ class AndroidBrowserRunner(object):
                 mozEnv = None
 
             # launch fennec for reals
-            self.launch_fennec(mozEnv, self.url)
+            if self.open_url_after_launch:
+                self.launch_fennec(mozEnv, None)
+            else:
+                self.launch_fennec(mozEnv, self.url)
         else:
             self.is_profiling = False # never profiling with non-fennec browsers
+            if self.open_url_after_launch:
+                raise Exception("Opening URL after launch not currently "
+                                "supported on non-fennec browsers")
             self.dm.launchApplication(self.appname, self.activity, self.intent,
                                       url=self.url)
+
+    def open_url(self):
+        self.dm.launchFennec(self.appname, mozEnv=None, url=self.url,
+                             failIfRunning=False)
 
     def launch_fennec(self, mozEnv, url):
         # sometimes fennec fails to start, so we'll try three times...
@@ -156,7 +167,6 @@ class AndroidBrowserRunner(object):
                 continue
             return # Ok!
         raise Exception("Failed to start Fennec after three tries")
-
 
     def save_profile(self):
         # Dump the profile (don't process it yet because we need to cleanup
