@@ -11,5 +11,5 @@ fi
 
 EIDETICKER=$(dirname $0)/../
 
-rsync -avz -e ssh $EIDETICKER/src/dashboard/ eideticker@$DASHBOARD_SERVER:~/www/
+rsync -avz --copy-links -e ssh $EIDETICKER/src/dashboard/ eideticker@$DASHBOARD_SERVER:~/www/
 
