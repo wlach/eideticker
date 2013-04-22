@@ -153,7 +153,7 @@ function updateGraph(rawdata, measure) {
   var plot = $.plot($("#graph-container"), graphdata, {
     xaxis: {
       mode: "time",
-      timeformat: "%0m-%0d"
+      timeformat: "%m-%d"
     },
     yaxis: {
       axisLabel: measures[measure].shortDesc,
