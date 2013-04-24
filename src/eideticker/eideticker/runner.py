@@ -2,6 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 
+import datetime
 import mozdevice
 import mozprofile
 import os
@@ -45,6 +46,9 @@ class AndroidBrowserRunner(object):
         else:
             self.activity = activity_mappings[self.appname]
 
+    def log(self, msg):
+        print "%s AndroidBrowserRunner | %s" % (datetime.datetime.now().strftime("%b %d %H:%M:%S %Z"), msg)
+
     def get_profile_and_symbols(self, target_zip):
         if not self.enable_profiling:
            raise Exception("Can't get profile if it isn't started with the profiling option")
@@ -59,19 +63,19 @@ class AndroidBrowserRunner(object):
         if os.path.exists(sps_profile_path):
             os.remove(sps_profile_path)
 
-        print "Fetching fennec_profile.txt"
+        self.log("Fetching fennec_profile.txt")
         self.dm.getFile(self.remote_sps_profile_location, sps_profile_path)
         files_to_package.append(sps_profile_path)
 
         # FIXME: We still get a useful profile without the symbols from the apk
         # make doing this optional so we don't require a rooted device
-        print "Fetching app symbols"
+        self.log("Fetching app symbols")
         local_apk_path = os.path.join(profiledir, "symbol.apk")
         self.dm.getAPK(self.appname, local_apk_path)
         files_to_package.append(local_apk_path)
 
         # get all the symbols library for symbolication
-        print "Fetching system libraries"
+        self.log("Fetching system libraries")
         libpaths = [ "/system/lib",
                      "/system/lib/egl",
                      "/system/lib/hw",
@@ -81,7 +85,7 @@ class AndroidBrowserRunner(object):
                      "/system/b2g" ]
 
         for libpath in libpaths:
-             print "Fetching from: " + libpath
+             self.log("Fetching from: %s" % libpath)
              dirlist = self.dm.listFiles(libpath)
              for filename in dirlist:
                  filename = filename.strip()
@@ -126,7 +130,11 @@ class AndroidBrowserRunner(object):
             self.dm.killProcess(self.appname)
 
     def start(self):
-        print "Starting %s... " % self.appname
+        self.log("Starting %s... " % self.appname)
+
+        url = self.url
+        if self.open_url_after_launch:
+            url = None
 
         # for fennec only, we create and use a profile
         if self.appname.startswith('org.mozilla'):
@@ -158,7 +166,7 @@ class AndroidBrowserRunner(object):
     def launch_fennec(self, mozEnv, url):
         # sometimes fennec fails to start, so we'll try three times...
         for i in range(3):
-            print "Launching %s (try %s of 3)" % (self.appname, i+1)
+            self.log("Launching %s (try %s of 3)" % (self.appname, i+1))
             try:
                 self.dm.launchFennec(self.appname, url=url, mozEnv=mozEnv,
                                      extraArgs=["-profile",
@@ -171,7 +179,7 @@ class AndroidBrowserRunner(object):
     def save_profile(self):
         # Dump the profile (don't process it yet because we need to cleanup
         # the capture first)
-        print "Saving sps performance profile"
+        self.log("Saving sps performance profile")
         appPID = self.dm.getPIDs(self.appname)[0]
         self.dm.sendSaveProfileSignal(self.appname)
         self.remote_sps_profile_location = "/mnt/sdcard/profile_0_%s.txt" % appPID
@@ -197,4 +205,5 @@ class AndroidBrowserRunner(object):
         # the sampling profile)
         if self.remote_profile_dir:
             self.dm.removeDir(self.remote_profile_dir)
-            print "WARNING: Failed to remove profile (%s) from device" % self.remote_profile_dir
+            self.log("WARNING: Failed to remove profile (%s) from device" %
+                     self.remote_profile_dir)
