@@ -105,7 +105,20 @@ class AndroidBrowserRunner(object):
         # This is broken out from start() so we can call it explicitly if
         # we want to initialize the user profile by starting the app seperate
         # from the test itself
-        if not self.appname.startswith('org.mozilla'):
+        if self.appname == "com.android.chrome":
+            # for chrome, we just delete existing browser state (opened tabs, etc.)
+            # so we can start reasonably fresh
+            self.dm.shellCheckOutput(["sh", "-c",
+                                      "rm -f /data/user/0/com.android.chrome/files/*"],
+                                     root=True)
+        elif self.appname == "com.google.android.browser":
+            # for stock browser, ditto
+            self.dm.shellCheckOutput(["rm", "-f",
+                                      "/data/user/0/com.google.android.browser/cache/browser_state.parcel"],
+                                     root=True)
+        elif not self.appname.startswith('org.mozilla'):
+            # some other browser which we don't know how to handle, just
+            # return
             return
 
         preferences = { 'gfx.show_checkerboard_pattern': False,
@@ -147,21 +160,15 @@ class AndroidBrowserRunner(object):
                 mozEnv = None
 
             # launch fennec for reals
-            if self.open_url_after_launch:
-                self.launch_fennec(mozEnv, None)
-            else:
-                self.launch_fennec(mozEnv, self.url)
+            self.launch_fennec(mozEnv, url)
         else:
             self.is_profiling = False # never profiling with non-fennec browsers
-            if self.open_url_after_launch:
-                raise Exception("Opening URL after launch not currently "
-                                "supported on non-fennec browsers")
             self.dm.launchApplication(self.appname, self.activity, self.intent,
-                                      url=self.url)
+                                      url=url)
 
     def open_url(self):
-        self.dm.launchFennec(self.appname, mozEnv=None, url=self.url,
-                             failIfRunning=False)
+        self.dm.launchApplication(self.appname, self.activity, self.intent,
+                                  url=self.url, failIfRunning=False)
 
     def launch_fennec(self, mozEnv, url):
         # sometimes fennec fails to start, so we'll try three times...
