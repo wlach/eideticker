@@ -1,5 +1,5 @@
 from device import getDevice
-from test import get_test
+from test import get_test, TestException
 import datetime
 import json
 import manifestparser
@@ -13,30 +13,30 @@ TEST_DIR = os.path.abspath(os.path.join(SRC_DIR, "tests"))
 GECKO_PROFILER_ADDON_DIR = os.path.join(SRC_DIR, "../src/GeckoProfilerAddon")
 EIDETICKER_TEMP_DIR = "/tmp/eideticker"
 
-def run_test(testkey, capture_device, devicetype, appname, capture_name,
+def run_test(testkey, capture_device, appname, capture_name,
              device_prefs, extra_prefs={}, test_type=None, profile_file=None,
-             checkerboard_log_file=None, capture_area=None,
-             no_capture=False, capture_file=None):
+             request_log_file=None, checkerboard_log_file=None,
+             capture_area=None, no_capture=False, capture_file=None):
     manifest = manifestparser.TestManifest(manifests=[os.path.join(
                 TEST_DIR, 'manifest.ini')])
 
     # sanity check... does the test match a known test key?
     testkeys = [test["key"] for test in manifest.active_tests()]
     if testkey not in testkeys:
-        raise Exception("No tests matching '%s' (options: %s)" % (testkey, ", ".join(testkeys)))
+        raise TestException("No tests matching '%s' (options: %s)" % (testkey, ", ".join(testkeys)))
 
     testinfo = [test for test in manifest.active_tests() if test['key'] == testkey][0]
     print "Testinfo: %s" % testinfo
 
-    if devicetype == 'android' and not appname and \
+    if device_prefs['devicetype'] == 'android' and not appname and \
             not testinfo.get('appname'):
-        raise Exception("Must specify an appname (with --app-name) on Android "
-                        "when not spec'd by test")
+        raise TestException("Must specify an appname (with --app-name) on Android "
+                            "when not spec'd by test")
 
     if not os.path.exists(EIDETICKER_TEMP_DIR):
         os.mkdir(EIDETICKER_TEMP_DIR)
     if not os.path.isdir(EIDETICKER_TEMP_DIR):
-        raise Exception("Could not open eideticker temporary directory")
+        raise TestException("Could not open eideticker temporary directory")
 
     appname = testinfo.get('appname') or appname
 
@@ -55,7 +55,7 @@ def run_test(testkey, capture_device, devicetype, appname, capture_name,
         'testpath': testinfo['relpath'],
         'app': appname,
         'device': device.model,
-        'devicetype': devicetype,
+        'devicetype': device_prefs['devicetype'],
         'startupTest': testinfo['type'] == 'startup'
         }
 
@@ -80,9 +80,10 @@ def run_test(testkey, capture_device, devicetype, appname, capture_name,
             with open(actions_path) as f:
                 actions = json.loads(f.read())
         except EnvironmentError:
-            raise Exception("Couldn't open actions file '%s'" % actions_path)
+            raise TestException("Couldn't open actions file '%s'" % actions_path)
 
-    test = get_test(devicetype = devicetype, testtype = testtype,
+    test = get_test(devicetype = device_prefs['devicetype'],
+                    testtype = testtype,
                     testpath = testinfo['path'],
                     testpath_rel = testpath_rel, device = device,
                     actions = actions, extra_prefs = extra_prefs,
@@ -108,4 +109,4 @@ def run_test(testkey, capture_device, devicetype, appname, capture_name,
         try:
             capture_controller.convert_capture(test.start_frame, test.end_frame)
         except KeyboardInterrupt:
-            raise Exception("Aborting because of keyboard interrupt")
+            raise TestException("Aborting because of keyboard interrupt")

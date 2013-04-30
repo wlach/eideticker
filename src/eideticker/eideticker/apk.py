@@ -21,7 +21,7 @@ def get_fennec_appinfo(fname):
         appname = archive.open('package-name.txt').read().rstrip()
     else:
         appname = None
-    return { 'date':  "%s-%s-%s" % (year, month, day),
+    return { 'appdate':  "%s-%s-%s" % (year, month, day),
              'buildid': buildid,
              'revision': revision,
              'appname': appname,

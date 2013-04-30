@@ -11,7 +11,14 @@ import imp
 import os
 from log import LoggingMixin
 
-class CaptureServer(object):
+class TestException(Exception):
+
+    def __init__(self, msg, can_retry=False):
+        Exception.__init__(msg)
+        # can_retry means a failure that is possibly intermittent
+        self.can_retry = can_retry
+
+class CaptureServer(LoggingMixin):
 
     start_capture_called = False
     end_capture_called = False

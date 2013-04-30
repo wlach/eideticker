@@ -43,9 +43,6 @@ def main(args=sys.argv[1:]):
                       type="string", dest="profile_file",
                       help="Collect a performance profile using the built in "
                       "profiler (fennec only).")
-    parser.add_option("--capture-area", action="store", default=None,
-                      help="Hardcode capture area. Must be passed in as json "
-                      "array [x1, y1, x2, y2]")
     parser.add_option("--debug", action="store_true",
                       dest="debug", help="show verbose debugging information")
 
@@ -65,18 +62,14 @@ def main(args=sys.argv[1:]):
 
     capture_area = None
     if options.capture_area:
-        try:
-            capture_area = json.loads(options.capture_area)
-        except ValueError:
-            parser.error("Error process capture area: not valid JSON!")
-            raise
-
+        # we validated this previously...
+        capture_area = json.loads(options.capture_area)
     device_prefs = eideticker.getDevicePrefs(options)
 
     if options.debug:
         mozdevice.DeviceManagerSUT.debug = 4
 
-    eideticker.run_test(testkey, options.capture_device, options.devicetype,
+    eideticker.run_test(testkey, options.capture_device,
                         options.appname,
                         options.capture_name, device_prefs,
                         extra_prefs=extra_prefs,

@@ -100,7 +100,7 @@ def run_capture(options, capture_file):
 
 def main(args=sys.argv[1:]):
     usage = "usage: %prog [options] <app name>"
-    parser = eideticker.CaptureOptionParser(usage=usage)
+    parser = eideticker.CaptureOptionParser(usage=usage, capture_area_option=False)
     parser.add_option("--no-capture", action="store_true",
                       dest = "no_capture",
                       help = "run through the test, but don't actually "
