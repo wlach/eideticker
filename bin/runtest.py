@@ -9,6 +9,7 @@ import sys
 import eideticker
 import mozdevice
 
+
 def main(args=sys.argv[1:]):
     usage = "usage: %prog [options] <test key>"
     parser = eideticker.CaptureOptionParser(usage=usage)
@@ -16,14 +17,14 @@ def main(args=sys.argv[1:]):
                       dest="url_params",
                       help="additional url parameters for test")
     parser.add_option("--name", action="store",
-                      type = "string", dest = "capture_name",
-                      help = "name to give capture")
+                      type="string", dest="capture_name",
+                      help="name to give capture")
     parser.add_option("--capture-file", action="store",
-                      type = "string", dest = "capture_file",
-                      help = "name to give to capture file")
+                      type="string", dest="capture_file",
+                      help="name to give to capture file")
     parser.add_option("--no-capture", action="store_true",
-                      dest = "no_capture",
-                      help = "run through the test, but don't actually "
+                      dest="no_capture",
+                      help="run through the test, but don't actually "
                       "capture anything")
     parser.add_option("--app-name", action="store",
                       type="string", dest="appname",
@@ -31,14 +32,15 @@ def main(args=sys.argv[1:]):
     parser.add_option("--test-type", action="store", type="string",
                       dest="test_type", help="override test type")
     parser.add_option("--checkerboard-log-file", action="store",
-                      type = "string", dest = "checkerboard_log_file",
-                      help = "name to give checkerboarding stats file (fennec only)")
+                      type="string", dest="checkerboard_log_file",
+                      help="name to give checkerboarding stats file (fennec "
+                      "only)")
     parser.add_option("--extra-prefs", action="store", dest="extra_prefs",
                       default="{}",
-                      help="Extra profile preference for Firefox browsers. " \
-                          "Must be passed in as a JSON dictionary")
+                      help="Extra profile preference for Firefox browsers. "
+                      "Must be passed in as a JSON dictionary")
     parser.add_option("--profile-file", action="store",
-                      type="string", dest = "profile_file",
+                      type="string", dest="profile_file",
                       help="Collect a performance profile using the built in "
                       "profiler (fennec only).")
     parser.add_option("--capture-area", action="store", default=None,
