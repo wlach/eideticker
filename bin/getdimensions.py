@@ -146,7 +146,6 @@ def main(args=sys.argv[1:]):
         if largest_square is None or largest_square_area < square_area:
             largest_square = i
             largest_square_area = square_area
-        print (i, largest_square)
     if largest_square is not None:
         print "Capture area: %s (frame: %s)" % (squares[largest_square], largest_square)
     else:
