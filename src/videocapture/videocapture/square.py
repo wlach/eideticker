@@ -67,10 +67,14 @@ def get_squares(rgb, imgarray, x_tolerance_min=X_TOLERANCE_MIN,
 def get_area(square):
     return (square[2]-square[0])*(square[3]-square[1])
 
-def get_biggest_square(rgb, imgarray, x_tolerance_min=X_TOLERANCE_MIN, x_tolerance_max=X_TOLERANCE_MAX):
+def get_biggest_square(rgb, imgarray, x_tolerance_min=X_TOLERANCE_MIN,
+                       x_tolerance_max=X_TOLERANCE_MAX,
+                       handle_multiple_scanlines=False):
     '''Get the biggest contiguous square region within a certain threshold
        of an RGB color inside an image'''
-    squares = get_squares(rgb, imgarray, x_tolerance_min=x_tolerance_min, x_tolerance_max=x_tolerance_max)
+    squares = get_squares(rgb, imgarray, x_tolerance_min=x_tolerance_min,
+                          x_tolerance_max=x_tolerance_max,
+                          handle_multiple_scanlines=handle_multiple_scanlines)
 
     if squares:
         biggest_square = max(squares, key=get_area)
