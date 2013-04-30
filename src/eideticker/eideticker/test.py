@@ -9,6 +9,7 @@ import urlparse
 import time
 import imp
 import os
+from log import LoggingMixin
 
 class CaptureServer(object):
 
@@ -21,7 +22,7 @@ class CaptureServer(object):
 
     @mozhttpd.handlers.json_response
     def start_capture(self, request):
-        print "Received start capture callback from test"
+        self.log("Received start capture callback from test")
         assert not self.start_capture_called
         self.start_capture_called = True
         self.test.start_capture()
@@ -30,7 +31,7 @@ class CaptureServer(object):
 
     @mozhttpd.handlers.json_response
     def end_capture(self, request):
-        print "Received end capture callback from test"
+        self.log("Received end capture callback from test")
         assert not self.end_capture_called
         self.end_capture_called = True
         self.test.end_capture()
@@ -40,7 +41,7 @@ class CaptureServer(object):
     @mozhttpd.handlers.json_response
     def input(self, request):
         commandset = urlparse.parse_qs(request.body)['commands'][0]
-        print "Received input callback from test"
+        self.log("Received input callback from test")
         assert not self.input_called
         self.input_called = True
         self.test.execute_actions(commandset)
@@ -66,7 +67,7 @@ def get_test(devicetype="android", testtype="web", testpath=None, **kwargs):
         elif testtype == "web":
             return AndroidWebTest(**kwargs)
 
-class Test(object):
+class Test(LoggingMixin):
 
     finished_capture = False
     start_frame = None
@@ -119,15 +120,16 @@ class Test(object):
     def start_capture(self):
         # callback indicating we should start capturing (if we're not doing so already)
         if self.capture_file and not self.capture_controller.capturing:
-            print "Starting capture on device '%s' with mode: '%s'" % (self.capture_metadata['device'],
-                                                                       self.device.hdmiResolution)
+            self.log("Starting capture on device '%s' with mode: '%s'" % (
+                    self.capture_metadata['device'],
+                    self.device.hdmiResolution))
             self.capture_controller.start_capture(self.capture_file,
                                                   self.device.hdmiResolution,
                                                   self.capture_metadata)
 
     def end_capture(self):
         # callback indicating we should terminate the capture
-        print "Ending capture"
+        self.log("Ending capture")
         self.finished_capture = True
         if self.capture_file:
             self.capture_controller.terminate_capture()
@@ -137,7 +139,7 @@ class Test(object):
         if self.capture_file and self.track_start_frame:
             self.start_frame = self.capture_controller.capture_framenum()
 
-        print "Test started callback (time: %s, framenum: %s)" % (time.time(), self.start_frame)
+        self.log("Test started callback (framenum: %s)" % (self.start_frame))
 
     def test_finished(self):
         # callback indicating test has finished
@@ -148,7 +150,8 @@ class Test(object):
             if self.capture_controller.find_start_signal:
                 self.capture_controller.find_end_signal = False
 
-        print "Test finished callback (time: %s, framenum: %s)" % (time.time(), self.end_frame)
+        self.log("Test finished callback (framenum: %s)" % (
+                self.end_frame))
 
 class WebTest(Test):
 
@@ -184,9 +187,10 @@ class WebTest(Test):
                 s.connect((self.host, self.http.httpd.server_port))
                 connected = True
             except Exception:
-                print "Can't connect to %s:%s, retrying..." % (self.host, self.http.httpd.server_port)
+                self.log("Can't connect to %s:%s, retrying..." % (
+                        self.host, self.http.httpd.server_port))
 
-        print "Test URL is: %s" % self.url
+        self.log("Test URL is: %s" % self.url)
 
         if not connected:
             raise "Could not open webserver. Error!"
@@ -199,8 +203,8 @@ class WebTest(Test):
                                                         self.testpath_rel)
     def execute_actions(self, commandset):
         if self.actions: # startup test indicated by no actions
-            print "Executing commands '%s' for device '%s' (time: %s, framenum: %s)" % (
-                commandset, self.device.model, time.time(), self.start_frame)
+            self.log("Executing commands '%s' for device '%s' (framenum: %s)" % (
+                    commandset, self.device.model, self.start_frame))
             if not self.actions.get(commandset) or not \
                         self.actions[commandset].get(self.device.model):
                     raise Exception("Could not get actions for commandset "
@@ -376,7 +380,7 @@ class B2GTest(Test):
 
     def __init__(self, **kwargs):
         super(B2GTest, self).__init__(**kwargs)
-        print "Setting up device"
+        self.log("Setting up device")
         self.device.setupDHCP()
 
         self.device.setupMarionette()
@@ -407,6 +411,6 @@ class B2GWebTest(B2GTest, WebTest):
 
     def run(self):
         # start the tests by navigating to the url
-        print "Navigating to %s" % self.url
+        self.log("Navigating to %s" % self.url)
         self.device.marionette.execute_script("window.location.href='%s';" % self.url)
         self.wait()

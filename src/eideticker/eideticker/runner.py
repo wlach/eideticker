@@ -2,7 +2,6 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 
-import datetime
 import mozdevice
 import mozprofile
 import os
@@ -11,8 +10,9 @@ import subprocess
 import tempfile
 import time
 import zipfile
+import log
 
-class AndroidBrowserRunner(object):
+class AndroidBrowserRunner(log.LoggingMixin):
 
     remote_profile_dir = None
     intent = "android.intent.action.VIEW"
@@ -45,9 +45,6 @@ class AndroidBrowserRunner(object):
             self.intent = None
         else:
             self.activity = activity_mappings[self.appname]
-
-    def log(self, msg):
-        print "%s AndroidBrowserRunner | %s" % (datetime.datetime.now().strftime("%b %d %H:%M:%S %Z"), msg)
 
     def get_profile_and_symbols(self, target_zip):
         if not self.enable_profiling:
