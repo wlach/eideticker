@@ -9,6 +9,7 @@ import posixpath
 import re
 import tempfile
 import time
+import xml
 from gaiatest.gaia_test import LockScreen
 
 # I know specifying resolution manually like this is ugly, but as far as I
@@ -340,6 +341,17 @@ class EidetickerB2GMixin(EidetickerMixin):
         # unlock device, so it doesn't go to sleep
         ls = LockScreen(self.marionette)
         ls.unlock()
+
+    def getRevisionData(self):
+        revisionData = {}
+        sources = xml.dom.minidom.parseString(self.pullFile('/system/sources.xml'))
+        for element in sources.getElementsByTagName('project'):
+            path = element.getAttribute('path')
+            revision = element.getAttribute('revision')
+            if path in ['gaia', 'gecko', 'build']:
+                revisionData[path + 'Revision'] = revision
+
+        return revisionData
 
 class B2GADB(EidetickerB2GMixin, mozb2g.DeviceADB):
     def __init__(self, **kwargs):
