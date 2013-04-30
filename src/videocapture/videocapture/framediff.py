@@ -69,7 +69,7 @@ def get_framediff_sums(capture, threshold = PIXEL_DIFF_THRESHOLD):
         for i in range(1, capture.num_frames+1):
             frame = capture.get_frame(i, True).astype('float')
             if prevframe != None:
-                framediff = (frame - prevframe)
+                framediff = abs(frame - prevframe)
                 for ignored_area in ignored_areas:
                     for x in range(ignored_area[0], ignored_area[2]):
                         for y in range(ignored_area[1], ignored_area[3]):
