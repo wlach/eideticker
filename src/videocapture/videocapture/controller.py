@@ -177,7 +177,6 @@ class CaptureController(object):
 
         self.capture_process.stop()
         self.capture_process.join()
-        print "Capture process terminated!!!LOL"
         self.capture_process = None
 
     def convert_capture(self, start_frame, end_frame):
