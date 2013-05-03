@@ -342,8 +342,10 @@ class AndroidWebStartupTest(AndroidWebTest):
             self.runner.start()
             # make sure fennec has actually started by sleeping for a bit.
             # this is a fairly arbitrary value but not sure of a better way
+            self.log("Started. Waiting.")
             time.sleep(5)
             self.start_capture()
+            self.log("Opening url")
             self.runner.open_url()
 
         self.wait()
