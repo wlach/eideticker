@@ -312,15 +312,12 @@ $(function() {
       };
 
       var defaultDeviceId = deviceIds[0];
-      // HACK: try to default to the LG-P999 for now
-      deviceIds.forEach(function(deviceId) {
-        if (devices[deviceId].name === "lg-p999") {
-          defaultDeviceId = deviceId;
-        }
-      });
+      var initialTestKey = Object.keys(devices[defaultDeviceId]['tests']);
+      var initialTest = devices[defaultDeviceId]['tests'][initialTestKey]
 
-      // FIXME: somehow point at the actual first test in the list here
-      var router = Router(routes).init('/' + defaultDeviceId + '/taskjs/checkerboard');
+      var router = Router(routes).init('/' + [ defaultDeviceId,
+                                               initialTestKey,
+                                               initialTest.defaultMeasure ].join('/'));
     }
 
     setTimeout(setupRoutes, 100);
