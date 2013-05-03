@@ -186,6 +186,5 @@ int main(int argc, char *argv[])
       std::ostringstream fname;
       fname << videoOutputDir << "/" << "image-" << imageCnt << ".png";
       vecImages[imageCnt].Save(fname.str().c_str());
-      printf("Appended image %d...\n", imageCnt);
     }
 }
