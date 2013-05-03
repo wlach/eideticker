@@ -66,9 +66,6 @@ def main(args=sys.argv[1:]):
         capture_area = json.loads(options.capture_area)
     device_prefs = eideticker.getDevicePrefs(options)
 
-    if options.debug:
-        mozdevice.DeviceManagerSUT.debug = 4
-
     eideticker.run_test(testkey, options.capture_device,
                         options.appname,
                         options.capture_name, device_prefs,

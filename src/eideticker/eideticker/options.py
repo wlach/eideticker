@@ -28,6 +28,8 @@ class OptionParser(optparse.OptionParser):
                         help = "Device type (android or b2g, default to "
                         "android). If B2G, you do not need to pass in an "
                         "appname")
+        self.add_option("--debug", action="store_true",
+                        dest="debug", help="show verbose debugging information")
 
     def __init__(self, **kwargs):
         optparse.OptionParser.__init__(self, **kwargs)

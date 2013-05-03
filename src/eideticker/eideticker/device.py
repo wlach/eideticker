@@ -4,6 +4,7 @@
 
 import mozdevice
 import mozb2g
+import mozlog
 import os
 import posixpath
 import re
@@ -385,6 +386,10 @@ def getDevicePrefs(options):
     optionDict = {}
     optionDict['dmtype'] = options.dmtype
     optionDict['devicetype'] = options.devicetype
+    if options.debug:
+        optionDict['logLevel'] = mozlog.DEBUG
+    else:
+        optionDict['logLevel'] = mozlog.INFO
 
     host = options.host
     if not host and optionDict['dmtype'] == "sut":
@@ -395,30 +400,31 @@ def getDevicePrefs(options):
 
     return optionDict
 
-def getDevice(dmtype="adb", devicetype="android", host=None, port=None):
+def getDevice(dmtype="adb", devicetype="android", host=None, port=None,
+              logLevel=mozlog.INFO):
     '''Gets an eideticker device according to parameters'''
 
-    print "Using %s interface (type: %s, host: %s, port: %s)" % (dmtype,
-                                                                 devicetype,
-                                                                 host, port)
+    print "Using %s interface (type: %s, host: %s, port: %s, " \
+        "debuglevel: %s)" % (dmtype, devicetype, host, port, logLevel)
     if dmtype == "adb":
         if host and not port:
             port = 5555
         if devicetype=='b2g':
             # HACK: Assume adb-over-usb for now, with marionette forwarded
             # to localhost via "adb forward tcp:2828 tcp:2828"
-            return B2GADB(marionetteHost="127.0.0.1")
+            return B2GADB(marionetteHost="127.0.0.1", logLevel=logLevel)
             #return B2GADB(host=host, port=port)
         else:
-            return DroidADB(packageName=None, host=host, port=port)
+            return DroidADB(packageName=None, host=host, port=port,
+                            logLevel=logLevel)
     elif dmtype == "sut":
         if not host:
             raise Exception("Must specify host with SUT!")
         if not port:
             port = 20701
         if devicetype=='b2g':
-            return B2GSUT(host=host, port=port)
+            return B2GSUT(host=host, port=port, logLevel=logLevel)
         else:
-            return DroidSUT(host=host, port=port)
+            return DroidSUT(host=host, port=port, logLevel=logLevel)
     else:
         raise Exception("Unknown device manager type: %s" % type)
