@@ -21,7 +21,8 @@ class OptionParser(optparse.OptionParser):
                         default = None,
                         help = "mode to use with decklink cards (%s)" % " or ".join(valid_decklink_modes))
         if self.capture_area_option:
-            self.add_option("--capture-area", action="store", default=None,
+            self.add_option("--capture-area", action="store",
+                            default=os.environ.get('CAPTURE_AREA', None),
                             help="Hardcode capture area. Must be passed in as json "
                             "array [x1, y1, x2, y2]")
 
