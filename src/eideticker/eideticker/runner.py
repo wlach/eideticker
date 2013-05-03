@@ -42,7 +42,6 @@ class AndroidBrowserRunner(log.LoggingMixin):
         # use activity mapping if not mozilla
         if self.appname.startswith('org.mozilla'):
             self.activity = '.App'
-            self.intent = None
         else:
             self.activity = activity_mappings[self.appname]
 
