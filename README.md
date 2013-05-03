@@ -67,14 +67,14 @@ and out will pop several results. This is not yet supported for B2G.
 For example, to run the canvas clock example against Fennec nightly, try
 this:
 
-    ./bin/get-metric-for-build.py --use-apks src/tests/ep1/clock.html nightly.apk
+    ./bin/get-metric-for-build.py --use-apks clock nightly.apk
 
 Typically, you want to run Eideticker more than once on a particular test to
 get a range of results as tests are not 100% deterministic (partly due to the
 way we run tests, partly due to Android itself). You can do this with the
 `--num-runs` option. For example:
 
-    ./bin/get-metric-for-build.py --use-apks --num-runs 5 src/tests/ep1/clock.html nightly.apk
+    ./bin/get-metric-for-build.py --use-apks --num-runs 5 clock nightly.apk
 
 If you want to know more about the results (where the numbers are coming from)
 you can open them up inside the Eideticker web interface. To open it, execute:
