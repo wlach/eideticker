@@ -96,8 +96,14 @@ def runtest(dm, device_prefs, capture_device, capture_area, product, appname, ap
         datapoint['timetostableframe'] = videocapture.get_stable_frame_time(capture)
     else:
         # standard test metrics
-        datapoint['uniqueframes'] = videocapture.get_num_unique_frames(capture)
-        datapoint['fps'] = videocapture.get_fps(capture)
+        threshold = 0
+        if capture_device == "pointgrey":
+            # even with median filtering, pointgrey captures tend to have a
+            # bunch of visual noise -- try to compensate for this by setting
+            # a higher threshold for frames to be considered different
+            threshold = 2000
+        datapoint['uniqueframes'] = videocapture.get_num_unique_frames(capture, threshold=threshold)
+        datapoint['fps'] = videocapture.get_fps(capture, threshold=threshold)
         datapoint['checkerboard'] = videocapture.get_checkerboarding_area_duration(capture)
 
     if enable_profiling:

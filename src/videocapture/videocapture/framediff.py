@@ -82,12 +82,12 @@ def get_framediff_sums(capture, threshold = PIXEL_DIFF_THRESHOLD):
 
     return diffsums
 
-def get_num_unique_frames(capture):
+def get_num_unique_frames(capture, threshold=0):
     framediff_sums = get_framediff_sums(capture)
-    return 1 + len([framediff for framediff in framediff_sums if framediff > 0])
+    return 1 + len([framediff for framediff in framediff_sums if framediff > threshold])
 
-def get_fps(capture):
-    return get_num_unique_frames(capture) / capture.length
+def get_fps(capture, threshold=0):
+    return get_num_unique_frames(capture, threshold=threshold) / capture.length
 
 def get_stable_frame(capture, threshold = 2048):
     framediff_sums = get_framediff_sums(capture)
