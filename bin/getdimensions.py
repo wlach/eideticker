@@ -26,8 +26,6 @@ class CaptureServer(object):
     def start_capture(self, req):
         if self.capture_controller:
             self.capture_controller.start_capture(self.capture_file, self.mode)
-            while self.capture_controller.capture_framenum() < 1:
-                time.sleep(0.1)
             self.start_frame = self.capture_controller.capture_framenum()
         print "Start capture. Frame: %s. Time: %s" % (self.start_frame, time.time())
         return (200, {}, '')

@@ -160,6 +160,9 @@ class CaptureController(object):
                                               outputdir=self.outputdir)
         self.log("Starting capture...")
         self.capture_process.start()
+        # wait for capture to actually start...
+        while self.capture_framenum() < 1:
+            time.sleep(0.1)
 
     @property
     def capturing(self):
