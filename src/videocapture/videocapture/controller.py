@@ -15,7 +15,7 @@ import re
 import multiprocessing
 import shutil
 
-from PIL import Image
+from PIL import Image, ImageFilter
 import numpy
 from zipfile import ZipFile
 
@@ -257,6 +257,9 @@ class CaptureController(object):
             im = Image.open(imagefilename)
             if self.capture_area:
                 im = im.crop(self.capture_area)
+            # pointgrey needs a median filter because it's so noisy
+            if self.capture_device == "pointgrey":
+                im = im.filter(ImageFilter.MedianFilter())
             im = im.convert("RGB")
             im.save(os.path.join(dirname, '%s.png' % framenum))
 
