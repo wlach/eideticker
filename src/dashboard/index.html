@@ -146,6 +146,10 @@
         <dt>Build Date</dt>
         <dd>{{appDate}}</dd>
         {{/appDate}}
+        {{#gaiaRevision}}
+        <dt>Gaia Revision</dt>
+        <dd><a href="https://github.com/mozilla-b2g/gaia/commit/{{gaiaRevision}}">{{gaiaRevision}}</a></dd>
+        {{/gaiaRevision}}
         {{#revision}}
         <dt>Revision</dt>
         <dd><a href="http://hg.mozilla.org/mozilla-central/rev/{{revision}}">{{revision}}</a></dd>

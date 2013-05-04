@@ -102,6 +102,7 @@ function updateGraph(rawdata, measure) {
             'dateStr': datestr,
             'appDate': sample.appdate,
             'revision': sample.revision,
+            'gaiaRevision': sample.gaiaRevision,
             'prevRevision': prevRevision,
             'buildId': sample.buildid,
             'profileURL': sample.profile
@@ -223,6 +224,7 @@ function updateGraph(rawdata, measure) {
                                                      'measureName': measure,
                                                      'date': metadata.dateStr,
                                                      'appDate': metadata.appDate,
+                                                     'gaiaRevision': metadata.gaiaRevision.slice(0, 8),
                                                      'revision': metadata.revision,
                                                      'prevRevision': metadata.prevRevision,
                                                      'buildId': metadata.buildId,
