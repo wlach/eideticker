@@ -17,9 +17,11 @@ class Test(B2GTest):
         self.start_capture()
         self.test_started()
         cmds = []
-        for i in range(100):
+        for i in range(20):
             cmds.append(['scroll_down'])
+        self.log("Running commands")
         self.device.executeCommands(cmds)
+        self.log("Executed commands, finishing test")
         self.test_finished()
         self.end_capture()
 
