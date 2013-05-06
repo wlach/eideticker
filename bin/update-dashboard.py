@@ -197,7 +197,7 @@ def main(args=sys.argv[1:]):
             appinfo = eideticker.get_fennec_appinfo(options.apk)
             appname = appinfo['appname']
             print "Using application name '%s' from apk '%s'" % (appname, options.apk)
-            capture_name = "%s %s" % (product['name'], appinfo['date'])
+            capture_name = "%s %s" % (product['name'], appinfo['appdate'])
         else:
             if not options.app_version:
                 raise Exception("Should specify --app-version if not --apk!")
