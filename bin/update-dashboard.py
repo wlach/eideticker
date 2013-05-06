@@ -72,7 +72,7 @@ def runtest(dm, device_prefs, capture_device, capture_area, product, appname, ap
         data['testdata'][productname] = {}
 
     # app date
-    appdate = appinfo.get('date')
+    appdate = appinfo['appdate']
 
     if not data['testdata'][productname].get(appdate):
         data['testdata'][productname][appdate] = []
