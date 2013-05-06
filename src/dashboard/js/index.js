@@ -314,7 +314,7 @@ $(function() {
       };
 
       var defaultDeviceId = deviceIds[0];
-      var initialTestKey = Object.keys(devices[defaultDeviceId]['tests']);
+      var initialTestKey = Object.keys(devices[defaultDeviceId]['tests'])[0];
       var initialTest = devices[defaultDeviceId]['tests'][initialTestKey]
 
       var router = Router(routes).init('/' + [ defaultDeviceId,
