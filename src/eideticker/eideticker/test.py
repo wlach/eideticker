@@ -14,7 +14,7 @@ from log import LoggingMixin
 class TestException(Exception):
 
     def __init__(self, msg, can_retry=False):
-        Exception.__init__(msg)
+        Exception.__init__(self, msg)
         # can_retry means a failure that is possibly intermittent
         self.can_retry = can_retry
 
