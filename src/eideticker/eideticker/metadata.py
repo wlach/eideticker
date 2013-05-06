@@ -5,10 +5,9 @@
 import ConfigParser
 import zipfile
 
-def get_fennec_appinfo(fname):
-    archive = zipfile.ZipFile(fname, 'r')
+def get_appinfo(fh):
     config = ConfigParser.ConfigParser()
-    config.readfp(archive.open('application.ini'))
+    config.readfp(fh)
     buildid = config.get('App', 'BuildID')
     try:
         revision = config.get('App', 'SourceStamp')
@@ -17,12 +16,19 @@ def get_fennec_appinfo(fname):
         revision = None
     version = config.get('App', 'Version')
     (year, month, day) = (buildid[0:4], buildid[4:6], buildid[6:8])
-    if 'package-name.txt' in archive.namelist():
-        appname = archive.open('package-name.txt').read().rstrip()
-    else:
-        appname = None
+    sourcerepo = config.get('App', 'SourceRepository')
     return { 'appdate':  "%s-%s-%s" % (year, month, day),
              'buildid': buildid,
              'revision': revision,
-             'appname': appname,
+             'sourceRepo': sourcerepo,
              'version': version }
+
+def get_fennec_appinfo(fname):
+    archive = zipfile.ZipFile(fname, 'r')
+    appinfo = {}
+    if 'package-name.txt' in archive.namelist():
+        appinfo['appname'] = archive.open('package-name.txt').read().rstrip()
+
+    appinfo.update(get_appinfo(archive.open('application.ini')))
+
+    return appinfo

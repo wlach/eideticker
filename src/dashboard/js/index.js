@@ -97,11 +97,17 @@ function updateGraph(rawdata, measure) {
       rawdata[type][datestr].forEach(function(sample) {
         if (measure in sample) {
           series1.data.push([ parseDate(datestr), sample[measure] ]);
+          var sourceRepo = sample.sourceRepo;
+          if (!sourceRepo) {
+            sourceRepo = "http://hg.mozilla.org/mozilla-central";
+          }
           metadataHash[seriesIndex].push({
             'videoURL': sample.video,
             'dateStr': datestr,
             'appDate': sample.appdate,
+            'sourceRepo': sourceRepo,
             'revision': sample.revision,
+            'buildRevision': sample.buildRevision,
             'gaiaRevision': sample.gaiaRevision,
             'prevRevision': prevRevision,
             'buildId': sample.buildid,
@@ -224,8 +230,10 @@ function updateGraph(rawdata, measure) {
                                                      'measureName': measure,
                                                      'date': metadata.dateStr,
                                                      'appDate': metadata.appDate,
-                                                     'gaiaRevision': metadata.gaiaRevision.slice(0, 8),
+                                                     'buildRevision': metadata.buildRevision.slice(0, 12),
+                                                     'gaiaRevision': metadata.gaiaRevision.slice(0, 12),
                                                      'revision': metadata.revision,
+                                                     'sourceRepo': metadata.sourceRepo,
                                                      'prevRevision': metadata.prevRevision,
                                                      'buildId': metadata.buildId,
                                                      'measureValue': Math.round(100.0*item.datapoint[1])/100.0

@@ -8,6 +8,8 @@ import time
 import videocapture
 import uuid
 import manifestparser
+import xml
+import StringIO
 
 
 class NestedDict(dict):
@@ -19,13 +21,24 @@ class NestedDict(dict):
 DOWNLOAD_DIR = os.path.join(os.path.dirname(__file__), "../downloads")
 CAPTURE_DIR = os.path.join(os.path.dirname(__file__), "../captures")
 
+def get_revision_data(sources_xml):
+    revision_data = {}
+    sources = xml.dom.minidom.parseString(open(sources_xml).read())
+    for element in sources.getElementsByTagName('project'):
+        path = element.getAttribute('path')
+        revision = element.getAttribute('revision')
+        print path
+        if path in ['gaia', 'build']:
+            revision_data[path + 'Revision'] = revision
+    return revision_data
+
 
 def runtest(dm, device_prefs, capture_device, capture_area, product, appname, appinfo, testinfo, capture_name,
             outputdir, datafile, data, enable_profiling=False, baseline=False):
     capture_file = os.path.join(CAPTURE_DIR,
                                 "%s-%s-%s-%s.zip" % (testinfo['key'],
                                                      appname,
-                                                     appinfo.get('date'),
+                                                     appinfo.get('appdate'),
                                                      int(time.time())))
     productname = product['name']
 
@@ -80,7 +93,7 @@ def runtest(dm, device_prefs, capture_device, capture_area, product, appname, ap
     datapoint = { 'uuid': uuid.uuid1().hex,
                   'video': video_path }
     for key in ['appdate', 'buildid', 'revision', 'geckoRevision',
-                'gaiaRevision', 'buildRevision']:
+                'gaiaRevision', 'buildRevision', 'sourceRepo']:
         if appinfo.get(key):
             datapoint.update({key: appinfo[key]})
 
@@ -136,7 +149,11 @@ def main(args=sys.argv[1:]):
                       type = "int", dest = "num_runs",
                       help = "number of runs (default: 1)")
     parser.add_option("--app-version", action="store", dest="app_version",
-                      help="Specify app version (if not automatically available)")
+                      help="Specify app version (if not automatically " \
+                          "available; Android-specific)")
+    parser.add_option("--sources-xml", action="store", dest="sources_xml",
+                      help="Path to sources XML file for getting revision " \
+                          "information (B2G-specific)")
 
     options, args = parser.parse_args()
     parser.validate_options(options)
@@ -203,15 +220,18 @@ def main(args=sys.argv[1:]):
                 raise Exception("Should specify --app-version if not --apk!")
 
             # no apk, assume it's something static on the device
-            appinfo = { 'date': time.strftime("%Y-%m-%d"), 'version': options.app_version }
+            appinfo = { 'appdate': time.strftime("%Y-%m-%d"), 'version': options.app_version }
             appname = product['appname']
 
     elif options.devicetype == "b2g":
+        if not options.sources_xml:
+            raise Exception("Must specify --sources-xml on b2g!")
+
         devices[device_id] = { 'name': device.model }
-        # using today's date for the date is not awesome but I am not sure
-        # what the alternative is atm...
-        appinfo = { 'date': time.strftime("%Y-%m-%d") }
-        appinfo.update(device.getRevisionData())
+        appinicontents = device.pullFile('/system/b2g/application.ini')
+        sfh = StringIO.StringIO(appinicontents)
+        appinfo = eideticker.get_appinfo(sfh)
+        appinfo.update(get_revision_data(options.sources_xml))
         appname = None
     else:
         print "Unknown device type '%s'!" % options.devicetype
