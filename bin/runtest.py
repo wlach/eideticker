@@ -43,8 +43,6 @@ def main(args=sys.argv[1:]):
                       type="string", dest="profile_file",
                       help="Collect a performance profile using the built in "
                       "profiler (fennec only).")
-    parser.add_option("--debug", action="store_true",
-                      dest="debug", help="show verbose debugging information")
 
     options, args = parser.parse_args()
     parser.validate_options(options)
