@@ -80,6 +80,14 @@ way we run tests, partly due to Android itself). You can do this with the
 
     ./bin/get-metric-for-build.py --use-apks --num-runs 5 clock nightly.apk
 
+Occasionally you may want to run Fennec with a custom preference or two set,
+you can do this with the "extra prefs" option. Just pass a json dictionary
+of preferences, and they will be merged into the profile used by fennec:
+
+    ./bin/get-metric-for-build.py --use-apks \
+        --extra-prefs "{gfx.color_management.enablev4: true}" clock \
+        nightly.apk
+
 If you want to know more about the results (where the numbers are coming from)
 you can open them up inside the Eideticker web interface. To open it, execute:
 
