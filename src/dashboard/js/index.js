@@ -222,6 +222,13 @@ function updateGraph(rawdata, measure) {
   });
 
   $("#graph-container").bind("plotclick", function (event, pos, item) {
+    function sliceIfExist(str) {
+      if (str) {
+        return str.slice(0, 12);
+      }
+      return null;
+    }
+
     plot.unhighlight();
     if (item) {
       var metadata = metadataHash[item.seriesIndex][item.dataIndex];
@@ -230,8 +237,8 @@ function updateGraph(rawdata, measure) {
                                                      'measureName': measure,
                                                      'date': metadata.dateStr,
                                                      'appDate': metadata.appDate,
-                                                     'buildRevision': metadata.buildRevision.slice(0, 12),
-                                                     'gaiaRevision': metadata.gaiaRevision.slice(0, 12),
+                                                     'buildRevision': sliceIfExist(metadata.buildRevision),
+                                                     'gaiaRevision': sliceIfExist(metadata.gaiaRevision),
                                                      'revision': metadata.revision,
                                                      'sourceRepo': metadata.sourceRepo,
                                                      'prevRevision': metadata.prevRevision,
