@@ -69,6 +69,10 @@ this:
 
     ./bin/get-metric-for-build.py --use-apks clock nightly.apk
 
+To get a list of tests to run, use the list tests script:
+
+    ./bin/list-tests.py
+
 Typically, you want to run Eideticker more than once on a particular test to
 get a range of results as tests are not 100% deterministic (partly due to the
 way we run tests, partly due to Android itself). You can do this with the

@@ -13,12 +13,15 @@ TEST_DIR = os.path.abspath(os.path.join(SRC_DIR, "tests"))
 GECKO_PROFILER_ADDON_DIR = os.path.join(SRC_DIR, "../src/GeckoProfilerAddon")
 EIDETICKER_TEMP_DIR = "/tmp/eideticker"
 
+def get_test_manifest():
+    return manifestparser.TestManifest(manifests=[os.path.join(
+                TEST_DIR, 'manifest.ini')])
+
 def run_test(testkey, capture_device, appname, capture_name,
              device_prefs, extra_prefs={}, test_type=None, profile_file=None,
              request_log_file=None, checkerboard_log_file=None,
              capture_area=None, no_capture=False, capture_file=None):
-    manifest = manifestparser.TestManifest(manifests=[os.path.join(
-                TEST_DIR, 'manifest.ini')])
+    manifest = get_test_manifest()
 
     # sanity check... does the test match a known test key?
     testkeys = [test["key"] for test in manifest.active_tests()]
