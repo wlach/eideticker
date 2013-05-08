@@ -163,8 +163,7 @@ def main(args=sys.argv[1:]):
     if options.num_runs:
         num_runs = options.num_runs
 
-    manifest = manifestparser.TestManifest(manifests=[os.path.join(
-                os.path.dirname(__file__), '../src/tests/manifest.ini')])
+    manifest = eideticker.get_test_manifest()
 
     # sanity check... does the test match a known test key?
     testkeys = [test["key"] for test in manifest.active_tests()]
