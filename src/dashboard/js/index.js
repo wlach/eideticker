@@ -111,7 +111,8 @@ function updateGraph(rawdata, measure) {
             'gaiaRevision': sample.gaiaRevision,
             'prevRevision': prevRevision,
             'buildId': sample.buildid,
-            'profileURL': sample.profile
+            'profileURL': sample.profile,
+            'httpLog': sample.httpLog
           });
         }
       });
@@ -228,12 +229,13 @@ function updateGraph(rawdata, measure) {
       }
       return null;
     }
-
+    
     plot.unhighlight();
     if (item) {
       var metadata = metadataHash[item.seriesIndex][item.dataIndex];
       $('#datapoint-info').html(ich.graphDatapoint({ 'videoURL': metadata.videoURL,
                                                      'profileURL': metadata.profileURL,
+                                                     'httpLog': metadata.httpLog,
                                                      'measureName': measure,
                                                      'date': metadata.dateStr,
                                                      'appDate': metadata.appDate,

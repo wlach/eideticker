@@ -3,6 +3,7 @@
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import eideticker
+import json
 import mozhttpd
 import moznetwork
 import urlparse
@@ -162,16 +163,19 @@ class Test(LoggingMixin):
 
 class WebTest(Test):
 
-    def __init__(self, actions={}, docroot=None, **kwargs):
+    def __init__(self, actions={}, docroot=None, request_log_file=None,
+                 **kwargs):
         super(WebTest, self).__init__(track_start_frame = True,
                                       track_end_frame = True, **kwargs)
 
         self.actions = actions
+        self.request_log_file = request_log_file
 
         self.capture_server = CaptureServer(self)
         self.host = moznetwork.get_ip()
         self.http = mozhttpd.MozHttpd(docroot=docroot,
                                       host=self.host, port=0,
+                                      log_requests=bool(request_log_file),
                                       urlhandlers = [
                 { 'method': 'GET',
                   'path': '/api/captures/start/?',
@@ -208,6 +212,25 @@ class WebTest(Test):
         return "http://%s:%s/start.html?testpath=%s" % (self.host,
                                                         self.http.httpd.server_port,
                                                         self.testpath_rel)
+
+    def test_started(self):
+        super(WebTest, self).test_started()
+
+        if self.request_log_file:
+            self.test_start_time = time.time()
+
+    def test_finished(self):
+        super(WebTest, self).test_finished()
+
+        request_log = []
+        if self.request_log_file:
+            # let's make the request times relative to the start of the test
+            for request in self.http.request_log:
+                request['time'] -= self.test_start_time
+                request_log.append(request)
+
+            open(self.request_log_file, 'w').write(json.dumps(request_log))
+
     def execute_actions(self, commandset):
         if self.actions: # startup test indicated by no actions
             self.log("Executing commands '%s' for device '%s' (framenum: %s)" % (
@@ -225,8 +248,7 @@ class WebTest(Test):
                                         executeCallback=executeCallback)
             self.test_finished()
         else:
-            # startup test: we start and finish, all at once
-            self.test_started()
+            # startup test: if we get here, it means we're done
             self.test_finished()
 
 class AndroidWebTest(WebTest):
@@ -337,15 +359,15 @@ class AndroidWebStartupTest(AndroidWebTest):
             # optional and then start capture after triggering app launch to
             # reduce latency?
             self.start_capture()
+            self.test_started()
             self.runner.start()
         else:
             self.runner.start()
             # make sure fennec has actually started by sleeping for a bit.
             # this is a fairly arbitrary value but not sure of a better way
-            self.log("Started. Waiting.")
             time.sleep(5)
             self.start_capture()
-            self.log("Opening url")
+            self.test_started()
             self.runner.open_url()
 
         self.wait()

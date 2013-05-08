@@ -29,3 +29,4 @@ lib/
 src/videocapture/build/*
 src/videocapture/videocapture.egg-info/
 src/videocapture/videocapture/decklink/decklink-capture
+src/dashboard/httplogs/*.json

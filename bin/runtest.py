@@ -43,6 +43,9 @@ def main(args=sys.argv[1:]):
                       type="string", dest="profile_file",
                       help="Collect a performance profile using the built in "
                       "profiler (fennec only).")
+    parser.add_option("--request-log-file", action="store",
+                      type="string", dest="request_log_file",
+                      help="Collect a log of HTTP requests during tests")
 
     options, args = parser.parse_args()
     parser.validate_options(options)
@@ -70,6 +73,7 @@ def main(args=sys.argv[1:]):
                         extra_prefs=extra_prefs,
                         test_type=options.test_type,
                         profile_file=options.profile_file,
+                        request_log_file=options.request_log_file,
                         checkerboard_log_file=options.checkerboard_log_file,
                         no_capture=options.no_capture,
                         capture_area=capture_area,

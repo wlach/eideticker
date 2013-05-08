@@ -33,8 +33,9 @@ def get_revision_data(sources_xml):
     return revision_data
 
 
-def runtest(dm, device_prefs, capture_device, capture_area, product, appname, appinfo, testinfo, capture_name,
-            outputdir, datafile, data, enable_profiling=False, baseline=False):
+def runtest(dm, device_prefs, capture_device, capture_area, product, appname,
+            appinfo, testinfo, capture_name, outputdir, datafile, data,
+            enable_profiling=False, log_http_requests=False, baseline=False):
     capture_file = os.path.join(CAPTURE_DIR,
                                 "%s-%s-%s-%s.zip" % (testinfo['key'],
                                                      appname,
@@ -48,6 +49,11 @@ def runtest(dm, device_prefs, capture_device, capture_area, product, appname, ap
         profile_path = os.path.join('profiles', 'sps-profile-%s.zip' % time.time())
         profile_file = os.path.join(outputdir, profile_path)
 
+    request_log_file = None
+    if log_http_requests:
+        request_log_path = os.path.join('httplogs', 'http-log-%s.json' % time.time())
+        request_log_file = os.path.join(outputdir, request_log_path)
+
     test_completed = False
     for i in range(3):
         print "Running test (try %s of 3)" % (i+1)
@@ -59,6 +65,7 @@ def runtest(dm, device_prefs, capture_device, capture_area, product, appname, ap
             eideticker.run_test(testinfo['key'], capture_device,
                                 appname, capture_name, device_prefs,
                                 profile_file=profile_file,
+                                request_log_file=request_log_file,
                                 capture_area=capture_area,
                                 capture_file=capture_file)
             test_completed = True
@@ -122,6 +129,9 @@ def runtest(dm, device_prefs, capture_device, capture_area, product, appname, ap
     if enable_profiling:
         datapoint['profile'] = profile_path
 
+    if log_http_requests:
+        datapoint['httpLog'] = request_log_path
+
     data['testdata'][productname][appdate].append(datapoint)
 
     # Write the data to disk immediately (so we don't lose it if we fail later)
@@ -179,6 +189,11 @@ def main(args=sys.argv[1:]):
     if not device_id:
         print "ERROR: Must specify device id (either with --device-id or with DEVICE_ID environment variable)"
         sys.exit(1)
+
+    # we'll log http requests for webstartup tests only
+    log_http_requests = False
+    if testinfo['type'] == 'webstartup':
+        log_http_requests = True
 
     product = eideticker.get_product(productname)
     current_date = time.strftime("%Y-%m-%d")
@@ -256,6 +271,7 @@ def main(args=sys.argv[1:]):
                 product, appname, appinfo, testinfo,
                 capture_name + " #%s" % i, outputdir, datafile, data,
                 enable_profiling=options.enable_profiling,
+                log_http_requests=log_http_requests,
                 baseline=options.baseline)
         if options.devicetype == "android":
             # Kill app after test complete
