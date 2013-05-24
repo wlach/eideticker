@@ -63,6 +63,13 @@ DEVICE_PROPERTIES = {
             "defaultOrientation": "portrait",
             "dimensions": (320, 480),
             "swipePadding": (40, 40, 40, 40)
+            },
+        "inari1": {
+            "hdmiResolution": None,
+            "inputDevice": "/dev/input/event0",
+            "defaultOrientation": "portrait",
+            "dimensions": (320, 480),
+            "swipePadding": (40, 40, 40, 40)
             }
         }
 }
