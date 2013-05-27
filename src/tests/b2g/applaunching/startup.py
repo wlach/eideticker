@@ -15,7 +15,9 @@ class Test(B2GTest):
         self.test_started()
         app = apps.launch(self.appname)
         assert app.frame_id is not None
-        time.sleep(5)
+        self.log("Waiting %s seconds for app to finish starting" %
+                 self.capture_timeout)
+        time.sleep(self.capture_timeout)
         self.test_finished()
         self.end_capture()
 
