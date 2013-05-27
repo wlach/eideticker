@@ -56,24 +56,26 @@ class CaptureServer(LoggingMixin):
 
         return (200, {})
 
-def get_test(devicetype="android", testtype="web", testpath=None, **kwargs):
+def get_test(testinfo, devicetype="android", testtype="web", **kwargs):
+    testpath = testinfo['path']
+
     if devicetype == 'b2g':
         if testtype == 'web':
-            return B2GWebTest(**kwargs)
+            return B2GWebTest(testinfo, **kwargs)
         else:
             (basepath, testfile) = os.path.split(testpath)
             (file, pathname, description) = imp.find_module(testfile[0:-3],
                                                             [basepath])
             module = imp.load_module('test', file, pathname, description)
-            test = module.Test(**kwargs)
+            test = module.Test(testinfo, **kwargs)
             return test
     else:
         if testtype == 'webstartup':
-            return AndroidWebStartupTest(**kwargs)
+            return AndroidWebStartupTest(testinfo, **kwargs)
         elif testtype == 'appstartup':
-            return AndroidAppStartupTest(**kwargs)
+            return AndroidAppStartupTest(testinfo, **kwargs)
         elif testtype == "web":
-            return AndroidWebTest(**kwargs)
+            return AndroidWebTest(testinfo, **kwargs)
 
 class Test(LoggingMixin):
 
@@ -81,18 +83,18 @@ class Test(LoggingMixin):
     start_frame = None
     end_frame = None
 
-    def __init__(self, testpath=None, testpath_rel=None, device=None, capture_file = None,
+    def __init__(self, testinfo, testpath_rel=None, device=None,
+                 capture_file = None,
                  capture_controller=None,
-                 capture_metadata={}, capture_timeout=None, tempdir=None,
+                 capture_metadata={}, tempdir=None,
                  no_capture=False, track_start_frame=False,
                  track_end_frame=False, **kwargs):
-        self.testpath = testpath
         self.testpath_rel = testpath_rel
         self.device = device
         self.capture_file = capture_file
         self.capture_controller = capture_controller
         self.capture_metadata = capture_metadata
-        self.capture_timeout = capture_timeout
+        self.capture_timeout = int(testinfo['captureTimeout'])
         self.tempdir = tempdir
         self.no_capture = no_capture
         self.track_start_frame = track_start_frame
@@ -163,9 +165,9 @@ class Test(LoggingMixin):
 
 class WebTest(Test):
 
-    def __init__(self, actions={}, docroot=None, request_log_file=None,
+    def __init__(self, testinfo, actions={}, docroot=None, request_log_file=None,
                  **kwargs):
-        super(WebTest, self).__init__(track_start_frame = True,
+        super(WebTest, self).__init__(testinfo, track_start_frame = True,
                                       track_end_frame = True, **kwargs)
 
         self.actions = actions
@@ -253,21 +255,20 @@ class WebTest(Test):
 
 class AndroidWebTest(WebTest):
 
-    def __init__(self, appname = None, extra_prefs = {}, profile_file = None,
-                 preinitialize_user_profile = False,
-                 open_url_after_launch=False,
+    def __init__(self, testinfo, appname = None, extra_prefs = {},
+                 profile_file = None,
                  gecko_profiler_addon_dir = None,
                  checkerboard_log_file = None,
                  **kwargs):
-        super(AndroidWebTest, self).__init__(**kwargs)
+        super(AndroidWebTest, self).__init__(testinfo, **kwargs)
 
         self.appname = appname
         self.extra_prefs = extra_prefs
         self.checkerboard_log_file = checkerboard_log_file
         self.profile_file = profile_file
         self.gecko_profiler_addon_dir = gecko_profiler_addon_dir
-        self.preinitialize_user_profile = preinitialize_user_profile
-        self.open_url_after_launch = open_url_after_launch
+        self.preinitialize_user_profile = int(testinfo.get('preInitializeProfile', 0))
+        self.open_url_after_launch = bool(testinfo.get('openURLAfterLaunch'))
 
         # If we're logging checkerboard stats, set that up here (seems like it
         # takes a second or so to accept the new setting, so let's do that here --
@@ -337,8 +338,8 @@ class AndroidWebTest(WebTest):
 
 class AndroidWebStartupTest(AndroidWebTest):
 
-    def __init__(self, **kwargs):
-        super(AndroidWebStartupTest, self).__init__(**kwargs)
+    def __init__(self, testinfo, appname=None, **kwargs):
+        super(AndroidWebStartupTest, self).__init__(testinfo, appname=appname, **kwargs)
         # don't want to track start frames for startup tests
         self.track_start_frame = False
 
@@ -388,11 +389,11 @@ class AndroidWebStartupTest(AndroidWebTest):
 
 class AndroidAppStartupTest(Test):
 
-    def __init__(self, appname=None, activity=None, intent=None, **kwargs):
-        super(AndroidAppStartupTest, self).__init__(**kwargs)
+    def __init__(self, testinfo, appname=None, intent=None, **kwargs):
+        super(AndroidAppStartupTest, self).__init__(testinfo, **kwargs)
         self.appname = appname
-        self.activity = activity
-        self.intent = intent
+        self.activity = testinfo.get('activity')
+        self.intent = testinfo.get('intent')
 
         # precondition: app should not be running. abort if it is
         if self.device.processExist(self.appname):
@@ -409,8 +410,12 @@ class AndroidAppStartupTest(Test):
 
 class B2GTest(Test):
 
-    def __init__(self, **kwargs):
-        super(B2GTest, self).__init__(**kwargs)
+    def __init__(self, testinfo, track_start_frame=True, track_end_frame=True,
+                 **kwargs):
+        super(B2GTest, self).__init__(testinfo,
+                                      track_start_frame=track_start_frame,
+                                      track_end_frame=track_end_frame,
+                                      **kwargs)
         self.log("Setting up device")
         self.device.setupDHCP()
 
@@ -437,8 +442,8 @@ class B2GTest(Test):
 
 class B2GWebTest(B2GTest, WebTest):
 
-    def __init__(self, **kwargs):
-        super(B2GWebTest, self).__init__(**kwargs)
+    def __init__(self, testinfo, **kwargs):
+        super(B2GWebTest, self).__init__(testinfo, **kwargs)
 
     def run(self):
         # start the tests by navigating to the url

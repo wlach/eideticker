@@ -3,10 +3,10 @@ import time
 from gaiatest.gaia_test import GaiaApps
 
 class Test(B2GTest):
-    def __init__(self, appname=None, **kwargs):
-        super(Test, self).__init__(**kwargs)
+    def __init__(self, testinfo, **kwargs):
+        super(Test, self).__init__(testinfo, **kwargs)
 
-        self.appname = appname
+        self.appname = testinfo['appname']
 
     def run(self):
         apps = GaiaApps(self.device.marionette)
