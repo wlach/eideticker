@@ -177,12 +177,13 @@ class EidetickerMixin(object):
 
         return coords
 
-    def _getDragEvents(self, touch_start, touch_end, duration=1000, num_steps=5):
-        touch_start = self._transformXY(touch_start)
-        touch_end = self._transformXY(touch_end)
+    def _getDragEvent(self, touchstart_x1, touchstart_y1, touchend_x1,
+                       touchend_y1, duration=1000, num_steps=5):
+        touchstart = self._transformXY((touchstart_x1, touchstart_y1))
+        touchend = self._transformXY((touchend_x1, touchend_y1))
 
-        return "drag %s %s %s %s %s %s" % (int(touch_start[0]), int(touch_start[1]),
-                                           int(touch_end[0]), int(touch_end[1]),
+        return "drag %s %s %s %s %s %s" % (int(touchstart[0]), int(touchstart[1]),
+                                           int(touchend[0]), int(touchend[1]),
                                            num_steps, duration)
 
     def _getSleepEvent(self, duration=1.0):
@@ -201,7 +202,7 @@ class EidetickerMixin(object):
         if direction == "up":
             (p1, p2) = (p2, p1)
         for i in range(int(numtimes)):
-            events.append(self._getDragEvents(p1, p2, duration,
+            events.append(self._getDragEvent(p1[0], p1[1], p2[0], p2[1], duration,
                                               int(numsteps)))
         return events
 
@@ -213,7 +214,7 @@ class EidetickerMixin(object):
         if direction == "left":
             (x1, x2) = (x2, x1)
         for i in range(int(numtimes)):
-            events.append(self._getDragEvents((x1, y), (x2, y), duration,
+            events.append(self._getDragEvent(x1, y, x2, y, duration,
                                               int(numsteps)))
         return events
 
@@ -235,6 +236,8 @@ class EidetickerMixin(object):
             cmdevents = self._getSwipeEvents("left", *args)
         elif cmd == "swipe_right":
             cmdevents = self._getSwipeEvents("right", *args)
+        elif cmd == "drag":
+            cmdevents = [self._getDragEvent(*args)]
         elif cmd == "tap":
             cmdevents = [self._getTapEvent(*args)]
         elif cmd == "double_tap":

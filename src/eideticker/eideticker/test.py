@@ -10,6 +10,7 @@ import urlparse
 import time
 import imp
 import os
+from gaiatest.gaia_test import GaiaApps
 from log import LoggingMixin
 
 class TestException(Exception):
@@ -450,3 +451,26 @@ class B2GWebTest(B2GTest, WebTest):
         self.log("Navigating to %s" % self.url)
         self.device.marionette.execute_script("window.location.href='%s';" % self.url)
         self.wait()
+
+class B2GAppActionTest(B2GTest):
+    def __init__(self, testinfo, appname, **kwargs):
+        super(B2GAppActionTest, self).__init__(testinfo, **kwargs)
+        self.appname = appname
+        # parent class must define self.cmds
+
+    def run(self):
+        apps = GaiaApps(self.device.marionette)
+
+        app = apps.launch(self.appname)
+        assert app.frame_id is not None
+        time.sleep(5)
+        self.start_capture()
+        self.test_started()
+        self.log("Running commands")
+        self.device.executeCommands(self.cmds)
+        self.log("Executed commands, finishing test")
+        self.test_finished()
+        self.end_capture()
+
+        # cleanup: switch back to main frame
+        self.device.marionette.switch_to_frame()
