@@ -7,7 +7,6 @@
 import json
 import sys
 import eideticker
-import mozdevice
 
 
 def main(args=sys.argv[1:]):
