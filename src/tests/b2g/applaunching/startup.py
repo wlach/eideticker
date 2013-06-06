@@ -11,6 +11,11 @@ class Test(B2GTest):
     def run(self):
         apps = GaiaApps(self.device.marionette)
 
+        # theoretically it would be cleaner to set this specifically for the
+        # camera test, but that seemed additional complication for no real
+        # gain
+        apps.set_permission('Camera', 'geolocation', 'deny')
+
         self.start_capture()
         self.test_started()
         app = apps.launch(self.appname)

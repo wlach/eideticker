@@ -5,5 +5,6 @@ class Test(B2GAppActionTest):
         B2GAppActionTest.__init__(self, testinfo, appname, **kwargs)
 
         self.cmds = []
-        for i in range(20):
+        for i in range(5):
             self.cmds.append(['scroll_down'])
+            self.cmds.append(['scroll_up'])
