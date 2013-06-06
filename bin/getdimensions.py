@@ -3,6 +3,7 @@
 import eideticker
 import mozhttpd
 import moznetwork
+import multiprocessing
 import sys
 import time
 import videocapture
@@ -42,7 +43,7 @@ class CaptureServer(object):
     def convert_capture(self):
         if self.capture_controller:
             self.capture_controller.convert_capture(self.start_frame,
-                                                    self.end_frame)
+                                                    self.end_frame, create_webm=False)
 
 CAPTURE_DIR = os.path.join(os.path.dirname(__file__), "../captures")
 
@@ -126,26 +127,41 @@ def main(args=sys.argv[1:]):
 
     print "Processing capture..."
     capture = videocapture.Capture(capture_file)
-    squares = []
-    largest_square = None
-    largest_square_area = None
-    for (i, framenum) in enumerate(range(1, capture.num_frames)):
+
+    result_queue = multiprocessing.Queue()
+
+    def _get_biggest_framediff_square(result_queue, capture, framenum):
         imgarray = videocapture.get_framediff_imgarray(capture, framenum-1, framenum,
                                                        threshold=8.0)
-        squares.append(square.get_biggest_square([255,0,0],
-                                                 imgarray,
-                                                 x_tolerance_min=100,
-                                                 x_tolerance_max=100,
-                                                 handle_multiple_scanlines=True))
-        if squares[i]:
-            square_area = square.get_area(squares[i])
-        else:
-            square_area = 0
-        if largest_square is None or largest_square_area < square_area:
-            largest_square = i
-            largest_square_area = square_area
+        biggest = square.get_biggest_square([255,0,0],
+                                            imgarray,
+                                            x_tolerance_min=100,
+                                            x_tolerance_max=100,
+                                            handle_multiple_scanlines=True)
+        if biggest:
+            result_queue.put(biggest)
+
+    multiprocesses = []
+    for (i, framenum) in enumerate(range(3, capture.num_frames)):
+        p = multiprocessing.Process(target=_get_biggest_framediff_square, args=(result_queue, capture, framenum))
+        p.start()
+        multiprocesses.append(p)
+        if len(multiprocesses) == 8:
+            for p in multiprocesses:
+                p.join()
+            multiprocesses = []
+
+    for p in multiprocesses:
+        p.join()
+
+    largest_square = None
+    while not result_queue.empty():
+        s = result_queue.get()
+        if not largest_square or square.get_area(s) > square.get_area(largest_square):
+            largest_square = s
+
     if largest_square is not None:
-        print "Capture area: %s (frame: %s)" % (squares[largest_square], largest_square)
+        print "Capture area: %s" % largest_square
     else:
         print "Couldn't find capture area"
 

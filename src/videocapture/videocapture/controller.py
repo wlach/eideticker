@@ -182,7 +182,7 @@ class CaptureController(object):
         self.capture_process.join()
         self.capture_process = None
 
-    def convert_capture(self, start_frame, end_frame):
+    def convert_capture(self, start_frame, end_frame, create_webm=True):
         self.log("Converting capture...")
         # wait for capture to finish if it has not already
         if self.capturing:
@@ -287,12 +287,13 @@ class CaptureController(object):
         for p in multiprocesses:
             p.join()
 
-        self.log("Creating movie ...")
-        moviefile = tempfile.NamedTemporaryFile(dir=self.custom_tempdir,
-                                                suffix=".webm")
-        subprocess.Popen(('ffmpeg', '-y', '-r', '60', '-i',
-                          os.path.join(rewritten_imagedir, '%d.png'),
-                          moviefile.name), close_fds=True).wait()
+        if create_webm:
+            self.log("Creating movie ...")
+            moviefile = tempfile.NamedTemporaryFile(dir=self.custom_tempdir,
+                                                    suffix=".webm")
+            subprocess.Popen(('ffmpeg', '-y', '-r', '60', '-i',
+                              os.path.join(rewritten_imagedir, '%d.png'),
+                              moviefile.name), close_fds=True).wait()
 
         self.log("Writing final capture '%s'..." % self.output_filename)
         zipfile = ZipFile(self.output_filename, 'a')
@@ -303,7 +304,8 @@ class CaptureController(object):
                                            'version': 1 },
                                          **self.capture_metadata)))
 
-        zipfile.writestr('movie.webm', moviefile.read())
+        if create_webm:
+            zipfile.writestr('movie.webm', moviefile.read())
 
         for imagefilename in os.listdir(rewritten_imagedir):
             zipfile.writestr("images/%s" % imagefilename,
