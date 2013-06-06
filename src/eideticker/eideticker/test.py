@@ -126,6 +126,7 @@ class Test(LoggingMixin):
             self.test_finished()
             self.end_capture()
         elif not self.finished_capture:
+            self.log("Did not finish test / capture. Error!")
             raise Exception("Did not finish test / capture! Error!")
 
     def start_capture(self):

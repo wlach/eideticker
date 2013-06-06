@@ -188,6 +188,7 @@ class AndroidBrowserRunner(log.LoggingMixin):
         self.remote_sps_profile_location = "/mnt/sdcard/profile_0_%s.txt" % appPID
         # Saving goes through the main event loop so give it time to flush
         time.sleep(10)
+        self.log("SPS profile should be saved")
 
     def process_profile(self, profile_file):
         with tempfile.NamedTemporaryFile() as temp_profile_file:
