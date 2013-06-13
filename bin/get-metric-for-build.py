@@ -5,7 +5,6 @@ import eideticker
 import json
 import os
 import re
-import subprocess
 import sys
 import tempfile
 import time
@@ -27,17 +26,18 @@ def parse_checkerboard_log(fname):
 
     return checkerboarding_percent_totals
 
-def run_test(device, outputdir, outputfile, test, url_params, num_runs,
+def runtest(device_prefs, capture_device, outputdir, outputfile, testname, url_params, num_runs,
              startup_test, no_capture, get_internal_checkerboard_stats,
              apk=None, appname = None, appdate = None, enable_profiling=False,
-             extra_prefs="{}", dmtype="adb", devicetype="android", host=None,
-             port=None):
+             extra_prefs={}):
+    device = None
     if apk:
         appinfo = eideticker.get_fennec_appinfo(apk)
         appname = appinfo['appname']
         print "Installing %s (version: %s, revision %s)" % (appinfo['appname'],
                                                             appinfo['version'],
                                                             appinfo['revision'])
+        device = eideticker.getDevice(**device_prefs)
         device.updateApp(apk)
     else:
         appinfo = None
@@ -45,8 +45,9 @@ def run_test(device, outputdir, outputfile, test, url_params, num_runs,
     captures = []
 
     for i in range(num_runs):
-        # Kill any existing instances of the processes
-        device.killProcess(appname)
+        # Kill any existing instances of the processes (for Android)
+        if device:
+            device.killProcess(appname)
 
         # Now run the test
         curtime = int(time.time())
@@ -56,30 +57,24 @@ def run_test(device, outputdir, outputfile, test, url_params, num_runs,
         if enable_profiling:
             profile_file = os.path.join(PROFILE_DIR,
                                         "profile-%s-%s.zip" % (appname, curtime))
-
-        args = ["runtest.py", "--url-params", url_params,
-                "--extra-prefs", extra_prefs, "--app-name", appname, test]
-        if get_internal_checkerboard_stats:
-            checkerboard_logfile = tempfile.NamedTemporaryFile()
-            args.extend(["--checkerboard-log-file", checkerboard_logfile.name])
-        if no_capture:
-            args.extend(["--no-capture"])
         else:
-            args.extend(["--capture-file", capture_file])
-        if enable_profiling:
-            args.extend(["--profile-file", profile_file])
-        if dmtype:
-            args.extend(["-m", dmtype])
-        if devicetype:
-            args.extend(["-d", devicetype])
-        if host:
-            args.extend(["--host", host])
-        if port:
-            args.extend(["--port", port])
-        print args
-        retval = subprocess.call(args)
-        if retval != 0:
-            raise Exception("Failed to run test %s for %s" % (test, appname))
+            profile_file = None
+
+        if get_internal_checkerboard_stats:
+            checkerboard_log_file = tempfile.NamedTemporaryFile()
+        else:
+            checkerboard_log_file = None
+
+        current_date = time.strftime("%Y-%m-%d")
+        capture_name = "%s - %s (taken on %s)" % (testname, appname, current_date)
+
+        eideticker.run_test(testname, capture_device,
+                            appname, capture_name, device_prefs,
+                            extra_prefs=extra_prefs,
+                            checkerboard_log_file=checkerboard_log_file,
+                            profile_file=profile_file,
+                            no_capture=no_capture,
+                            capture_file=capture_file)
 
         capture_result = {}
         if not no_capture:
@@ -103,7 +98,7 @@ def run_test(device, outputdir, outputfile, test, url_params, num_runs,
             capture_result['profile'] = profile_file
 
         if get_internal_checkerboard_stats:
-            internal_checkerboard_totals = parse_checkerboard_log(checkerboard_logfile.name)
+            internal_checkerboard_totals = parse_checkerboard_log(checkerboard_log_file.name)
             capture_result['internalcheckerboard'] = internal_checkerboard_totals
 
         captures.append(capture_result)
@@ -153,7 +148,7 @@ def run_test(device, outputdir, outputfile, test, url_params, num_runs,
         print
 
     if outputfile:
-        resultdict = { 'title': test, 'data': {} }
+        resultdict = { 'title': testname, 'data': {} }
         if os.path.isfile(outputfile):
             resultdict.update(json.loads(open(outputfile).read()))
 
@@ -166,7 +161,7 @@ def run_test(device, outputdir, outputfile, test, url_params, num_runs,
 
 def main(args=sys.argv[1:]):
     usage = "usage: %prog <test> [appname1] [appname2] ..."
-    parser = eideticker.OptionParser(usage=usage)
+    parser = eideticker.CaptureOptionParser(usage=usage)
     parser.add_option("--num-runs", action="store",
                       type = "int", dest = "num_runs",
                       default=1,
@@ -226,17 +221,17 @@ def main(args=sys.argv[1:]):
     appnames = []
     apks = []
     if options.start_date and options.end_date and len(args) == 1:
-        test = args[0]
+        testname = args[0]
         start_date = eideticker.BuildRetriever.get_date(options.start_date)
         end_date = eideticker.BuildRetriever.get_date(options.end_date)
         days=(end_date-start_date).days
         for numdays in range(days+1):
             dates.append(start_date+datetime.timedelta(days=numdays))
     elif options.date and len(args) == 1:
-        test = args[0]
+        testname = args[0]
         dates = [eideticker.BuildRetriever.get_date(options.date)]
     elif not options.date and len(args) >= 2:
-        test = args[0]
+        testname = args[0]
         if options.use_apks:
             apks = args[1:]
         else:
@@ -244,8 +239,12 @@ def main(args=sys.argv[1:]):
     elif not options.date or (not options.start_date and not options.end_date):
         parser.error("Must specify date, date range, a set of appnames (e.g. org.mozilla.fennec) or a set of apks (if --use-apks is specified)")
 
-    devicePrefs = eideticker.getDevicePrefs(options)
-    device = eideticker.getDevice(**devicePrefs)
+    device_prefs = eideticker.getDevicePrefs(options)
+    try:
+        extra_prefs = json.loads(options.extra_prefs)
+    except ValueError:
+        parser.error("Error processing extra preferences: not valid JSON!")
+        raise
 
     if options.outputdir:
         outputfile = os.path.join(options.outputdir, "metric-test-%s.json" % time.time())
@@ -254,45 +253,42 @@ def main(args=sys.argv[1:]):
 
     if appnames:
         for appname in appnames:
-            run_test(device, options.outputdir, outputfile, test,
-                     options.url_params,
-                     options.num_runs,
-                     options.startup_test,
-                     options.no_capture,
-                     options.get_internal_checkerboard_stats,
-                     appname=appname,
-                     enable_profiling=options.enable_profiling,
-                     extra_prefs=options.extra_prefs,
-                     **devicePrefs)
+            runtest(device_prefs, options.capture_device, options.outputdir, outputfile, testname,
+                    options.url_params,
+                    options.num_runs,
+                    options.startup_test,
+                    options.no_capture,
+                    options.get_internal_checkerboard_stats,
+                    appname=appname,
+                    enable_profiling=options.enable_profiling,
+                    extra_prefs=extra_prefs)
     elif apks:
         for apk in apks:
-            run_test(device, options.outputdir,
-                     outputfile, test,
-                     options.url_params,
-                     options.num_runs,
-                     options.startup_test,
-                     options.no_capture,
-                     options.get_internal_checkerboard_stats, apk=apk,
-                     enable_profiling=options.enable_profiling,
-                     extra_prefs=options.extra_prefs,
-                     **devicePrefs)
+            runtest(device_prefs, options.capture_device, options.outputdir,
+                    outputfile, testname,
+                    options.url_params,
+                    options.num_runs,
+                    options.startup_test,
+                    options.no_capture,
+                    options.get_internal_checkerboard_stats, apk=apk,
+                    enable_profiling=options.enable_profiling,
+                    extra_prefs=extra_prefs)
     else:
         br = eideticker.BuildRetriever()
         productname = "nightly"
         product = eideticker.get_product(productname)
         for date in dates:
             apk = br.get_build(product, date)
-            run_test(device, options.outputdir,
-                     outputfile, test,
-                     options.url_params,
-                     options.num_runs,
-                     options.startup_test,
-                     options.no_capture,
-                     options.get_internal_checkerboard_stats, apk=apk,
-                     appdate=date,
-                     enable_profiling=options.enable_profiling,
-                     extra_prefs=options.extra_prefs,
-                     **devicePrefs)
+            runtest(device_prefs, options.capture_device, options.outputdir,
+                    outputfile, testname,
+                    options.url_params,
+                    options.num_runs,
+                    options.startup_test,
+                    options.no_capture,
+                    options.get_internal_checkerboard_stats, apk=apk,
+                    appdate=date,
+                    enable_profiling=options.enable_profiling,
+                    extra_prefs=extra_prefs)
 
 
 main()

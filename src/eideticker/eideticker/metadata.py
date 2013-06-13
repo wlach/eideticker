@@ -16,7 +16,10 @@ def get_appinfo(fh):
         revision = None
     version = config.get('App', 'Version')
     (year, month, day) = (buildid[0:4], buildid[4:6], buildid[6:8])
-    sourcerepo = config.get('App', 'SourceRepository')
+    try:
+       sourcerepo = config.get('App', 'SourceRepository')
+    except ConfigParser.NoOptionError:
+       sourcerepo = None
     return { 'appdate':  "%s-%s-%s" % (year, month, day),
              'buildid': buildid,
              'revision': revision,
