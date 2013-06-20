@@ -1,7 +1,7 @@
 language: python
 python:
   - "2.7"
-install: ./bootstrap.sh
+install: sudo apt-get install -y python-virtualenv g++ ffmpeg && ./bootstrap.sh
 script: python bin/list-tests.py
 notifications:
   # irc notifications not working with irc.mozilla.org, see: https://github.com/travis-ci/travis-ci/issues/436
