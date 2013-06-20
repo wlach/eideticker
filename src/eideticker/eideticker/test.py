@@ -88,7 +88,7 @@ class Test(LoggingMixin):
                  capture_file = None,
                  capture_controller=None,
                  capture_metadata={}, tempdir=None,
-                 no_capture=False, track_start_frame=False,
+                 track_start_frame=False,
                  track_end_frame=False, **kwargs):
         self.testpath_rel = testpath_rel
         self.device = device
@@ -97,7 +97,6 @@ class Test(LoggingMixin):
         self.capture_metadata = capture_metadata
         self.capture_timeout = int(testinfo['captureTimeout'])
         self.tempdir = tempdir
-        self.no_capture = no_capture
         self.track_start_frame = track_start_frame
         self.track_end_frame = track_end_frame
 

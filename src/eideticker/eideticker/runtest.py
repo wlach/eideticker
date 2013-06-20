@@ -49,6 +49,8 @@ def run_test(testkey, capture_device, appname, capture_name,
     if not capture_file and not no_capture:
         capture_file = os.path.join(CAPTURE_DIR, "capture-%s.zip" %
                                     datetime.datetime.now().isoformat())
+    elif no_capture:
+        capture_file = None
 
     # Create a device object to interface with the phone
     device = getDevice(**device_prefs)
