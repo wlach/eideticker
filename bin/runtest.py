@@ -45,6 +45,10 @@ def main(args=sys.argv[1:]):
     parser.add_option("--request-log-file", action="store",
                       type="string", dest="request_log_file",
                       help="Collect a log of HTTP requests during tests")
+    parser.add_option("--extra-env-vars", action="store", dest="extra_env_vars",
+                      default="",
+                      help='Extra environment variables to set in '
+                      '"VAR1=VAL1 VAR2=VAL2" format')
 
     options, args = parser.parse_args()
     parser.validate_options(options)
@@ -60,6 +64,12 @@ def main(args=sys.argv[1:]):
         parser.error("Error processing extra preferences: not valid JSON!")
         raise
 
+    keyvals = options.extra_env_vars.split()
+    extra_env_vars = {}
+    for kv in keyvals:
+        (var, _, val) = kv.partition("=")
+        extra_env_vars[var] = val
+
     capture_area = None
     if options.capture_area:
         # we validated this previously...
@@ -70,6 +80,7 @@ def main(args=sys.argv[1:]):
                         options.appname,
                         options.capture_name, device_prefs,
                         extra_prefs=extra_prefs,
+                        extra_env_vars=extra_env_vars,
                         test_type=options.test_type,
                         profile_file=options.profile_file,
                         request_log_file=options.request_log_file,

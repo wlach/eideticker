@@ -257,6 +257,7 @@ class WebTest(Test):
 class AndroidWebTest(WebTest):
 
     def __init__(self, testinfo, appname = None, extra_prefs = {},
+                 extra_env_vars = {},
                  profile_file = None,
                  gecko_profiler_addon_dir = None,
                  checkerboard_log_file = None,
@@ -295,7 +296,8 @@ class AndroidWebTest(WebTest):
                                                       open_url_after_launch = self.open_url_after_launch,
                                                       enable_profiling=bool(self.profile_file),
                                                       gecko_profiler_addon_dir=gecko_profiler_addon_dir,
-                                                      extra_prefs=self.extra_prefs)
+                                                      extra_prefs=self.extra_prefs,
+                                                      extra_env_vars=extra_env_vars)
 
     def cleanup(self):
         # Clean up checkerboard logging preferences
