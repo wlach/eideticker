@@ -19,7 +19,7 @@ def get_test_manifest():
 
 def run_test(testkey, capture_device, appname, capture_name,
              device_prefs, extra_prefs={}, test_type=None, profile_file=None,
-             request_log_file=None, checkerboard_log_file=None,
+             request_log_file=None, checkerboard_log_file=None, extra_env_vars={},
              capture_area=None, no_capture=False, capture_file=None):
     manifest = get_test_manifest()
 
@@ -91,6 +91,7 @@ def run_test(testkey, capture_device, appname, capture_name,
                     testtype = testtype,
                     testpath_rel = testpath_rel, device = device,
                     actions = actions, extra_prefs = extra_prefs,
+                    extra_env_vars = extra_env_vars,
                     capture_file = capture_file,
                     capture_controller = capture_controller,
                     capture_metadata = capture_metadata,

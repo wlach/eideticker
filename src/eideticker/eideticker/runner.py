@@ -19,7 +19,8 @@ class AndroidBrowserRunner(log.LoggingMixin):
 
     def __init__(self, dm, appname, url, tmpdir, preinitialize_user_profile=False,
                  open_url_after_launch=False, enable_profiling=False,
-                 gecko_profiler_addon_dir=None, extra_prefs={}):
+                 gecko_profiler_addon_dir=None, extra_prefs={},
+                 extra_env_vars={}):
         self.dm = dm
         self.appname = appname
         self.url = url
@@ -30,6 +31,7 @@ class AndroidBrowserRunner(log.LoggingMixin):
         self.gecko_profiler_addon_dir = gecko_profiler_addon_dir
         self.extra_prefs = extra_prefs
         self.remote_profile_dir = None
+        self.extra_env_vars = extra_env_vars
 
         activity_mappings = {
             'com.android.browser': '.BrowserActivity',
@@ -153,7 +155,8 @@ class AndroidBrowserRunner(log.LoggingMixin):
             if self.enable_profiling:
                 mozEnv = { "MOZ_PROFILER_STARTUP": "true" }
             else:
-                mozEnv = None
+                mozEnv = {}
+            mozEnv.update(self.extra_env_vars)
 
             # launch fennec for reals
             self.launch_fennec(mozEnv, url)
