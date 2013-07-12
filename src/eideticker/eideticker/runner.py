@@ -47,7 +47,8 @@ class AndroidBrowserRunner(log.LoggingMixin):
         else:
             self.activity = activity_mappings[self.appname]
 
-    def get_profile_and_symbols(self, target_zip):
+    # return a temporary directory containing profile, apk, and shared libs
+    def get_profile_and_symbols(self):
         if not self.enable_profiling:
            raise Exception("Can't get profile if it isn't started with the profiling option")
 
@@ -93,11 +94,7 @@ class AndroidBrowserRunner(log.LoggingMixin):
                      self.dm.getFile(remotefilename, lib_path)
                      files_to_package.append(lib_path);
 
-        with zipfile.ZipFile(target_zip, "w") as zip_file:
-            for file_to_package in files_to_package:
-                zip_file.write(file_to_package, os.path.basename(file_to_package))
-
-        shutil.rmtree(profiledir)
+        return profiledir
 
     def initialize_user_profile(self):
         # This is broken out from start() so we can call it explicitly if
@@ -194,15 +191,55 @@ class AndroidBrowserRunner(log.LoggingMixin):
         self.log("SPS profile should be saved")
 
     def process_profile(self, profile_file):
-        with tempfile.NamedTemporaryFile() as temp_profile_file:
-            self.get_profile_and_symbols(temp_profile_file.name)
-            self.dm.removeFile(self.remote_sps_profile_location)
-            subprocess.check_call(["./symbolicate.sh",
-                                   os.path.abspath(temp_profile_file.name),
-                                   os.path.abspath(profile_file)],
-                                  cwd=self.gecko_profiler_addon_dir)
+        xrebindir = os.path.join(os.environ['XRE'], 'bin') if 'XRE' in os.environ else ''
+        szippath = os.environ['SZIP'] if 'SZIP' in os.environ else 'szip'
+        addondir = self.gecko_profiler_addon_dir
 
+        tempdir = self.get_profile_and_symbols()
+        symbolapk = os.path.join(tempdir, 'symbol.apk')
+        if os.path.exists(symbolapk):
+            # extract and un-szip shared libs
+            zipfile.ZipFile(symbolapk).extractall(tempdir)
+            # find <dir> -wholename '<dir>/*/*.so' -exec szip -d {} \; -exec mv {} <dir> \;
+            subprocess.check_call(['find', tempdir,
+                '-wholename', os.path.join(tempdir, '*', '*.so'),
+                '-exec', szippath, '-d', '{}', ';',
+                '-exec', 'mv', '{}', tempdir, ';'])
 
+        # run the symbolicating code
+        symbolicator = subprocess.Popen([
+            os.path.join(xrebindir, 'run-mozilla.sh'), os.path.join(xrebindir, 'xpcshell'),
+            '-f', os.path.join('data', 'ProgressReporter.js'),
+            '-f', os.path.join('data', 'SymbolicateXPCShell.js'),
+            '-f', os.path.join('data', 'CmdRunWorker.js'),
+            '-f', os.path.join('data', 'SymbolicateWorker.js'),
+            os.path.join('data', 'SymbolicateMain.js'),
+            os.path.join(tempdir, 'fennec_profile.txt'), tempdir, self.appname],
+            cwd=addondir,
+            stdout=subprocess.PIPE)
+
+        symbolicated_profile = None
+        line = symbolicator.stdout.readline()
+        while line:
+            line = line.strip()
+            if line.startswith('{') and line.endswith('}'):
+                # assume JSON format
+                symbolicated_profile = line
+            else:
+                self.log('Symbolicate: ' + line)
+            line = symbolicator.stdout.readline()
+
+        if symbolicator.wait() == 0:
+            if symbolicated_profile:
+                with zipfile.ZipFile(profile_file, 'w') as out:
+                    out.writestr('symbolicated_profile.txt', symbolicated_profile)
+            else:
+                raise Exception('Failed to get symbolication output')
+        else:
+            raise Exception('Failed to symbolicate (returned %d)' % symbolicator.returncode)
+
+        # safe to get rid of temp dir
+        shutil.rmtree(tempdir)
 
     def cleanup(self):
         # stops the process and cleans up after a run
