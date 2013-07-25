@@ -7,7 +7,6 @@ import sys
 import time
 import videocapture
 import uuid
-import manifestparser
 import xml
 import StringIO
 
@@ -149,7 +148,8 @@ def main(args=sys.argv[1:]):
                       action="store_true", dest = "enable_profiling",
                       help = "Create SPS profile to go along with capture")
     parser.add_option("--device-id", action="store", dest="device_id",
-                      help="id of device (used in output json)")
+                      help="id of device (used in output json)",
+                      default=os.environ.get('DEVICE_ID'))
     parser.add_option("--apk", action="store", dest="apk",
                       help = "Product apk to get metadata from " \
                           "(Android-specific)")
@@ -184,8 +184,6 @@ def main(args=sys.argv[1:]):
     testinfo = [test for test in manifest.active_tests() if test['key'] == testkey][0]
 
     device_id = options.device_id
-    if not device_id:
-        device_id = os.environ.get('DEVICE_ID')
     if not device_id:
         print "ERROR: Must specify device id (either with --device-id or with DEVICE_ID environment variable)"
         sys.exit(1)

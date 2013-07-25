@@ -5,7 +5,6 @@ import glob
 import optparse
 import os
 import re
-import sys
 import time
 
 usage = "usage: %prog [options] [directory1] [directory2]"
