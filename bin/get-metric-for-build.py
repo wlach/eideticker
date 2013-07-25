@@ -29,7 +29,7 @@ def parse_checkerboard_log(fname):
 def runtest(device_prefs, capture_device, outputdir, outputfile, testname, url_params, num_runs,
              startup_test, no_capture, get_internal_checkerboard_stats,
              apk=None, appname = None, appdate = None, enable_profiling=False,
-             extra_prefs={}):
+             extra_prefs={}, extra_env_vars={}):
     device = None
     if apk:
         appinfo = eideticker.get_fennec_appinfo(apk)
@@ -71,6 +71,7 @@ def runtest(device_prefs, capture_device, outputdir, outputfile, testname, url_p
         eideticker.run_test(testname, capture_device,
                             appname, capture_name, device_prefs,
                             extra_prefs=extra_prefs,
+                            extra_env_vars=extra_env_vars,
                             checkerboard_log_file=checkerboard_log_file,
                             profile_file=profile_file,
                             no_capture=no_capture,
@@ -191,6 +192,10 @@ def main(args=sys.argv[1:]):
                       default="{}",
                       help="Extra profile preference for Firefox browsers. " \
                           "Must be passed in as a JSON dictionary")
+    parser.add_option("--extra-env-vars", action="store", dest="extra_env_vars",
+                      default="",
+                      help='Extra environment variables to set in '
+                      '"VAR1=VAL1 VAR2=VAL2" format')
     parser.add_option("--use-apks", action="store_true", dest="use_apks",
                       help="use and install android APKs as part of test (instead of specifying appnames)")
     parser.add_option("--date", action="store", dest="date",
@@ -246,6 +251,12 @@ def main(args=sys.argv[1:]):
         parser.error("Error processing extra preferences: not valid JSON!")
         raise
 
+    keyvals = options.extra_env_vars.split()
+    extra_env_vars = {}
+    for kv in keyvals:
+        (var, _, val) = kv.partition("=")
+        extra_env_vars[var] = val
+
     if options.outputdir:
         outputfile = os.path.join(options.outputdir, "metric-test-%s.json" % time.time())
     else:
@@ -261,7 +272,8 @@ def main(args=sys.argv[1:]):
                     options.get_internal_checkerboard_stats,
                     appname=appname,
                     enable_profiling=options.enable_profiling,
-                    extra_prefs=extra_prefs)
+                    extra_prefs=extra_prefs,
+                    extra_env_vars=extra_env_vars)
     elif apks:
         for apk in apks:
             runtest(device_prefs, options.capture_device, options.outputdir,
@@ -272,7 +284,8 @@ def main(args=sys.argv[1:]):
                     options.no_capture,
                     options.get_internal_checkerboard_stats, apk=apk,
                     enable_profiling=options.enable_profiling,
-                    extra_prefs=extra_prefs)
+                    extra_prefs=extra_prefs,
+                    extra_env_vars=extra_env_vars)
     else:
         br = eideticker.BuildRetriever()
         productname = "nightly"
@@ -288,7 +301,8 @@ def main(args=sys.argv[1:]):
                     options.get_internal_checkerboard_stats, apk=apk,
                     appdate=date,
                     enable_profiling=options.enable_profiling,
-                    extra_prefs=extra_prefs)
+                    extra_prefs=extra_prefs,
+                    extra_env_vars=extra_env_vars)
 
 
 main()
