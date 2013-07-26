@@ -150,6 +150,10 @@ def main(args=sys.argv[1:]):
     parser.add_option("--device-id", action="store", dest="device_id",
                       help="id of device (used in output json)",
                       default=os.environ.get('DEVICE_ID'))
+    parser.add_option("--device-name", action="store", dest="device_name",
+                      help="name of device to display in dashboard (if not "
+                      "specified, display model name)",
+                      default=os.environ.get('DEVICE_NAME'))
     parser.add_option("--apk", action="store", dest="apk",
                       help = "Product apk to get metadata from " \
                           "(Android-specific)")
@@ -217,8 +221,12 @@ def main(args=sys.argv[1:]):
     tests[testkey] = { 'shortDesc': testinfo['shortDesc'],
                        'defaultMeasure': testinfo['defaultMeasure'] }
 
+    device_name = options.device_name
+    if not device_name:
+        device_name = device.model
+
     if options.devicetype == "android":
-        devices[device_id] = { 'name': device.model,
+        devices[device_id] = { 'name': device_name,
                                'version': device.getprop('ro.build.version.release') }
         if options.apk:
             if options.app_version:
@@ -239,7 +247,7 @@ def main(args=sys.argv[1:]):
         if not options.sources_xml:
             raise Exception("Must specify --sources-xml on b2g!")
 
-        devices[device_id] = { 'name': device.model }
+        devices[device_id] = { 'name': device_name }
         appinicontents = device.pullFile('/system/b2g/application.ini')
         sfh = StringIO.StringIO(appinicontents)
         appinfo = eideticker.get_appinfo(sfh)
