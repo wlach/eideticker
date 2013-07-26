@@ -172,6 +172,10 @@ def main(args=sys.argv[1:]):
     options, args = parser.parse_args()
     parser.validate_options(options)
 
+    if len(args) != 3:
+        parser.print_usage()
+        sys.exit(1)
+
     (productname, testkey, outputdir) = args
     num_runs = 1
     if options.num_runs:
