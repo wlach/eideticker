@@ -55,7 +55,7 @@ function updateContent(testInfo, deviceId, testId, measureId) {
                                  }));
 
     // update graph
-    updateGraph(testData, measureId);
+    updateGraph(testInfo.shortDesc, testData, measureId);
 
     $('#measure-'+measureId).attr("selected", "true");
     $('#measure').change(function() {
@@ -66,7 +66,7 @@ function updateContent(testInfo, deviceId, testId, measureId) {
   });
 }
 
-function updateGraph(rawdata, measure) {
+function updateGraph(title, rawdata, measure) {
   // show individual data points
   var graphdata = [];
   var color = 0;
@@ -112,6 +112,7 @@ function updateGraph(rawdata, measure) {
             'prevRevision': prevRevision,
             'buildId': sample.buildid,
             'profileURL': sample.profile,
+            'frameDiff': sample.frameDiff,
             'httpLog': sample.httpLog
           });
         }
@@ -233,8 +234,10 @@ function updateGraph(rawdata, measure) {
     plot.unhighlight();
     if (item) {
       var metadata = metadataHash[item.seriesIndex][item.dataIndex];
-      $('#datapoint-info').html(ich.graphDatapoint({ 'videoURL': metadata.videoURL,
+      $('#datapoint-info').html(ich.graphDatapoint({ 'graphTitle': title,
+                                                     'videoURL': metadata.videoURL,
                                                      'profileURL': metadata.profileURL,
+                                                     'frameDiff': metadata.frameDiff,
                                                      'httpLog': metadata.httpLog,
                                                      'measureName': measure,
                                                      'date': metadata.dateStr,

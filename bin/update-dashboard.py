@@ -82,9 +82,9 @@ def runtest(dm, device_prefs, capture_device, capture_area, product, appname,
     capture = videocapture.Capture(capture_file)
 
     # video file
-    video_path = os.path.join('videos', 'video-%s.webm' % time.time())
-    video_file = os.path.join(outputdir, video_path)
-    open(video_file, 'w').write(capture.get_video().read())
+    video_relpath = os.path.join('videos', 'video-%s.webm' % time.time())
+    video_path = os.path.join(outputdir, video_relpath)
+    open(video_path, 'w').write(capture.get_video().read())
 
     # need to initialize dict for product if not there already
     if not data['testdata'].get(productname):
@@ -97,7 +97,7 @@ def runtest(dm, device_prefs, capture_device, capture_area, product, appname,
         data['testdata'][productname][appdate] = []
 
     datapoint = { 'uuid': uuid.uuid1().hex,
-                  'video': video_path }
+                  'video': video_relpath }
     for key in ['appdate', 'buildid', 'revision', 'geckoRevision',
                 'gaiaRevision', 'buildRevision', 'sourceRepo']:
         if appinfo.get(key):
@@ -110,12 +110,12 @@ def runtest(dm, device_prefs, capture_device, capture_area, product, appname,
     if baseline:
         datapoint.update({ 'baseline': True })
 
+    threshold = 0
     if testinfo['type'] == 'startup' or testinfo['type'] == 'webstartup' or \
             testinfo['defaultMeasure'] == 'timetostableframe':
         datapoint['timetostableframe'] = videocapture.get_stable_frame_time(capture)
     else:
         # standard test metrics
-        threshold = 0
         if capture_device == "pointgrey":
             # even with median filtering, pointgrey captures tend to have a
             # bunch of visual noise -- try to compensate for this by setting
@@ -124,6 +124,13 @@ def runtest(dm, device_prefs, capture_device, capture_area, product, appname,
         datapoint['uniqueframes'] = videocapture.get_num_unique_frames(capture, threshold=threshold)
         datapoint['fps'] = videocapture.get_fps(capture, threshold=threshold)
         datapoint['checkerboard'] = videocapture.get_checkerboarding_area_duration(capture)
+
+    framediff_relpath = os.path.join('framediffs', 'framediff-%s.json' % time.time())
+    framediff_path = os.path.join(outputdir, framediff_relpath)
+    with open(framediff_path, 'w') as f:
+        framediff = videocapture.get_framediff_sums(capture, threshold=threshold)
+        f.write(json.dumps({ 'diffsums': framediff }))
+    datapoint['frameDiff'] = framediff_relpath
 
     if enable_profiling:
         datapoint['profile'] = profile_path
