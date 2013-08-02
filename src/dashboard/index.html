@@ -148,20 +148,20 @@
         {{/appDate}}
         {{#revision}}
         <dt>Revision</dt>
-        <dd><a href="{{sourceRepo}}/rev/{{revision}}">{{revision}}</a></dd>
+        <dd><a href="{{sourceRepo}}/rev/{{revision}}" target="_blank">{{revision}}</a></dd>
         {{/revision}}
         {{#prevRevision}}
         <dt>Pushlog</dt>
-        <dd><a href="{{sourceRepo}}/pushloghtml?fromchange={{prevRevision}}&tochange={{revision}}">{{prevRevision}} -> {{revision}}</a></dd>
+        <dd><a href="{{sourceRepo}}/pushloghtml?fromchange={{prevRevision}}&tochange={{revision}}" target="_blank">{{prevRevision}} -> {{revision}}</a></dd>
         {{/prevRevision}}
         {{#buildId}}
         {{#gaiaRevision}}
         <dt>Gaia Revision</dt>
-        <dd><a href="https://github.com/mozilla-b2g/gaia/commit/{{gaiaRevision}}">{{gaiaRevision}}</a></dd>
+        <dd><a href="https://github.com/mozilla-b2g/gaia/commit/{{gaiaRevision}}" target="_blank">{{gaiaRevision}}</a></dd>
         {{/gaiaRevision}}
         {{#buildRevision}}
         <dt>Build Revision</dt>
-        <dd><a href="https://github.com/mozilla-b2g/platform_build/commit/{{buildRevision}}">{{buildRevision}}</a></dd>
+        <dd><a href="https://github.com/mozilla-b2g/platform_build/commit/{{buildRevision}}" target="_blank">{{buildRevision}}</a></dd>
         {{/buildRevision}}
         <dt>Build Id</dt>
         <dd>{{buildId}}</dd>
@@ -170,13 +170,13 @@
         <dd>{{measureValue}}</dd>
       </dl>
       {{#profileURL}}
-      <p><a href="http://people.mozilla.com/~bgirard/cleopatra/?zippedProfile={{profileURL}}&videoCapture={{videoURL}}">View SPS profile</a></p>
+      <p><a href="http://people.mozilla.com/~bgirard/cleopatra/?zippedProfile={{profileURL}}&videoCapture={{videoURL}}" target="_blank">View SPS profile</a></p>
       {{/profileURL}}
       {{#frameDiff}}
-      <p><a href="framediff-view.html?title=Frame Difference {{graphTitle}} ({{date}})&video={{videoURL}}&framediff={{frameDiff}}">Frame difference view</a></p>
+      <p><a href="framediff-view.html?title=Frame Difference {{graphTitle}} ({{date}})&video={{videoURL}}&framediff={{frameDiff}}" target="_blank">Frame difference view</a></p>
       {{/frameDiff}}
       {{#httpLog}}
-      <p><a href="{{httpLog}}">HTTP Request Log</a></p>
+      <p><a href="{{httpLog}}" target="_blank">HTTP Request Log</a></p>
       {{/httpLog}}
     </div>
   </script>
