@@ -460,12 +460,21 @@ class B2GAppActionTest(B2GTest):
         self.appname = appname
         # parent class must define self.cmds
 
+    def prepare_app(self):
+        # no action in default implementation
+        pass
+
     def run(self):
         apps = GaiaApps(self.device.marionette)
 
+        # launch app and wait for it to "settle" so that it's ready for use
         app = apps.launch(self.appname)
         assert app.frame_id is not None
-        time.sleep(5)
+        time.sleep(5) # FIXME: can we do better than a timeout here?
+
+        # prepare the app for the test
+        self.prepare_app()
+
         self.start_capture()
         self.test_started()
         self.log("Running commands")
