@@ -262,28 +262,28 @@ function updateGraph(title, rawdata, measure) {
 
 $(function() {
   var graphData = {};
+
   $.getJSON('devices.json', function(deviceData) {
     var devices = deviceData['devices'];
     var deviceIds = Object.keys(devices);
 
-    deviceIds.forEach(function(deviceId) {
-      $('<li id="device-' + deviceId + '-li" deviceid= ' + deviceId + '><a>'+devices[deviceId].name+'</a></li>').appendTo($('#device-chooser'));
-
-      $.getJSON([deviceId, 'tests.json'].join('/'), function(testData) {
+    $.when.apply($, deviceIds.map(function(deviceId) {
+      return $.getJSON([deviceId, 'tests.json'].join('/'), function(testData) {
         var tests = testData['tests'];
         devices[deviceId]['tests'] = tests;
       });
+    })).done(function() {
 
-    });
-
-    // FIXME: should probably have some kind of maximum timeout here...
-    function setupRoutes() {
+      // initialize device chooser
       deviceIds.forEach(function(deviceId) {
-        // not ready, call again shortly
-        if (!devices[deviceId]['tests']) {
-          setTimeout(setupRoutes, 100);
-          return;
-        }
+        var tests = devices[deviceId].tests;
+        var firstTestKey = Object.keys(tests).sort()[0];
+        var defaultMeasure = tests[firstTestKey].defaultMeasure;
+
+        var deviceURL = "#/" + [ deviceId, firstTestKey, defaultMeasure ].join('/');
+        $('<li id="device-' + deviceId + '-li" deviceid= ' + deviceId +
+          '><a href="' + deviceURL + '">' + devices[deviceId].name+'</a></li>').appendTo(
+            $('#device-chooser'));
       });
 
       var routes = {
@@ -294,26 +294,21 @@ $(function() {
               return;
             }
 
+            // update device chooser
+            $('#device-chooser').children('li').removeClass("active");
+            $('#device-chooser').children('#device-'+deviceId+'-li').addClass("active");
+
             // update list of tests to be consistent with those of this
             // particular device (in case it changed)
             $('#test-chooser').empty();
 
-            var tests = devices[deviceId]['tests'];
+            var tests = devices[deviceId].tests;
             var testKeys = Object.keys(tests).sort();
             testKeys.forEach(function(testKey) {
               $('<li id="' + testKey + '-li" testid = ' + testKey + '><a>' + testKey + '</a></li>').appendTo($('#test-chooser'));
             });
 
-            // update all links to be relative to the new test or device
-            $('#device-chooser').children('li').removeClass("active");
-            $('#device-chooser').children('#device-'+deviceId+'-li').addClass("active");
-            $('#device-chooser').children('li').each(function() {
-              var defaultMeasure = devices[deviceId]['tests'][testKeys[0]].defaultMeasure;
-              $(this).children('a').attr('href', '#/' + [ $(this).attr('deviceid'),
-                                                          testKeys[0],
-                                                          defaultMeasure ].join('/'));
-            });
-
+            // update all test links to be relative to the new test or device
             $('#test-chooser').children('li').removeClass("active");
             $('#test-chooser').children('#'+testId+'-li').addClass("active");
 
@@ -340,8 +335,6 @@ $(function() {
       var router = Router(routes).init('/' + [ defaultDeviceId,
                                                initialTestKey,
                                                initialTest.defaultMeasure ].join('/'));
-    }
-
-    setTimeout(setupRoutes, 100);
+    });
   });
 });
