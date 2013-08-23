@@ -53,7 +53,7 @@ class CaptureServer(LoggingMixin):
         self.log("Received input callback from test")
         assert not self.input_called
         self.input_called = True
-        self.test.execute_actions(commandset)
+        self.test.input_actions(commandset)
 
         return (200, {})
 
@@ -89,7 +89,8 @@ class Test(LoggingMixin):
                  capture_controller=None,
                  capture_metadata={}, tempdir=None,
                  track_start_frame=False,
-                 track_end_frame=False, **kwargs):
+                 track_end_frame=False, actions_log_file=None,
+                 **kwargs):
         self.testpath_rel = testpath_rel
         self.device = device
         self.capture_file = capture_file
@@ -99,6 +100,7 @@ class Test(LoggingMixin):
         self.tempdir = tempdir
         self.track_start_frame = track_start_frame
         self.track_end_frame = track_end_frame
+        self.actions_log_file = actions_log_file
 
     def cleanup(self):
         pass
@@ -134,6 +136,7 @@ class Test(LoggingMixin):
             self.log("Starting capture on device '%s' with mode: '%s'" % (
                     self.capture_metadata['device'],
                     self.device.hdmiResolution))
+            self.capture_start_time = time.time()
             self.capture_controller.start_capture(self.capture_file,
                                                   self.device.hdmiResolution,
                                                   self.capture_metadata)
@@ -150,7 +153,7 @@ class Test(LoggingMixin):
         if self.capture_file and self.track_start_frame:
             self.start_frame = self.capture_controller.capture_framenum()
 
-        self.log("Test started callback (framenum: %s)" % (self.start_frame))
+        self.log("Test started callback (framenum: %s)" % self.start_frame)
 
     def test_finished(self):
         # callback indicating test has finished
@@ -163,6 +166,23 @@ class Test(LoggingMixin):
 
         self.log("Test finished callback (framenum: %s)" % (
                 self.end_frame))
+
+    def execute_actions(self, actions):
+        self.log("Executing actions")
+        def executeCallback():
+            self.test_started()
+        actions = self.device.executeCommands(actions,
+                                              executeCallback=executeCallback)
+        for action in actions:
+            # adjust time to be relative to start of test
+            action['start'] -= self.test_start_time
+            action['end'] -= self.test_start_time
+
+        if self.actions_log_file:
+            open(self.actions_log_file, 'w').write(json.dumps({ 'actions': actions }))
+
+        self.test_finished()
+
 
 class WebTest(Test):
 
@@ -219,8 +239,7 @@ class WebTest(Test):
     def test_started(self):
         super(WebTest, self).test_started()
 
-        if self.request_log_file:
-            self.test_start_time = time.time()
+        self.test_start_time = time.time()
 
     def test_finished(self):
         super(WebTest, self).test_finished()
@@ -234,7 +253,7 @@ class WebTest(Test):
 
             open(self.request_log_file, 'w').write(json.dumps(request_log))
 
-    def execute_actions(self, commandset):
+    def input_actions(self, commandset):
         if self.actions: # startup test indicated by no actions
             self.log("Executing commands '%s' for device '%s' (framenum: %s)" % (
                     commandset, self.device.model, self.start_frame))
@@ -244,12 +263,7 @@ class WebTest(Test):
                                     "'%s', model '%s'" % (commandset,
                                                           self.device.model))
             device_actions = self.actions[commandset][self.device.model]
-
-            def executeCallback():
-                self.test_started()
-            self.device.executeCommands(device_actions,
-                                        executeCallback=executeCallback)
-            self.test_finished()
+            self.execute_actions(device_actions)
         else:
             # startup test: if we get here, it means we're done
             self.test_finished()
@@ -476,11 +490,7 @@ class B2GAppActionTest(B2GTest):
         self.prepare_app()
 
         self.start_capture()
-        self.test_started()
-        self.log("Running commands")
-        self.device.executeCommands(self.cmds)
-        self.log("Executed commands, finishing test")
-        self.test_finished()
+        self.execute_actions(self.cmds)
         self.end_capture()
 
         # cleanup: switch back to main frame

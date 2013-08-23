@@ -34,7 +34,8 @@ def get_revision_data(sources_xml):
 
 def runtest(dm, device_prefs, capture_device, capture_area, product, appname,
             appinfo, testinfo, capture_name, outputdir, datafile, data,
-            enable_profiling=False, log_http_requests=False, baseline=False):
+            enable_profiling=False, log_http_requests=False, log_actions=False,
+            baseline=False):
     capture_file = os.path.join(CAPTURE_DIR,
                                 "%s-%s-%s-%s.zip" % (testinfo['key'],
                                                      appname,
@@ -53,6 +54,11 @@ def runtest(dm, device_prefs, capture_device, capture_area, product, appname,
         request_log_path = os.path.join('httplogs', 'http-log-%s.json' % time.time())
         request_log_file = os.path.join(outputdir, request_log_path)
 
+    actions_log_file = None
+    if log_actions:
+        actions_log_path = os.path.join('actionlogs', 'action-log-%s.json' % time.time())
+        actions_log_file = os.path.join(outputdir, actions_log_path)
+
     test_completed = False
     for i in range(3):
         print "Running test (try %s of 3)" % (i+1)
@@ -65,6 +71,7 @@ def runtest(dm, device_prefs, capture_device, capture_area, product, appname,
                                 appname, capture_name, device_prefs,
                                 profile_file=profile_file,
                                 request_log_file=request_log_file,
+                                actions_log_file=actions_log_file,
                                 capture_area=capture_area,
                                 capture_file=capture_file)
             test_completed = True
@@ -138,6 +145,9 @@ def runtest(dm, device_prefs, capture_device, capture_area, product, appname,
     if log_http_requests:
         datapoint['httpLog'] = request_log_path
 
+    if log_actions:
+        datapoint['actionLog'] = actions_log_path
+
     data['testdata'][productname][appdate].append(datapoint)
 
     # Write the data to disk immediately (so we don't lose it if we fail later)
@@ -207,6 +217,11 @@ def main(args=sys.argv[1:]):
     log_http_requests = False
     if testinfo['type'] == 'webstartup':
         log_http_requests = True
+
+    # likewise, log actions only for web tests and b2g tests
+    log_actions = False
+    if testinfo['type'] == 'web' or testinfo['type'] == 'b2g':
+        log_actions = True
 
     product = eideticker.get_product(productname)
     current_date = time.strftime("%Y-%m-%d")
@@ -289,6 +304,7 @@ def main(args=sys.argv[1:]):
                 capture_name + " #%s" % i, outputdir, datafile, data,
                 enable_profiling=options.enable_profiling,
                 log_http_requests=log_http_requests,
+                log_actions=log_actions,
                 baseline=options.baseline)
         if options.devicetype == "android":
             # Kill app after test complete

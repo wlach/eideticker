@@ -2,6 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 
+import json
 import mozdevice
 import mozb2g
 import mozlog
@@ -115,6 +116,7 @@ class EidetickerMixin(object):
     # FIXME: make this part of devicemanager
     def _executeScript(self, events, executeCallback=None):
         '''Executes a set of monkey commands on the device'''
+        command_output = None
         with tempfile.NamedTemporaryFile() as f:
             f.write("\n".join(events) + "\n")
             f.flush()
@@ -123,9 +125,13 @@ class EidetickerMixin(object):
             self.pushFile(f.name, remotefilename)
             if executeCallback:
                 executeCallback()
-            self.shellCheckOutput([self.orngLocation, self.inputDevice,
-                                   remotefilename], root=self._logcatNeedsRoot)
+            command_output = self.shellCheckOutput([self.orngLocation, '-t',
+                                                    self.inputDevice,
+                                                    remotefilename],
+                                                   root=self._logcatNeedsRoot)
             self.removeFile(remotefilename)
+
+        return command_output
 
     def getPIDs(self, appname):
         '''FIXME: Total hack, put this in devicemanagerADB instead'''
@@ -259,12 +265,34 @@ class EidetickerMixin(object):
         if cmdevents:
             self._executeScript(cmdevents, executeCallback=executeCallback)
 
+    @staticmethod
+    def _parseTimings(timings_str):
+        actions = []
+        current_action = None
+        for line in timings_str.splitlines():
+            if line:
+                action = json.loads(line)
+                if action['level'] == 0:
+                    if action['event'] == 'START':
+                        current_action = { 'start': action['time'],
+                                           'type': action['type'],
+                                           'params': action.get('params') }
+                    else:
+                        assert current_action
+                        current_action['end'] = action['time']
+                        actions.append(current_action)
+                        current_action = None
+
+        return actions
+
     def executeCommands(self, cmds, executeCallback=None):
         cmdevents = []
         for cmd in cmds:
             (cmd, args) = (cmd[0], cmd[1:])
             cmdevents.extend(self._getCmdEvents(cmd, args))
-        self._executeScript(cmdevents, executeCallback=executeCallback)
+        timings_str = self._executeScript(cmdevents,
+                                          executeCallback=executeCallback)
+        return self._parseTimings(timings_str)
 
 class DroidADB(EidetickerMixin, mozdevice.DroidADB):
 

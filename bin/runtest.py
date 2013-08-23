@@ -44,7 +44,10 @@ def main(args=sys.argv[1:]):
                       "profiler (fennec only).")
     parser.add_option("--request-log-file", action="store",
                       type="string", dest="request_log_file",
-                      help="Collect a log of HTTP requests during tests")
+                      help="Collect a log of HTTP requests during test")
+    parser.add_option("--actions-log-file", action="store",
+                      type="string", dest="actions_log_file",
+                      help="Collect a log of actions requests during test")
     parser.add_option("--extra-env-vars", action="store", dest="extra_env_vars",
                       default="",
                       help='Extra environment variables to set in '
@@ -84,6 +87,7 @@ def main(args=sys.argv[1:]):
                         test_type=options.test_type,
                         profile_file=options.profile_file,
                         request_log_file=options.request_log_file,
+                        actions_log_file=options.actions_log_file,
                         checkerboard_log_file=options.checkerboard_log_file,
                         no_capture=options.no_capture,
                         capture_area=capture_area,

@@ -19,7 +19,8 @@ def get_test_manifest():
 
 def run_test(testkey, capture_device, appname, capture_name,
              device_prefs, extra_prefs={}, test_type=None, profile_file=None,
-             request_log_file=None, checkerboard_log_file=None, extra_env_vars={},
+             request_log_file=None, actions_log_file=None,
+             checkerboard_log_file=None, extra_env_vars={},
              capture_area=None, no_capture=False, capture_file=None):
     manifest = get_test_manifest()
 
@@ -97,6 +98,7 @@ def run_test(testkey, capture_device, appname, capture_name,
                     capture_metadata = capture_metadata,
                     appname = appname,
                     request_log_file = request_log_file,
+                    actions_log_file = actions_log_file,
                     checkerboard_log_file = checkerboard_log_file,
                     profile_file = profile_file,
                     gecko_profiler_addon_dir=GECKO_PROFILER_ADDON_DIR,
