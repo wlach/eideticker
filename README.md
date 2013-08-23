@@ -1,40 +1,71 @@
-Project Eideticker
-==================
+# Eideticker
 
-Project Eideticker is an automated test harness that captures and analyzes
-browser output via HDMI. It currently only supports various browsers (Fennec,
-Stock) on Android, but support for other platforms is planned. There is
-experimental support for B2G on the pandaboard.
+Eideticker is an automated test harness for web browsers that captures and
+analyzes browser output via HDMI or an external camera.
 
-### Requirements
+## Requirements
+
+### Common
 
 * Linux system with zip, ffmpeg, g++, python 2.7 development and virtualenv
   installed. On Ubuntu, you can get this setup by running:
 
     `sudo apt-get install -y zip ffmpeg g++ python2.7-dev python-virtualenv`
 
+* [Android Debug Bridge](https://developer.android.com/tools/help/adb.html) (adb)
+
+### HDMI
+
 * Blackmagic Design DeckLink HD Extreme 3D card and the appropriate drivers if
   you want to actually capture video (it is possible to use the Eideticker
   harness without the video capture step, which can be useful for certain
   cases: see below).
 
-* Installed Android SDK with the tools in your path. Please follow the
-  instructions at https://wiki.mozilla.org/Mobile/Fennec/Android#Setup_a_Build_Environment
+* A supported mobile phone running Android with Orangutan installed. Eideticker's
+  tests are specifically tuned for specific screen dimensions. Currently only the
+  LG G2X (running in portrait mode) and the Galaxy Nexus (running in landscape)
+  are supported. Your device must also be rooted and, if using SUTAgent, you must
+  configure the su binary to automatically allow SUTAgent to run commands as
+  root in silent mode (so that notifications don't pop up while running tests). For
+  information on installing Orangutan, see that project's
+  [README](https://github.com/wlach/orangutan/blob/master/README.md).
 
-* A supported mobile phone running Android with Orangutan installed in
-  `/system/ Eideticker's tests are specifically tuned for specific screen
-  dimensions. Currently only the LG G2X (running in portrait mode) and the
-  Galaxy Nexus (running in landscape) are supported. Your device must also be
-  rooted and, if using SUTAgent, you must configure the su binary to
-  automatically allow SUTAgent to run commands as root in silent mode (so that
-  notifications don't pop up while running tests). For information on installing
-  Orangutan, see that project's README at http://github.com/wlach/orangutan.
+### Camera
 
-### Installation
+* Ubuntu 12.04 64-bit. 32-bit is known not to work with the PointGrey cameras
+  for some reason.
+
+* USB3 port (USB3 ports are usually blue). If you have a desktop machine
+  without a USB3 port, there are [PCI cards](http://www.ptgrey.com/products/usb3-components/usb3-components.asp)
+  to add this capability.
+* [USB3 micro-b cable](http://www.ptgrey.com/products/usb3-components/usb3-components.asp)
+  (possibly add a hub depending on machine)
+* [PointGrey Flea3 FL3-U3-13E4C-C](http://www.ptgreystore.com/products/229-flea3-13mp-color-usb-30-e2v-ev76c560.aspx)
+  camera.
+* [Fujinon HF12.5HA-1B](http://www.ptgreystore.com/products/98-fujinon-hf125ha-1b-lens.aspx)
+  camera lens.
+* [Joby GorillaPod](http://joby.com/gorillapod/original/) flexible tripod for
+  the camera.
+* The following dependencies for the FlyCapture software will need to be
+  installed: libgtk-mm-2.4-dev, libglademm-2.4-dev, libusb-1.0. You can get
+  these by running:
+
+    `sudo apt-get install -y libgtk-mm-2.4-dev libglademm-2.4-dev libusb-1.0`
+* FlyCapture camera software available from
+  [PointGrey](http://www.ptgrey.com/support/downloads) (you will need to
+  register an account to access the downloads). Note that you may also need to
+  run this using `sudo` in order to get it to detect the camera.
+* A supported mobile phone running FirefoxOS with Orangutan installed in
+ `/data/local/` Your device must also be connected to the same network as
+ the machine running the tests. For information on installing Orangutan, see
+ that project's
+ [README](https://github.com/wlach/orangutan/blob/master/README.md).
+
+## Installation
 
 Run `bootstrap.sh` in the root directory to set everything up.
 
-### Usage
+## Usage
 
 Eideticker is meant to be run in a virtualenv, so the first step is to set
 that up in your shell by running this command within the root directory:
@@ -58,7 +89,7 @@ adb:
     adb kill-server
     sudo adb start-server
 
-#### Running a simple test
+### Running a simple test
 
 To get a list of tests to run, use the list tests script:
 
@@ -87,7 +118,7 @@ you are just working on a test and/or don't have a capture rig), pass the
 
     ./bin/runtest.py --app-name org.mozilla.fennec --no-capture taskjs
 
-#### Console profiling
+### Console profiling
 
 Console mode is meant for internal profiling. You run a program
 called get-metric-for-build.py with a specific test against an Android apk,
@@ -132,7 +163,7 @@ video encoding/decoding/analysis step). For this you want to pass in
 
     ./bin/get-metric-for-build.py --use-apks --no-capture --get-internal-checkerboard-stats src/tests/ep1/taskjs.org/index.html nightly.apk
 
-### Eideticker "dashboard"
+## Eideticker "dashboard"
 
 Dashboard mode is used to generate a dashboard of eideticker results, like
 what you see at http://wrla.ch/eideticker/dashboard. From a toplevel, it
@@ -145,11 +176,11 @@ Setting up a new instance of the dashboard has two components: setting up one
 or more "clients" (machines that run the tests) and setting up the server
 (machines that will serve up the results).
 
-#### Dashboard Server Setup
+### Dashboard Server Setup
 
 * Install nginx, ssh, and rsync if not installed already.
 * Create an "eideticker" user on the machine (with home directory).
-* As the newly-created eideticker user, create a "www" subdirectory.
+* As the newly-created user, create a "www" subdirectory.
 * Create an nginx configuration (on Redhat-based systems,
 `/etc/nginx/conf.d`).
 * Restart nginx. You will need to configure the clients before you
@@ -175,7 +206,7 @@ Note the Access-Control-Origin header, which allows us to integrate the SPS
 profiler to request eideticker resources directly (useful for direct linking
 to capture analysis).
 
-#### Dashboard Client Setup
+### Dashboard Client Setup
 
 Each eideticker client works by creating its own static copy of the dashboard,
 then copying the relevant files to the server setup above.
@@ -184,7 +215,7 @@ To setup to capture and store results
 
 FIXME: TODO
 
-To setup to synchronize to the eideticker server:
+To setup to synchronize to the Eideticker server:
 
 * Generate an ssh key for the client machine, if it doesn't have one already.
 * On the server, copy/paste the generated public key into
@@ -198,7 +229,7 @@ To setup to synchronize to the eideticker server:
 
     0 0 * * * /home/mozauto/src/eideticker/bin/sync-dashboard.sh eideticker.wrla.ch
 
-### Creating New Eideticker Tests
+## Creating New Eideticker Tests
 
 There are several types of eideticker tests: startup tests, web tests, and
 b2g tests. Startup tests measure the amount of time it takes to load a
@@ -229,7 +260,7 @@ After creating the ini file, you'll want to link to it from the parent directory
 so it gets picked up by the harness. See "manifest.ini" in the ep1 testset for
 an example.
 
-#### B2G Tests
+### B2G Tests
 
 A B2G test is generally a mix of calls to Marionette (to launch an application
 and set it into an initial state) followed by another set of calls to Marionette
@@ -282,7 +313,7 @@ would pair each start and end pair together unless you were doing something
 exotic. It is between the test_started and test_finished callbacks that you
 would perform whatever action you wanted to perform.
 
-#### Web Tests
+### Web Tests
 
 Web tests are just static HTML with a bit of JavaScript glue to
 interface with the harness and some JSON metadata to describe actions that
@@ -358,7 +389,7 @@ Triggers two tap events in succession, at the specified x and y coordinates
 (this is designed to allow zooming into a web page).
 
 Triggering these actions requires posting to the JSON API endpoint on the
-eideticker desktop machine running the test. This is typically done as
+Eideticker desktop machine running the test. This is typically done as
 follows (using jQuery):
 
     $.post('/api/captures/input', { 'commands': 'default' },
