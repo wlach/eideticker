@@ -81,6 +81,12 @@ captures/ subdirectory. You can view some details of this capture with the
 Eideticker web application. Load it by running `./bin/webapp.sh` and then
 navigating to http://localhost:8080 with your browser.
 
+If you just want to run through a test *without* capturing any output (e.g. if
+you are just working on a test and/or don't have a capture rig), pass the
+--no-capture option. For example:
+
+    ./bin/runtest.py --app-name org.mozilla.fennec --no-capture taskjs
+
 #### Console profiling
 
 Console mode is meant for internal profiling. You run a program
