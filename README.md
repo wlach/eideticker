@@ -89,6 +89,22 @@ adb:
     adb kill-server
     sudo adb start-server
 
+If you are using a PointGrey camera to capture footage of the device, you
+will need to first calibrate the camera and determine the area to capture.
+
+First, position the camera setup and mounted device so that the device
+appears to be in the visual field. Next, run the `flycap` utility on the
+command line. Select camera. Select "Configure Selected". In new dialog,
+select "Standard Video Modes". Select Y8. Now, go back to main dialog and
+select "OK". You should see a camera preview. Adjust the camera/device
+as needed until there is a very clear and sharp picture of the device in
+view. Once this is done, you will need to run the getdimensions.py to get
+the dimensions to capture:
+
+    ./bin/getdimensions.py
+
+Set the CAPTURE_AREA environment variable to the output of that utility.
+
 ### Running a simple test
 
 To get a list of tests to run, use the list tests script:
