@@ -6,7 +6,8 @@ $(function() {
     if (!match)
       return null;
 
-    return match && decodeURIComponent(match[1].replace(/\+/g, ' '));
+    return decodeURIComponent(match[1].replace(/\+/g, ' ')).replace(
+        /[\"\']/g, ' ');
   }
 
   console.log(getParameterByName('video'));
