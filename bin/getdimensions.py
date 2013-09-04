@@ -111,6 +111,9 @@ def main(args=sys.argv[1:]):
                       type="string", dest="appname",
                       default="org.mozilla.fennec",
                       help="Specify an application name (android only)")
+    parser.add_option("--output-file", action="store",
+                      type="string", dest="output_file",
+                      help="Output the results to file")
 
     options, args = parser.parse_args()
     parser.validate_options(options)
@@ -162,6 +165,9 @@ def main(args=sys.argv[1:]):
 
     if largest_square is not None:
         print "Capture area: %s" % largest_square
+        if options.output_file:
+            with open(options.output_file, 'w+') as f:
+                f.write('CAPTURE_AREA=%s\n' % largest_square)
     else:
         print "Couldn't find capture area"
 
