@@ -153,6 +153,7 @@ class Test(LoggingMixin):
         if self.capture_file and self.track_start_frame:
             self.start_frame = self.capture_controller.capture_framenum()
 
+        self.test_start_time = time.time()
         self.log("Test started callback (framenum: %s)" % self.start_frame)
 
     def test_finished(self):
@@ -238,8 +239,6 @@ class WebTest(Test):
 
     def test_started(self):
         super(WebTest, self).test_started()
-
-        self.test_start_time = time.time()
 
     def test_finished(self):
         super(WebTest, self).test_finished()
