@@ -55,11 +55,12 @@ analyzes browser output via HDMI or an external camera.
   [PointGrey](http://www.ptgrey.com/support/downloads) (you will need to
   register an account to access the downloads). Note that you may also need to
   run this using `sudo` in order to get it to detect the camera.
-* A supported mobile phone running FirefoxOS with Orangutan installed in
- `/data/local/` Your device must also be connected to the same network as
- the machine running the tests. For information on installing Orangutan, see
- that project's
- [README](https://github.com/wlach/orangutan/blob/master/README.md).
+* A supported mobile phone running Firefox OS with Orangutan installed in
+  `/data/local/` with execute permissions. For information on installing
+  Orangutan, see that project's
+  [README](https://github.com/wlach/orangutan/blob/master/README.md).
+* Your device must be connected to the same network as the machine running the
+  tests.
 
 ## Installation
 
@@ -73,7 +74,7 @@ that up in your shell by running this command within the root directory:
     source ./bin/activate
 
 The next step depends on whether you're using adb or SUTAgent to interface
-with the device (on FirefoxOS, we assume adb). If the former, just connect
+with the device (on Firefox OS, we assume adb). If the former, just connect
 your device to your computer's USB port. That's it, you should now be set to
 run tests!
 
@@ -92,18 +93,46 @@ adb:
 If you are using a PointGrey camera to capture footage of the device, you
 will need to first calibrate the camera and determine the area to capture.
 
-First, position the camera setup and mounted device so that the device
-appears to be in the visual field. Next, run the `flycap` utility on the
-command line. Select camera. Select "Configure Selected". In new dialog,
-select "Standard Video Modes". Select Y8. Now, go back to main dialog and
-select "OK". You should see a camera preview. Adjust the camera/device
-as needed until there is a very clear and sharp picture of the device in
-view. Once this is done, you will need to run the getdimensions.py to get
-the dimensions to capture:
+First, set the following environment variables:
+
+    export CAPTURE_DEVICE=pointgrey
+
+Next, change to the /src/videocapture/videocapture/pointgrey directory and
+run `make` to build the capture tool for the PointGrey hardware.
+
+Make sure that you have the appropriate udev rules in place. These are set
+in `/etc/udev/rules.d/40-pgr.rules`. You can find your exact vendor and product
+details by running `lsusb` with the camera attached. For example if you see
+something like:
+
+    Bus 004 Device 003: ID 1e10:300a Point Grey Research, Inc.
+
+You will need the following like in your rules file:
+
+    ATTRS{idVendor}=="1e10", ATTRS{idProduct}=="300a", MODE="0664", GROUP="pgrimaging"
+
+This should be done for you during the installation of the FlyCap software,
+however it's best to double check as the values are case sensitive. If the
+camera cannot be detected it's a good chance this is wrong. You should
+restart the udev service after updating this file, and may been to disconnect
+and reconnect the camera:
+
+    sudo service udev restart
+
+Now position the camera setup and mounted device so that the device appears
+to be in the visual field. Next, run the `flycap` utility on the command line.
+Select camera. Select "Configure Selected". In new dialog, select "Standard
+Video Modes". Select Y8. Now, go back to main dialog and select "OK". You
+should see a camera preview. Adjust the camera/device as needed until there is
+a very clear and sharp picture of the device in view. Once this is done, you
+will need to run the getdimensions.py to get the dimensions to capture:
 
     ./bin/getdimensions.py
 
-Set the CAPTURE_AREA environment variable to the output of that utility.
+Set the CAPTURE_AREA environment variable to the output of that utility, for
+example:
+
+    export CAPTURE_AREA="[355, 83, 1043, 933]"
 
 ### Running a simple test
 
@@ -121,7 +150,7 @@ the test. For fennec nightly, you'd use:
 
     ./bin/runtest.py --app-name org.mozilla.fennec <testname>
 
-On FirefoxOS, you can just specify the testname and you should be good to go.
+On Firefox OS, you can just specify the testname and you should be good to go.
 
 If you have a proper camera set up, you should get a recorded capture in the
 captures/ subdirectory. You can view some details of this capture with the
@@ -181,11 +210,11 @@ video encoding/decoding/analysis step). For this you want to pass in
 
 ## Eideticker "dashboard"
 
-Dashboard mode is used to generate a dashboard of eideticker results, like
+Dashboard mode is used to generate a dashboard of Eideticker results, like
 what you see at http://wrla.ch/eideticker/dashboard. From a toplevel, it
 is run from a script called `bin/run-update-dashboard.sh`, which can be called
-standalone. This script then it turn calls another script called
-`bin/update-dashboard.py` with various arguments corresponding to firefox
+standalone. This script then in turn calls another script called
+`bin/update-dashboard.py` with various arguments corresponding to Firefox
 version, test to run, etc. This is not yet supported for B2G.
 
 Setting up a new instance of the dashboard has two components: setting up one
@@ -219,12 +248,12 @@ Here's the nginx configuration we currently use in production:
     }
 
 Note the Access-Control-Origin header, which allows us to integrate the SPS
-profiler to request eideticker resources directly (useful for direct linking
+profiler to request Eideticker resources directly (useful for direct linking
 to capture analysis).
 
 ### Dashboard Client Setup
 
-Each eideticker client works by creating its own static copy of the dashboard,
+Each Eideticker client works by creating its own static copy of the dashboard,
 then copying the relevant files to the server setup above.
 
 To setup to capture and store results
@@ -247,11 +276,11 @@ To setup to synchronize to the Eideticker server:
 
 ## Creating New Eideticker Tests
 
-There are several types of eideticker tests: startup tests, web tests, and
+There are several types of Eideticker tests: startup tests, web tests, and
 b2g tests. Startup tests measure the amount of time it takes to load a
 particular web site. Web tests load a website and then perform a set of
 actions on them (e.g. panning). B2G tests record the performance of some set
-of actions inside a FirefoxOS application (e.g. scrolling through a list of
+of actions inside a Firefox OS application (e.g. scrolling through a list of
 contacts).
 
 The first step in adding a new test is to create a subdirectory in `src/tests`
@@ -321,7 +350,7 @@ the testinfo dictionary (passed in from the manifest) to determine which
 application to launch.
 
 The run method is where we actually interact with the harness. The key points
-of interaction with the eideticker harness are start_capture, test_started,
+of interaction with the Eideticker harness are start_capture, test_started,
 test_finished, and end_capture methods. start_capture and end_capture
 correspond to starting and shutting down the video capture. test_started and
 test_finished correspond to the test starting and ending. Generally you
@@ -338,7 +367,7 @@ of a test would probably be the clock demo, which you can find in
 `src/tests/ep1/clock/index.html` (you have to run `./bootstrap.sh first to
 checkout the ep1 submodule before you can find this file).
 
-Writing your own tests is a matter of adding a subdirectory to eideticker as
+Writing your own tests is a matter of adding a subdirectory to Eideticker as
 per the generic instructions, then creating/copying an HTML page of your choice,
 adding the relevant JavaScript code to start/stop the test as appropriate, and
 then making an actions.json file with whatever actions you want to simulate during
