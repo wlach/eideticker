@@ -66,10 +66,11 @@ class BuildRetriever(object):
             dirhref = dirlink.get("href")
             if re.match(linkregex, dirhref):
                 # now parse the page for the correct build url
-                for link in self._url_links(url + dirhref):
-                    href = link.get("href")
-                    if re.match(product['buildregex'], href):
-                        return url + dirhref + href
+                for url in [ url+dirhref, url + dirhref + "en-US/" ]:
+                    for link in self._url_links(url):
+                        href = link.get("href")
+                        if re.match(product['buildregex'], href):
+                            return url + href
 
         return None
 
@@ -115,7 +116,7 @@ products = [
         "platform": "android",
         "buildregex": ".*android-arm.apk",
         "reponame": "mozilla-central-android",
-        "latest": "http://ftp.mozilla.org/pub/mozilla.org/mobile/nightly/latest-mozilla-central-android/",
+        "latest": "http://ftp.mozilla.org/pub/mozilla.org/mobile/nightly/latest-mozilla-central-android/en-US/",
         "appname": "org.mozilla.fennec"
     },
     {
@@ -123,7 +124,7 @@ products = [
         "platform": "android",
         "buildregex": ".*android-arm-armv6.apk",
         "reponame": "mozilla-central-android-armv6",
-        "latest": "http://ftp.mozilla.org/pub/mozilla.org/mobile/nightly/latest-mozilla-central-android-armv6/",
+        "latest": "http://ftp.mozilla.org/pub/mozilla.org/mobile/nightly/latest-mozilla-central-android-armv6/en-US/",
         "appname": "org.mozilla.fennec"
     },
     {
