@@ -8,12 +8,14 @@
 
     <style type="text/css">
       body {
-        padding-top: 60px;
-        padding-bottom: 40px;
+        padding-top: 20px;
         background-color: #EEE;
       }
       .container {
         width: 950px;
+      }
+      .row {
+        margin-bottom: 20px;
       }
       .content {
         background-color: #FFF;
@@ -53,7 +55,7 @@
       <div class="content">
         <div id="header">
         </div>
-        <div id="maincontent" class="row">
+        <div id="maincontent">
         </div>
         <p class="help-block">Click on a point on the graph to see associated point in capture.</p>
       </div>
@@ -75,12 +77,29 @@
     </script>
 
     <script id="pageContent" type="text/html">
-      <div class="span6">
-        <video src="{{videoPath}}" class="inline-video" id="frameview">
-      </div>
-      <div class="span6">
+      <div class="row">
         <div id="graph-container"></div>
       </div>
+      <div class="row">
+        <div class="span6">
+          <video src="{{videoPath}}" class="inline-video" id="frameview">
+        </div>
+        <div class="span5" id="datapoint">
+        </div>
+      </div>
+    </script>
+
+    <script id="graphDatapoint" type="text/html">
+      <dl>
+        <dt>Time</dt>
+        <dd>{{time}}s</dd>
+        <dt>Pixel Difference to Previous Frame</dt>
+        <dd>{{framediff}}</dd>
+        {{#eventName}}
+        <dt>Event / Gesture</dt>
+        <dd>{{eventName}}</dd>
+        {{/eventName}}
+      </dl>
     </script>
   </body>
 </html>

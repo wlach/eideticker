@@ -113,6 +113,7 @@ function updateGraph(title, rawdata, measure) {
             'buildId': sample.buildid,
             'profileURL': sample.profile,
             'frameDiff': sample.frameDiff,
+            'actionLog': sample.actionLog,
             'httpLog': sample.httpLog
           });
         }
@@ -238,6 +239,7 @@ function updateGraph(title, rawdata, measure) {
                                                      'videoURL': metadata.videoURL,
                                                      'profileURL': metadata.profileURL,
                                                      'frameDiff': metadata.frameDiff,
+                                                     'actionLog': metadata.actionLog,
                                                      'httpLog': metadata.httpLog,
                                                      'measureName': measure,
                                                      'date': metadata.dateStr,
