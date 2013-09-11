@@ -35,7 +35,7 @@ def get_revision_data(sources_xml):
 def runtest(dm, device_prefs, capture_device, capture_area, product, appname,
             appinfo, testinfo, capture_name, outputdir, datafile, data,
             enable_profiling=False, log_http_requests=False, log_actions=False,
-            baseline=False):
+            baseline=False, sync_time=True):
     capture_file = os.path.join(CAPTURE_DIR,
                                 "%s-%s-%s-%s.zip" % (testinfo['key'],
                                                      appname,
@@ -73,7 +73,8 @@ def runtest(dm, device_prefs, capture_device, capture_area, product, appname,
                                 request_log_file=request_log_file,
                                 actions_log_file=actions_log_file,
                                 capture_area=capture_area,
-                                capture_file=capture_file)
+                                capture_file=capture_file,
+                                sync_time=sync_time)
             test_completed = True
             break
         except eideticker.TestException, e:
@@ -160,7 +161,7 @@ def runtest(dm, device_prefs, capture_device, capture_area, product, appname,
 def main(args=sys.argv[1:]):
     usage = "usage: %prog [options] <product> <test> <output dir>"
 
-    parser = eideticker.CaptureOptionParser(usage=usage)
+    parser = eideticker.TestOptionParser(usage=usage)
     parser.add_option("--enable-profiling",
                       action="store_true", dest = "enable_profiling",
                       help = "Create SPS profile to go along with capture")
@@ -298,14 +299,13 @@ def main(args=sys.argv[1:]):
 
     # Run the test the specified number of times
     for i in range(num_runs):
-        # Now run the test
         runtest(device, device_prefs, options.capture_device, capture_area,
                 product, appname, appinfo, testinfo,
                 capture_name + " #%s" % i, outputdir, datafile, data,
                 enable_profiling=options.enable_profiling,
                 log_http_requests=log_http_requests,
                 log_actions=log_actions,
-                baseline=options.baseline)
+                baseline=options.baseline, sync_time=not options.no_sync_time)
         if options.devicetype == "android":
             # Kill app after test complete
             device.killProcess(appname)

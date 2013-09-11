@@ -79,6 +79,9 @@ class EidetickerMixin(object):
     """Mixin to extend DeviceManager with functionality to allow it to be
        remotely controlled and other related things"""
 
+    DEFAULT_ORNG_LOCATION = "/data/local/orng"
+    DEFAULT_NTPDATE_LOCATION = "/data/local/ntpclient"
+
     @property
     def hdmiResolution(self):
         return self.deviceProperties['hdmiResolution']
@@ -89,7 +92,7 @@ class EidetickerMixin(object):
 
     def _init(self):
         self.model = self.getprop("ro.product.model")
-        self.orngLocation = None
+        self.locations = {}
 
         if not DEVICE_PROPERTIES.get(self.type) or \
                 not DEVICE_PROPERTIES[self.type].get(self.model):
@@ -97,16 +100,13 @@ class EidetickerMixin(object):
                     self.model, self.type))
         self.deviceProperties = DEVICE_PROPERTIES[self.type][self.model]
 
-        # we support two locations for the orng executable: /data/local
-        # and /system/xbin
-        for dir in ["/data/local", "/system/xbin", "/system/bin"]:
-            potentialLocation = posixpath.join(dir, "orng")
-            if self.fileExists(potentialLocation):
-                self.orngLocation = potentialLocation
-                break
 
-        if not self.orngLocation:
-            raise mozdevice.DMError("Could not find a copy of Orangutan (orng) to run")
+        for (name, path) in [("orangutan", self.DEFAULT_ORNG_LOCATION),
+                             ("ntpdate", self.DEFAULT_NTPDATE_LOCATION)]:
+            if not self.fileExists(path):
+                raise mozdevice.DMError("%s not on device in %s! Please "
+                                        "install it according to the "
+                                        "documentation" % (name, path))
 
         # Hack: this gets rid of the "finished charging" modal dialog that the
         # LG G2X sometimes brings up
@@ -125,7 +125,7 @@ class EidetickerMixin(object):
             self.pushFile(f.name, remotefilename)
             if executeCallback:
                 executeCallback()
-            command_output = self.shellCheckOutput([self.orngLocation, '-t',
+            command_output = self.shellCheckOutput([self.DEFAULT_ORNG_LOCATION, '-t',
                                                     self.inputDevice,
                                                     remotefilename],
                                                    root=self._logcatNeedsRoot)
@@ -141,6 +141,10 @@ class EidetickerMixin(object):
             if name == appname:
                 pids.append(pid)
         return pids
+
+    def synchronizeTime(self):
+        self.shellCheckOutput([self.DEFAULT_NTPDATE_LOCATION, "-c", "1", "-d",
+                               "-h", "pool.ntp.org", "-s"], root=True)
 
     def sendSaveProfileSignal(self, appName):
         pids = self.getPIDs(appName)

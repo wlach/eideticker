@@ -29,7 +29,7 @@ def parse_checkerboard_log(fname):
 def runtest(device_prefs, capture_device, outputdir, outputfile, testname, url_params, num_runs,
              startup_test, no_capture, get_internal_checkerboard_stats,
              apk=None, appname = None, appdate = None, enable_profiling=False,
-             extra_prefs={}, extra_env_vars={}):
+             extra_prefs={}, extra_env_vars={}, sync_time=True):
     device = None
     if apk:
         appinfo = eideticker.get_fennec_appinfo(apk)
@@ -75,7 +75,7 @@ def runtest(device_prefs, capture_device, outputdir, outputfile, testname, url_p
                             checkerboard_log_file=checkerboard_log_file,
                             profile_file=profile_file,
                             no_capture=no_capture,
-                            capture_file=capture_file)
+                            capture_file=capture_file, sync_time=sync_time)
 
         capture_result = {}
         if not no_capture:
@@ -162,7 +162,7 @@ def runtest(device_prefs, capture_device, outputdir, outputfile, testname, url_p
 
 def main(args=sys.argv[1:]):
     usage = "usage: %prog <test> [appname1] [appname2] ..."
-    parser = eideticker.CaptureOptionParser(usage=usage)
+    parser = eideticker.TestOptionParser(usage=usage)
     parser.add_option("--num-runs", action="store",
                       type = "int", dest = "num_runs",
                       default=1,
@@ -273,7 +273,8 @@ def main(args=sys.argv[1:]):
                     appname=appname,
                     enable_profiling=options.enable_profiling,
                     extra_prefs=extra_prefs,
-                    extra_env_vars=extra_env_vars)
+                    extra_env_vars=extra_env_vars,
+                    sync_time=not options.no_sync_time)
     elif apks:
         for apk in apks:
             runtest(device_prefs, options.capture_device, options.outputdir,
@@ -285,7 +286,8 @@ def main(args=sys.argv[1:]):
                     options.get_internal_checkerboard_stats, apk=apk,
                     enable_profiling=options.enable_profiling,
                     extra_prefs=extra_prefs,
-                    extra_env_vars=extra_env_vars)
+                    extra_env_vars=extra_env_vars,
+                    sync_time=not options.no_sync_time)
     else:
         br = eideticker.BuildRetriever()
         productname = "nightly"
@@ -302,7 +304,7 @@ def main(args=sys.argv[1:]):
                     appdate=date,
                     enable_profiling=options.enable_profiling,
                     extra_prefs=extra_prefs,
-                    extra_env_vars=extra_env_vars)
-
+                    extra_env_vars=extra_env_vars,
+                    sync_time=not options.no_sync_time)
 
 main()

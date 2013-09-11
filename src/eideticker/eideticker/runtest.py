@@ -21,7 +21,8 @@ def run_test(testkey, capture_device, appname, capture_name,
              device_prefs, extra_prefs={}, test_type=None, profile_file=None,
              request_log_file=None, actions_log_file=None,
              checkerboard_log_file=None, extra_env_vars={},
-             capture_area=None, no_capture=False, capture_file=None):
+             capture_area=None, no_capture=False, capture_file=None,
+             sync_time=True):
     manifest = get_test_manifest()
 
     # sanity check... does the test match a known test key?
@@ -55,6 +56,10 @@ def run_test(testkey, capture_device, appname, capture_name,
 
     # Create a device object to interface with the phone
     device = getDevice(**device_prefs)
+
+    # synchronize time unless instructed not to
+    if sync_time:
+        device.synchronizeTime()
 
     capture_metadata = {
         'name': capture_name,

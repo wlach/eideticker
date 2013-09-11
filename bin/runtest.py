@@ -11,7 +11,7 @@ import eideticker
 
 def main(args=sys.argv[1:]):
     usage = "usage: %prog [options] <test key>"
-    parser = eideticker.CaptureOptionParser(usage=usage)
+    parser = eideticker.TestOptionParser(usage=usage)
     parser.add_option("--url-params", action="store",
                       dest="url_params",
                       help="additional url parameters for test")
@@ -91,6 +91,7 @@ def main(args=sys.argv[1:]):
                         checkerboard_log_file=options.checkerboard_log_file,
                         no_capture=options.no_capture,
                         capture_area=capture_area,
-                        capture_file=options.capture_file)
+                        capture_file=options.capture_file,
+                        sync_time=not options.no_sync_time)
 
 main()

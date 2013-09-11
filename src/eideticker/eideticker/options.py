@@ -43,3 +43,14 @@ class CaptureOptionParser(OptionParser, videocapture.OptionParser):
         videocapture.OptionParser.__init__(self, **kwargs)
         OptionParser._add_options(self)
 
+class TestOptionParser(CaptureOptionParser):
+    '''Custom version of the optionparser with eideticker-specific parameters
+    to set device information, video capture settings, and test-specific settings'''
+
+    def __init__(self, **kwargs):
+        CaptureOptionParser.__init__(self, **kwargs)
+
+        self.add_option("--no-sync-time", action="store_true",
+                        dest="no_sync_time",
+                        help="don't synchronize time before running test",
+                        default=False)
