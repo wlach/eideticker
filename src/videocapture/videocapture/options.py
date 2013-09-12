@@ -32,7 +32,9 @@ class OptionParser(optparse.OptionParser):
         self.capture_area_option = capture_area_option
         OptionParser._add_options(self)
 
-    def validate_options(self, options):
+    def parse_args(self):
+        (options, args) = optparse.OptionParser.parse_args(self)
+
         if options.capture_device not in valid_capture_devices:
             self.error("Capture device must be %s" % " or ".join(valid_capture_devices))
         if self.require_mode and options.mode not in valid_decklink_modes:
@@ -44,5 +46,8 @@ class OptionParser(optparse.OptionParser):
                         not all(isinstance(n, int) for n in capture_area):
                     self.error("Capture area not in valid format ([int, int, "
                                "int, int])")
+                options.capture_area = capture_area
             except ValueError:
                 self.error("Error parsing capture area: not valid JSON!")
+
+        return (options, args)

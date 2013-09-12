@@ -34,10 +34,6 @@ def main(args=sys.argv[1:]):
                       type="string", dest="checkerboard_log_file",
                       help="name to give checkerboarding stats file (fennec "
                       "only)")
-    parser.add_option("--extra-prefs", action="store", dest="extra_prefs",
-                      default="{}",
-                      help="Extra profile preference for Firefox browsers. "
-                      "Must be passed in as a JSON dictionary")
     parser.add_option("--profile-file", action="store",
                       type="string", dest="profile_file",
                       help="Collect a performance profile using the built in "
@@ -48,30 +44,15 @@ def main(args=sys.argv[1:]):
     parser.add_option("--actions-log-file", action="store",
                       type="string", dest="actions_log_file",
                       help="Collect a log of actions requests during test")
-    parser.add_option("--extra-env-vars", action="store", dest="extra_env_vars",
-                      default="",
-                      help='Extra environment variables to set in '
-                      '"VAR1=VAL1 VAR2=VAL2" format')
 
     options, args = parser.parse_args()
+
     parser.validate_options(options)
 
     if len(args) != 1:
         parser.error("You must specify (only) a test key")
         sys.exit(1)
     testkey = args[0]
-
-    try:
-        extra_prefs = json.loads(options.extra_prefs)
-    except ValueError:
-        parser.error("Error processing extra preferences: not valid JSON!")
-        raise
-
-    keyvals = options.extra_env_vars.split()
-    extra_env_vars = {}
-    for kv in keyvals:
-        (var, _, val) = kv.partition("=")
-        extra_env_vars[var] = val
 
     capture_area = None
     if options.capture_area:
@@ -82,8 +63,8 @@ def main(args=sys.argv[1:]):
     eideticker.run_test(testkey, options.capture_device,
                         options.appname,
                         options.capture_name, device_prefs,
-                        extra_prefs=extra_prefs,
-                        extra_env_vars=extra_env_vars,
+                        extra_prefs=options.extra_prefs,
+                        extra_env_vars=options.extra_env_vars,
                         test_type=options.test_type,
                         profile_file=options.profile_file,
                         request_log_file=options.request_log_file,
@@ -92,6 +73,6 @@ def main(args=sys.argv[1:]):
                         no_capture=options.no_capture,
                         capture_area=capture_area,
                         capture_file=options.capture_file,
-                        sync_time=not options.no_sync_time)
+                        sync_time=options.sync_time)
 
 main()

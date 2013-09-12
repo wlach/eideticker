@@ -188,7 +188,6 @@ def main(args=sys.argv[1:]):
                           "information (B2G-specific)")
 
     options, args = parser.parse_args()
-    parser.validate_options(options)
 
     if len(args) != 3:
         parser.print_usage()
@@ -292,20 +291,15 @@ def main(args=sys.argv[1:]):
     with open(testfile, 'w') as f:
         f.write(json.dumps({ 'tests': tests }))
 
-    capture_area = None
-    if options.capture_area:
-        # we validated this previously...
-        capture_area = json.loads(options.capture_area)
-
     # Run the test the specified number of times
     for i in range(num_runs):
-        runtest(device, device_prefs, options.capture_device, capture_area,
+        runtest(device, device_prefs, options.capture_device, options.capture_area,
                 product, appname, appinfo, testinfo,
                 capture_name + " #%s" % i, outputdir, datafile, data,
                 enable_profiling=options.enable_profiling,
                 log_http_requests=log_http_requests,
                 log_actions=log_actions,
-                baseline=options.baseline, sync_time=not options.no_sync_time)
+                baseline=options.baseline, sync_time=options.sync_time)
         if options.devicetype == "android":
             # Kill app after test complete
             device.killProcess(appname)

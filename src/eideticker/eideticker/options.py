@@ -2,6 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 
+import json
 import optparse
 import os
 import videocapture
@@ -50,7 +51,35 @@ class TestOptionParser(CaptureOptionParser):
     def __init__(self, **kwargs):
         CaptureOptionParser.__init__(self, **kwargs)
 
-        self.add_option("--no-sync-time", action="store_true",
-                        dest="no_sync_time",
+        self.add_option("--no-sync-time", action="store_false",
+                        dest="sync_time",
                         help="don't synchronize time before running test",
-                        default=False)
+                        default=True)
+        self.add_option("--extra-env-vars", action="store", dest="extra_env_vars",
+                        default="",
+                        help='Extra environment variables to set in '
+                        '"VAR1=VAL1 VAR2=VAL2" format')
+        self.add_option("--extra-prefs", action="store", dest="extra_prefs",
+                        default="{}",
+                        help="Extra profile preference for Firefox browsers. "
+                        "Must be passed in as a JSON dictionary")
+
+    def parse_args(self):
+        (options, args) = CaptureOptionParser.parse_args(self)
+
+        # parse out environment variables
+        dict = {}
+        for kv in options.extra_env_vars.split():
+            (var, _, val) = kv.partition("=")
+            dict[var] = val
+        options.extra_env_vars = dict
+
+        # parse out preferences
+        try:
+            dict = json.loads(options.extra_prefs)
+            options.extra_prefs = dict
+        except ValueError:
+            self.error("Error processing extra preferences: not valid JSON!")
+            raise
+
+        return (options, args)

@@ -26,10 +26,8 @@ def parse_checkerboard_log(fname):
 
     return checkerboarding_percent_totals
 
-def runtest(device_prefs, capture_device, outputdir, outputfile, testname, url_params, num_runs,
-             startup_test, no_capture, get_internal_checkerboard_stats,
-             apk=None, appname = None, appdate = None, enable_profiling=False,
-             extra_prefs={}, extra_env_vars={}, sync_time=True):
+def runtest(device_prefs, testname, options, apk=None, appname = None,
+            appdate = None):
     device = None
     if apk:
         appinfo = eideticker.get_fennec_appinfo(apk)
@@ -44,7 +42,7 @@ def runtest(device_prefs, capture_device, outputdir, outputfile, testname, url_p
 
     captures = []
 
-    for i in range(num_runs):
+    for i in range(options.num_runs):
         # Kill any existing instances of the processes (for Android)
         if device:
             device.killProcess(appname)
@@ -54,13 +52,13 @@ def runtest(device_prefs, capture_device, outputdir, outputfile, testname, url_p
         capture_file = os.path.join(CAPTURE_DIR,
                                     "metric-test-%s-%s.zip" % (appname,
                                                                curtime))
-        if enable_profiling:
+        if options.enable_profiling:
             profile_file = os.path.join(PROFILE_DIR,
                                         "profile-%s-%s.zip" % (appname, curtime))
         else:
             profile_file = None
 
-        if get_internal_checkerboard_stats:
+        if options.get_internal_checkerboard_stats:
             checkerboard_log_file = tempfile.NamedTemporaryFile()
         else:
             checkerboard_log_file = None
@@ -68,37 +66,38 @@ def runtest(device_prefs, capture_device, outputdir, outputfile, testname, url_p
         current_date = time.strftime("%Y-%m-%d")
         capture_name = "%s - %s (taken on %s)" % (testname, appname, current_date)
 
-        eideticker.run_test(testname, capture_device,
+        eideticker.run_test(testname, options.capture_device,
                             appname, capture_name, device_prefs,
-                            extra_prefs=extra_prefs,
-                            extra_env_vars=extra_env_vars,
+                            extra_prefs=options.extra_prefs,
+                            extra_env_vars=options.extra_env_vars,
                             checkerboard_log_file=checkerboard_log_file,
                             profile_file=profile_file,
-                            no_capture=no_capture,
-                            capture_file=capture_file, sync_time=sync_time)
+                            no_capture=options.no_capture,
+                            capture_file=options.capture_file,
+                            sync_time=options.sync_time)
 
         capture_result = {}
-        if not no_capture:
+        if not options.no_capture:
             capture_result['file'] = capture_file
 
             capture = videocapture.Capture(capture_file)
 
-            if startup_test:
+            if options.startup_test:
                 capture_result['stableframe'] = videocapture.get_stable_frame(capture)
             else:
                 capture_result['uniqueframes'] = videocapture.get_num_unique_frames(capture)
                 capture_result['fps'] = videocapture.get_fps(capture)
                 capture_result['checkerboard'] = videocapture.get_checkerboarding_area_duration(capture)
-            if outputdir:
+            if options.outputdir:
                 video_path = os.path.join('videos', 'video-%s.webm' % time.time())
-                video_file = os.path.join(outputdir, video_path)
+                video_file = os.path.join(options.outputdir, video_path)
                 open(video_file, 'w').write(capture.get_video().read())
                 capture_result['video'] = video_path
 
-        if enable_profiling:
+        if options.enable_profiling:
             capture_result['profile'] = profile_file
 
-        if get_internal_checkerboard_stats:
+        if options.get_internal_checkerboard_stats:
             internal_checkerboard_totals = parse_checkerboard_log(checkerboard_log_file.name)
             capture_result['internalcheckerboard'] = internal_checkerboard_totals
 
@@ -116,8 +115,8 @@ def runtest(device_prefs, capture_device, outputdir, outputfile, testname, url_p
         display_key = appkey
     print "=== Results for %s ===" % display_key
 
-    if not no_capture:
-        if startup_test:
+    if not options.no_capture:
+        if options.startup_test:
             print "  First stable frames:"
             print "  %s" % map(lambda c: c['stableframe'], captures)
             print
@@ -138,17 +137,18 @@ def runtest(device_prefs, capture_device, outputdir, outputfile, testname, url_p
         print "  Capture files: %s" % map(lambda c: c['file'], captures)
         print
 
-    if enable_profiling:
+    if options.enable_profiling:
         print "  Profile files:"
         print "  Profile files: %s" % map(lambda c: c['profile'], captures)
         print
 
-    if get_internal_checkerboard_stats:
+    if options.get_internal_checkerboard_stats:
         print "  Internal Checkerboard Stats (sum of percents, not percentage):"
         print "  %s" % map(lambda c: c['internalcheckerboard'], captures)
         print
 
-    if outputfile:
+    if options.outputdir:
+        outputfile = os.path.join(options.outputdir, "metric-test-%s.json" % time.time())
         resultdict = { 'title': testname, 'data': {} }
         if os.path.isfile(outputfile):
             resultdict.update(json.loads(open(outputfile).read()))
@@ -188,14 +188,6 @@ def main(args=sys.argv[1:]):
     parser.add_option("--url-params", action="store",
                       dest="url_params", default="",
                       help="additional url parameters for test")
-    parser.add_option("--extra-prefs", action="store", dest="extra_prefs",
-                      default="{}",
-                      help="Extra profile preference for Firefox browsers. " \
-                          "Must be passed in as a JSON dictionary")
-    parser.add_option("--extra-env-vars", action="store", dest="extra_env_vars",
-                      default="",
-                      help='Extra environment variables to set in '
-                      '"VAR1=VAL1 VAR2=VAL2" format')
     parser.add_option("--use-apks", action="store_true", dest="use_apks",
                       help="use and install android APKs as part of test (instead of specifying appnames)")
     parser.add_option("--date", action="store", dest="date",
@@ -212,15 +204,6 @@ def main(args=sys.argv[1:]):
 
     if len(args) == 0:
         parser.error("Must specify at least one argument: the path to the test")
-
-    try:
-        # we only need to validate extra_prefs, as we'll just be passing it down
-        # to runtest
-        json.loads(options.extra_prefs)
-    except ValueError:
-        parser.error("Error processing extra preferences: not valid JSON!")
-        raise
-
 
     dates = []
     appnames = []
@@ -245,66 +228,19 @@ def main(args=sys.argv[1:]):
         parser.error("Must specify date, date range, a set of appnames (e.g. org.mozilla.fennec) or a set of apks (if --use-apks is specified)")
 
     device_prefs = eideticker.getDevicePrefs(options)
-    try:
-        extra_prefs = json.loads(options.extra_prefs)
-    except ValueError:
-        parser.error("Error processing extra preferences: not valid JSON!")
-        raise
-
-    keyvals = options.extra_env_vars.split()
-    extra_env_vars = {}
-    for kv in keyvals:
-        (var, _, val) = kv.partition("=")
-        extra_env_vars[var] = val
-
-    if options.outputdir:
-        outputfile = os.path.join(options.outputdir, "metric-test-%s.json" % time.time())
-    else:
-        outputfile = None
 
     if appnames:
         for appname in appnames:
-            runtest(device_prefs, options.capture_device, options.outputdir, outputfile, testname,
-                    options.url_params,
-                    options.num_runs,
-                    options.startup_test,
-                    options.no_capture,
-                    options.get_internal_checkerboard_stats,
-                    appname=appname,
-                    enable_profiling=options.enable_profiling,
-                    extra_prefs=extra_prefs,
-                    extra_env_vars=extra_env_vars,
-                    sync_time=not options.no_sync_time)
+            runtest(device_prefs, testname, options, appname=appname)
     elif apks:
         for apk in apks:
-            runtest(device_prefs, options.capture_device, options.outputdir,
-                    outputfile, testname,
-                    options.url_params,
-                    options.num_runs,
-                    options.startup_test,
-                    options.no_capture,
-                    options.get_internal_checkerboard_stats, apk=apk,
-                    enable_profiling=options.enable_profiling,
-                    extra_prefs=extra_prefs,
-                    extra_env_vars=extra_env_vars,
-                    sync_time=not options.no_sync_time)
+            runtest(device_prefs, testname, options, apk=apk)
     else:
         br = eideticker.BuildRetriever()
         productname = "nightly"
         product = eideticker.get_product(productname)
         for date in dates:
             apk = br.get_build(product, date)
-            runtest(device_prefs, options.capture_device, options.outputdir,
-                    outputfile, testname,
-                    options.url_params,
-                    options.num_runs,
-                    options.startup_test,
-                    options.no_capture,
-                    options.get_internal_checkerboard_stats, apk=apk,
-                    appdate=date,
-                    enable_profiling=options.enable_profiling,
-                    extra_prefs=extra_prefs,
-                    extra_env_vars=extra_env_vars,
-                    sync_time=not options.no_sync_time)
+            runtest(device_prefs, testname, options, apk=apk, appdate=date)
 
 main()
