@@ -4,7 +4,6 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 
-import json
 import sys
 import eideticker
 
@@ -54,10 +53,6 @@ def main(args=sys.argv[1:]):
         sys.exit(1)
     testkey = args[0]
 
-    capture_area = None
-    if options.capture_area:
-        # we validated this previously...
-        capture_area = json.loads(options.capture_area)
     device_prefs = eideticker.getDevicePrefs(options)
 
     eideticker.run_test(testkey, options.capture_device,
@@ -71,7 +66,7 @@ def main(args=sys.argv[1:]):
                         actions_log_file=options.actions_log_file,
                         checkerboard_log_file=options.checkerboard_log_file,
                         no_capture=options.no_capture,
-                        capture_area=capture_area,
+                        capture_area=options.capture_area,
                         capture_file=options.capture_file,
                         sync_time=options.sync_time)
 
