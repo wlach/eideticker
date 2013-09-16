@@ -9,3 +9,4 @@ from metadata import get_fennec_appinfo, get_appinfo
 from products import get_product, products, BuildRetriever
 from test import get_test
 from runtest import get_test_manifest, run_test, TestException
+from metrics import get_standard_metrics

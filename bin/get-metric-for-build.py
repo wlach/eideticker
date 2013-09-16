@@ -25,7 +25,7 @@ def runtest(device_prefs, testname, options, apk=None, appname = None,
     else:
         appinfo = None
 
-    captures = []
+    capture_results = []
 
     for i in range(options.num_runs):
         # Kill any existing instances of the processes (for Android)
@@ -65,9 +65,8 @@ def runtest(device_prefs, testname, options, apk=None, appname = None,
             if options.startup_test:
                 capture_result['stableframe'] = videocapture.get_stable_frame(capture)
             else:
-                capture_result['uniqueframes'] = videocapture.get_num_unique_frames(capture)
-                capture_result['fps'] = videocapture.get_fps(capture)
-                capture_result['checkerboard'] = videocapture.get_checkerboarding_area_duration(capture)
+                capture_result.update(
+                    eideticker.get_standard_metrics(capture, testlog.actions))
             if options.outputdir:
                 video_path = os.path.join('videos', 'video-%s.webm' % time.time())
                 video_file = os.path.join(options.outputdir, video_path)
@@ -80,7 +79,7 @@ def runtest(device_prefs, testname, options, apk=None, appname = None,
         if options.get_internal_checkerboard_stats:
             capture_result['internalcheckerboard'] = testlog.checkerboard_percent_totals
 
-        captures.append(capture_result)
+        capture_results.append(capture_result)
 
     appkey = appname
     if appdate:
@@ -97,33 +96,37 @@ def runtest(device_prefs, testname, options, apk=None, appname = None,
     if not options.no_capture:
         if options.startup_test:
             print "  First stable frames:"
-            print "  %s" % map(lambda c: c['stableframe'], captures)
+            print "  %s" % map(lambda c: c['stableframe'], capture_results)
             print
         else:
             print "  Number of unique frames:"
-            print "  %s" % map(lambda c: c['uniqueframes'], captures)
+            print "  %s" % map(lambda c: c['uniqueframes'], capture_results)
             print
 
             print "  Average number of unique frames per second:"
-            print "  %s" % map(lambda c: c['fps'], captures)
+            print "  %s" % map(lambda c: c['fps'], capture_results)
             print
 
             print "  Checkerboard area/duration (sum of percents NOT percentage):"
-            print "  %s" % map(lambda c: c['checkerboard'], captures)
+            print "  %s" % map(lambda c: c['checkerboard'], capture_results)
+            print
+
+            print "  Time to first input response: "
+            print "  %s" % map(lambda c: c['timetoresponse'], capture_results)
             print
 
         print "  Capture files:"
-        print "  Capture files: %s" % map(lambda c: c['file'], captures)
+        print "  Capture files: %s" % map(lambda c: c['file'], capture_results)
         print
 
     if options.enable_profiling:
         print "  Profile files:"
-        print "  Profile files: %s" % map(lambda c: c['profile'], captures)
+        print "  Profile files: %s" % map(lambda c: c['profile'], capture_results)
         print
 
     if options.get_internal_checkerboard_stats:
         print "  Internal Checkerboard Stats (sum of percents, not percentage):"
-        print "  %s" % map(lambda c: c['internalcheckerboard'], captures)
+        print "  %s" % map(lambda c: c['internalcheckerboard'], capture_results)
         print
 
     if options.outputdir:
@@ -134,7 +137,7 @@ def runtest(device_prefs, testname, options, apk=None, appname = None,
 
         if not resultdict['data'].get(appkey):
             resultdict['data'][appkey] = []
-        resultdict['data'][appkey].extend(captures)
+        resultdict['data'][appkey].extend(capture_results)
 
         with open(outputfile, 'w') as f:
             f.write(json.dumps(resultdict))

@@ -117,9 +117,8 @@ def runtest(dm, device_prefs, capture_device, capture_area, product, appname,
             # bunch of visual noise -- try to compensate for this by setting
             # a higher threshold for frames to be considered different
             threshold = 2000
-        datapoint['uniqueframes'] = videocapture.get_num_unique_frames(capture, threshold=threshold)
-        datapoint['fps'] = videocapture.get_fps(capture, threshold=threshold)
-        datapoint['checkerboard'] = videocapture.get_checkerboarding_area_duration(capture)
+        datapoint.update(eideticker.get_standard_metrics(
+                capture, testlog.actions, difference_threshold=threshold))
 
     framediff_relpath = os.path.join('framediffs', 'framediff-%s.json' % time.time())
     framediff_path = os.path.join(outputdir, framediff_relpath)
