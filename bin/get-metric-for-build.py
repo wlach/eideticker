@@ -4,27 +4,12 @@ import datetime
 import eideticker
 import json
 import os
-import re
 import sys
-import tempfile
 import time
 import videocapture
 
 CAPTURE_DIR = os.path.join(os.path.dirname(__file__), "../captures")
 PROFILE_DIR = os.path.join(os.path.dirname(__file__), "../profiles")
-CHECKERBOARD_REGEX = re.compile('.*GeckoLayerRendererProf.*1000ms:.*\ '
-                                '([0-9]+\.[0-9]+)\/([0-9]+).*')
-
-def parse_checkerboard_log(fname):
-    checkerboarding_percent_totals = 0.0
-    with open(fname) as f:
-        for line in f.readlines():
-            match = CHECKERBOARD_REGEX.search(line.rstrip())
-            if match:
-                (amount, total) = (float(match.group(1)), float(match.group(2)))
-                checkerboarding_percent_totals += (total - amount)
-
-    return checkerboarding_percent_totals
 
 def runtest(device_prefs, testname, options, apk=None, appname = None,
             appdate = None):
@@ -58,23 +43,18 @@ def runtest(device_prefs, testname, options, apk=None, appname = None,
         else:
             profile_file = None
 
-        if options.get_internal_checkerboard_stats:
-            checkerboard_log_file = tempfile.NamedTemporaryFile()
-        else:
-            checkerboard_log_file = None
-
         current_date = time.strftime("%Y-%m-%d")
         capture_name = "%s - %s (taken on %s)" % (testname, appname, current_date)
 
-        eideticker.run_test(testname, options.capture_device,
-                            appname, capture_name, device_prefs,
-                            extra_prefs=options.extra_prefs,
-                            extra_env_vars=options.extra_env_vars,
-                            checkerboard_log_file=checkerboard_log_file,
-                            profile_file=profile_file,
-                            no_capture=options.no_capture,
-                            capture_file=options.capture_file,
-                            sync_time=options.sync_time)
+        testlog = eideticker.run_test(testname, options.capture_device,
+                                      appname, capture_name, device_prefs,
+                                      extra_prefs=options.extra_prefs,
+                                      extra_env_vars=options.extra_env_vars,
+                                      log_checkerboard_stats=options.get_internal_checkerboard_stats,
+                                      profile_file=profile_file,
+                                      no_capture=options.no_capture,
+                                      capture_file=capture_file,
+                                      sync_time=options.sync_time)
 
         capture_result = {}
         if not options.no_capture:
@@ -98,8 +78,7 @@ def runtest(device_prefs, testname, options, apk=None, appname = None,
             capture_result['profile'] = profile_file
 
         if options.get_internal_checkerboard_stats:
-            internal_checkerboard_totals = parse_checkerboard_log(checkerboard_log_file.name)
-            capture_result['internalcheckerboard'] = internal_checkerboard_totals
+            capture_result['internalcheckerboard'] = testlog.checkerboard_percent_totals
 
         captures.append(capture_result)
 

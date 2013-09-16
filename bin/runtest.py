@@ -29,10 +29,6 @@ def main(args=sys.argv[1:]):
                       help="Specify an application name (android only)")
     parser.add_option("--test-type", action="store", type="string",
                       dest="test_type", help="override test type")
-    parser.add_option("--checkerboard-log-file", action="store",
-                      type="string", dest="checkerboard_log_file",
-                      help="name to give checkerboarding stats file (fennec "
-                      "only)")
     parser.add_option("--profile-file", action="store",
                       type="string", dest="profile_file",
                       help="Collect a performance profile using the built in "
@@ -55,19 +51,20 @@ def main(args=sys.argv[1:]):
 
     device_prefs = eideticker.getDevicePrefs(options)
 
-    eideticker.run_test(testkey, options.capture_device,
-                        options.appname,
-                        options.capture_name, device_prefs,
-                        extra_prefs=options.extra_prefs,
-                        extra_env_vars=options.extra_env_vars,
-                        test_type=options.test_type,
-                        profile_file=options.profile_file,
-                        request_log_file=options.request_log_file,
-                        actions_log_file=options.actions_log_file,
-                        checkerboard_log_file=options.checkerboard_log_file,
-                        no_capture=options.no_capture,
-                        capture_area=options.capture_area,
-                        capture_file=options.capture_file,
-                        sync_time=options.sync_time)
+    testlog = eideticker.run_test(testkey, options.capture_device,
+                                  options.appname,
+                                  options.capture_name, device_prefs,
+                                  extra_prefs=options.extra_prefs,
+                                  extra_env_vars=options.extra_env_vars,
+                                  test_type=options.test_type,
+                                  profile_file=options.profile_file,
+                                  no_capture=options.no_capture,
+                                  capture_area=options.capture_area,
+                                  capture_file=options.capture_file,
+                                  sync_time=options.sync_time)
+
+    # save logs if applicable
+    testlog.save_logs(http_request_log_file=options.request_log_file,
+                      actions_log_file=options.actions_log_file)
 
 main()

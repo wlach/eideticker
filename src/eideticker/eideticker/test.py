@@ -10,6 +10,7 @@ import urlparse
 import time
 import imp
 import os
+import re
 from gaiatest.gaia_test import GaiaApps
 from log import LoggingMixin
 
@@ -19,6 +20,20 @@ class TestException(Exception):
         Exception.__init__(self, msg)
         # can_retry means a failure that is possibly intermittent
         self.can_retry = can_retry
+
+class TestLog(object):
+    # initialize possible parameters to None
+    actions = None
+    http_request_log = None
+    checkerboard_percent_totals = None
+
+    def save_logs(self, actions_log_path=None, http_request_log_path=None):
+        if http_request_log_path:
+            open(http_request_log_path, 'w').write(json.dumps(
+                    self.http_request_log))
+        if actions_log_path:
+            open(actions_log_path, 'w').write(json.dumps({ 'actions':
+                                                           self.actions }))
 
 class CaptureServer(LoggingMixin):
 
@@ -83,13 +98,14 @@ class Test(LoggingMixin):
     finished_capture = False
     start_frame = None
     end_frame = None
+    testlog = TestLog()
 
     def __init__(self, testinfo, testpath_rel=None, device=None,
                  capture_file = None,
                  capture_controller=None,
                  capture_metadata={}, tempdir=None,
                  track_start_frame=False,
-                 track_end_frame=False, actions_log_file=None,
+                 track_end_frame=False,
                  **kwargs):
         self.testpath_rel = testpath_rel
         self.device = device
@@ -100,7 +116,6 @@ class Test(LoggingMixin):
         self.tempdir = tempdir
         self.track_start_frame = track_start_frame
         self.track_end_frame = track_end_frame
-        self.actions_log_file = actions_log_file
 
     def cleanup(self):
         pass
@@ -179,27 +194,24 @@ class Test(LoggingMixin):
             action['start'] -= self.test_start_time
             action['end'] -= self.test_start_time
 
-        if self.actions_log_file:
-            open(self.actions_log_file, 'w').write(json.dumps({ 'actions': actions }))
+        self.testlog.actions = actions
 
         self.test_finished()
 
 
 class WebTest(Test):
 
-    def __init__(self, testinfo, actions={}, docroot=None, request_log_file=None,
-                 **kwargs):
+    def __init__(self, testinfo, actions={}, docroot=None, **kwargs):
         super(WebTest, self).__init__(testinfo, track_start_frame = True,
                                       track_end_frame = True, **kwargs)
 
         self.actions = actions
-        self.request_log_file = request_log_file
 
         self.capture_server = CaptureServer(self)
         self.host = moznetwork.get_ip()
         self.http = mozhttpd.MozHttpd(docroot=docroot,
                                       host=self.host, port=0,
-                                      log_requests=bool(request_log_file),
+                                      log_requests=True,
                                       urlhandlers = [
                 { 'method': 'GET',
                   'path': '/api/captures/start/?',
@@ -243,14 +255,11 @@ class WebTest(Test):
     def test_finished(self):
         super(WebTest, self).test_finished()
 
-        request_log = []
-        if self.request_log_file:
-            # let's make the request times relative to the start of the test
-            for request in self.http.request_log:
-                request['time'] -= self.test_start_time
-                request_log.append(request)
-
-            open(self.request_log_file, 'w').write(json.dumps(request_log))
+        self.testlog.http_request_log = []
+        # let's make the request times relative to the start of the test
+        for request in self.http.request_log:
+            request['time'] -= self.test_start_time
+            self.testlog.http_request_log.append(request)
 
     def input_actions(self, commandset):
         if self.actions: # startup test indicated by no actions
@@ -273,13 +282,13 @@ class AndroidWebTest(WebTest):
                  extra_env_vars = {},
                  profile_file = None,
                  gecko_profiler_addon_dir = None,
-                 checkerboard_log_file = None,
+                 log_checkerboard_stats = False,
                  **kwargs):
         super(AndroidWebTest, self).__init__(testinfo, **kwargs)
 
         self.appname = appname
         self.extra_prefs = extra_prefs
-        self.checkerboard_log_file = checkerboard_log_file
+        self.log_checkerboard_stats = log_checkerboard_stats
         self.profile_file = profile_file
         self.gecko_profiler_addon_dir = gecko_profiler_addon_dir
         self.preinitialize_user_profile = int(testinfo.get('preInitializeProfile', 0))
@@ -289,7 +298,7 @@ class AndroidWebTest(WebTest):
         # takes a second or so to accept the new setting, so let's do that here --
         # ideally we would detect when that's working, but I'm not sure how to do
         # so trivially)
-        if self.checkerboard_log_file:
+        if self.log_checkerboard_stats:
             self.old_log_val = self.device.getprop("log.tag.GeckoLayerRendererProf")
             self.device.setprop("log.tag.GeckoLayerRendererProf", "DEBUG")
 
@@ -314,7 +323,7 @@ class AndroidWebTest(WebTest):
 
     def cleanup(self):
         # Clean up checkerboard logging preferences
-        if self.checkerboard_log_file:
+        if self.log_checkerboard_stats:
             self.device.setprop("log.tag.GeckoLayerRendererProf", self.old_log_val)
 
         # kill fennec, clean up temporary user profile
@@ -323,21 +332,26 @@ class AndroidWebTest(WebTest):
     def test_started(self):
         super(AndroidWebTest, self).test_started()
 
-        if self.checkerboard_log_file:
+        if self.log_checkerboard_stats:
             self.device.recordLogcat()
 
     def test_finished(self):
         super(AndroidWebTest, self).test_finished()
 
-        if self.checkerboard_log_file:
+        if self.log_checkerboard_stats:
             # sleep a bit to make sure we get all the checkerboard stats from
             # test
             time.sleep(1)
-            with open(self.checkerboard_log_file, 'w') as f:
-                output = "\n".join(self.device.getLogcat(
+            self.testlog.checkerboard_percent_totals = 0.0
+            CHECKERBOARD_REGEX = re.compile('.*GeckoLayerRendererProf.*1000ms:.*\ '
+                                '([0-9]+\.[0-9]+)\/([0-9]+).*')
+            for line in self.device.getLogcat(
                         filterSpecs=["GeckoLayerRendererProf:D", "*:S"],
-                        format="brief"))
-                f.write(output)
+                        format="brief"):
+                match = CHECKERBOARD_REGEX.search(line.rstrip())
+                if match:
+                    (amount, total) = (float(match.group(1)), float(match.group(2)))
+                    self.testlog.checkerboard_percent_totals += (total - amount)
 
         if self.profile_file:
             self.runner.save_profile()

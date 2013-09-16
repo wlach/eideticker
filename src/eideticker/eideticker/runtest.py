@@ -20,7 +20,7 @@ def get_test_manifest():
 def run_test(testkey, capture_device, appname, capture_name,
              device_prefs, extra_prefs={}, test_type=None, profile_file=None,
              request_log_file=None, actions_log_file=None,
-             checkerboard_log_file=None, extra_env_vars={},
+             log_checkerboard_stats=False, extra_env_vars={},
              capture_area=None, no_capture=False, capture_file=None,
              sync_time=True):
     manifest = get_test_manifest()
@@ -104,7 +104,7 @@ def run_test(testkey, capture_device, appname, capture_name,
                     appname = appname,
                     request_log_file = request_log_file,
                     actions_log_file = actions_log_file,
-                    checkerboard_log_file = checkerboard_log_file,
+                    log_checkerboard_stats = log_checkerboard_stats,
                     profile_file = profile_file,
                     gecko_profiler_addon_dir=GECKO_PROFILER_ADDON_DIR,
                     docroot = TEST_DIR,
@@ -118,3 +118,5 @@ def run_test(testkey, capture_device, appname, capture_name,
             capture_controller.convert_capture(test.start_frame, test.end_frame)
         except KeyboardInterrupt:
             raise TestException("Aborting because of keyboard interrupt")
+
+    return test.testlog

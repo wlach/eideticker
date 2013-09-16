@@ -49,16 +49,6 @@ def runtest(dm, device_prefs, capture_device, capture_area, product, appname,
         profile_path = os.path.join('profiles', 'sps-profile-%s.zip' % time.time())
         profile_file = os.path.join(outputdir, profile_path)
 
-    request_log_file = None
-    if log_http_requests:
-        request_log_path = os.path.join('httplogs', 'http-log-%s.json' % time.time())
-        request_log_file = os.path.join(outputdir, request_log_path)
-
-    actions_log_file = None
-    if log_actions:
-        actions_log_path = os.path.join('actionlogs', 'action-log-%s.json' % time.time())
-        actions_log_file = os.path.join(outputdir, actions_log_path)
-
     test_completed = False
     for i in range(3):
         print "Running test (try %s of 3)" % (i+1)
@@ -67,14 +57,12 @@ def runtest(dm, device_prefs, capture_device, capture_area, product, appname,
         dm.killProcess(appname)
 
         try:
-            eideticker.run_test(testinfo['key'], capture_device,
-                                appname, capture_name, device_prefs,
-                                profile_file=profile_file,
-                                request_log_file=request_log_file,
-                                actions_log_file=actions_log_file,
-                                capture_area=capture_area,
-                                capture_file=capture_file,
-                                sync_time=sync_time)
+            testlog = eideticker.run_test(testinfo['key'], capture_device,
+                                          appname, capture_name, device_prefs,
+                                          profile_file=profile_file,
+                                          capture_area=capture_area,
+                                          capture_file=capture_file,
+                                          sync_time=sync_time)
             test_completed = True
             break
         except eideticker.TestException, e:
@@ -144,11 +132,20 @@ def runtest(dm, device_prefs, capture_device, capture_area, product, appname,
         datapoint['profile'] = profile_path
 
     if log_http_requests:
-        datapoint['httpLog'] = request_log_path
+        request_log_relpath = os.path.join('httplogs',
+                                        'http-log-%s.json' % time.time())
+        testlog.save_logs(http_request_log_path=
+                          os.path.join(outputdir, request_log_relpath))
+        datapoint['httpLog'] = request_log_relpath
 
     if log_actions:
-        datapoint['actionLog'] = actions_log_path
+        actions_log_relpath = os.path.join('actionlogs',
+                                           'action-log-%s.json' % time.time())
+        testlog.save_logs(actions_log_path=os.path.join(outputdir,
+                                                        actions_log_relpath))
+        datapoint['actionLog'] = actions_log_relpath
 
+    # Add datapoint
     data['testdata'][productname][appdate].append(datapoint)
 
     # Write the data to disk immediately (so we don't lose it if we fail later)
