@@ -24,13 +24,15 @@ class CaptureServer(object):
             self.mode = mode
             self.capture_file = capture_file
 
+    @mozhttpd.handlers.json_response
     def start_capture(self, req):
         if self.capture_controller:
             self.capture_controller.start_capture(self.capture_file, self.mode)
             self.start_frame = self.capture_controller.capture_framenum()
         print "Start capture. Frame: %s. Time: %s" % (self.start_frame, time.time())
-        return (200, {}, '')
+        return (200, {})
 
+    @mozhttpd.handlers.json_response
     def end_capture(self, req):
         if self.capture_controller:
             self.end_frame = self.capture_controller.capture_framenum()
@@ -38,7 +40,7 @@ class CaptureServer(object):
             self.capture_controller.terminate_capture()
 
         self.finished = True
-        return (200, {}, '')
+        return (200, {})
 
     def convert_capture(self):
         if self.capture_controller:
@@ -116,7 +118,6 @@ def main(args=sys.argv[1:]):
                       help="Output the results to file")
 
     options, args = parser.parse_args()
-    parser.validate_options(options)
 
     capture_file = options.capture_file
     if not capture_file:
