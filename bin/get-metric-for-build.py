@@ -52,6 +52,7 @@ def runtest(device_prefs, testname, options, apk=None, appname = None,
                                       extra_env_vars=options.extra_env_vars,
                                       log_checkerboard_stats=options.get_internal_checkerboard_stats,
                                       profile_file=profile_file,
+                                      capture_area=options.capture_area,
                                       no_capture=options.no_capture,
                                       capture_file=capture_file,
                                       sync_time=options.sync_time)
@@ -62,11 +63,21 @@ def runtest(device_prefs, testname, options, apk=None, appname = None,
 
             capture = videocapture.Capture(capture_file)
 
+            difference_threshold = 2048
+            if options.capture_device == "pointgrey":
+                # even with median filtering, pointgrey captures tend to have a
+                # bunch of visual noise -- try to compensate for this by setting
+                # a higher threshold for frames to be considered different
+                difference_threshold = 4096
+
+
             if options.startup_test:
-                capture_result['stableframe'] = videocapture.get_stable_frame(capture)
+                capture_result['stableframe'] = videocapture.get_stable_frame(capture,
+                                                                              threshold=difference_threshold)
             else:
                 capture_result.update(
-                    eideticker.get_standard_metrics(capture, testlog.actions))
+                    eideticker.get_standard_metrics(capture, testlog.actions,
+                                                    difference_threshold=difference_threshold))
             if options.outputdir:
                 video_path = os.path.join('videos', 'video-%s.webm' % time.time())
                 video_file = os.path.join(options.outputdir, video_path)
@@ -81,17 +92,23 @@ def runtest(device_prefs, testname, options, apk=None, appname = None,
 
         capture_results.append(capture_result)
 
-    appkey = appname
-    if appdate:
-        appkey = appdate.isoformat()
+    if options.devicetype == "b2g":
+        # FIXME: get information from sources.xml and application.ini on
+        # device, as we do in update-dashboard.py
+        display_key = "FirefoxOS"
     else:
         appkey = appname
+        if appdate:
+            appkey = appdate.isoformat()
+        else:
+            appkey = appname
 
-    if appinfo and appinfo.get('revision'):
-        display_key = "%s (%s)" % (appkey, appinfo['revision'])
-    else:
-        display_key = appkey
-    print "=== Results for %s ===" % display_key
+        if appinfo and appinfo.get('revision'):
+            display_key = "%s (%s)" % (appkey, appinfo['revision'])
+        else:
+            display_key = appkey
+
+    print "=== Results on %s for %s ===" % (testname, display_key)
 
     if not options.no_capture:
         if options.startup_test:
@@ -185,7 +202,7 @@ def main(args=sys.argv[1:]):
     options, args = parser.parse_args()
 
     if len(args) == 0:
-        parser.error("Must specify at least one argument: the path to the test")
+        parser.error("Must specify at least one argument: the test")
 
     dates = []
     appnames = []
@@ -206,12 +223,16 @@ def main(args=sys.argv[1:]):
             apks = args[1:]
         else:
             appnames = args[1:]
+    elif options.devicetype == "b2g":
+        testname = args[0]
     elif not options.date or (not options.start_date and not options.end_date):
-        parser.error("Must specify date, date range, a set of appnames (e.g. org.mozilla.fennec) or a set of apks (if --use-apks is specified)")
+        parser.error("On Android, must specify date, date range, a set of appnames (e.g. org.mozilla.fennec) or a set of apks (if --use-apks is specified)")
 
     device_prefs = eideticker.getDevicePrefs(options)
 
-    if appnames:
+    if options.devicetype == "b2g":
+        runtest(device_prefs, testname, options)
+    elif appnames:
         for appname in appnames:
             runtest(device_prefs, testname, options, appname=appname)
     elif apks:
