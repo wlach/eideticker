@@ -25,6 +25,10 @@ def runtest(device_prefs, testname, options, apk=None, appname = None,
     else:
         appinfo = None
 
+    testinfo = eideticker.get_testinfo(testname)
+    stableframecapture = (testinfo['type'] in ('startup', 'webstartup') or
+                          testinfo['defaultMeasure'] == 'timetostableframe')
+
     capture_results = []
 
     for i in range(options.num_runs):
@@ -70,8 +74,7 @@ def runtest(device_prefs, testname, options, apk=None, appname = None,
                 # a higher threshold for frames to be considered different
                 difference_threshold = 4096
 
-
-            if options.startup_test:
+            if stableframecapture:
                 capture_result['stableframe'] = videocapture.get_stable_frame(capture,
                                                                               threshold=difference_threshold)
             else:
@@ -111,7 +114,7 @@ def runtest(device_prefs, testname, options, apk=None, appname = None,
     print "=== Results on %s for %s ===" % (testname, display_key)
 
     if not options.no_capture:
-        if options.startup_test:
+        if stableframecapture:
             print "  First stable frames:"
             print "  %s" % map(lambda c: c['stableframe'], capture_results)
             print
@@ -180,10 +183,6 @@ def main(args=sys.argv[1:]):
                       action="store_true",
                       dest="get_internal_checkerboard_stats",
                       help="get and calculate internal checkerboard stats")
-    parser.add_option("--startup-test",
-                      action="store_true",
-                      dest="startup_test",
-                      help="measure startup times instead of normal metrics")
     parser.add_option("--url-params", action="store",
                       dest="url_params", default="",
                       help="additional url parameters for test")

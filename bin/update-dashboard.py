@@ -194,15 +194,7 @@ def main(args=sys.argv[1:]):
     if options.num_runs:
         num_runs = options.num_runs
 
-    manifest = eideticker.get_test_manifest()
-
-    # sanity check... does the test match a known test key?
-    testkeys = [test["key"] for test in manifest.active_tests()]
-    if testkey not in testkeys:
-        print "ERROR: No tests matching '%s' (options: %s)" % (testkey, ", ".join(testkeys))
-        sys.exit(1)
-
-    testinfo = [test for test in manifest.active_tests() if test['key'] == testkey][0]
+    testinfo = eideticker.get_testinfo(testkey)
 
     device_id = options.device_id
     if not device_id:

@@ -11,8 +11,12 @@ import time
 import imp
 import os
 import re
+import manifestparser
 from gaiatest.gaia_test import GaiaApps
 from log import LoggingMixin
+
+SRC_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
+TEST_DIR = os.path.abspath(os.path.join(SRC_DIR, "tests"))
 
 class TestException(Exception):
 
@@ -71,6 +75,20 @@ class CaptureServer(LoggingMixin):
         self.test.input_actions(commandset)
 
         return (200, {})
+
+def get_test_manifest():
+    return manifestparser.TestManifest(manifests=[os.path.join(
+                TEST_DIR, 'manifest.ini')])
+
+def get_testinfo(testkey):
+    manifest = get_test_manifest()
+
+    # sanity check... does the test match a known test key?
+    testkeys = [test["key"] for test in manifest.active_tests()]
+    if testkey not in testkeys:
+        raise TestException("No tests matching '%s' (options: %s)" % (testkey, ", ".join(testkeys)))
+
+    return [test for test in manifest.active_tests() if test['key'] == testkey][0]
 
 def get_test(testinfo, devicetype="android", testtype="web", **kwargs):
     testpath = testinfo['path']

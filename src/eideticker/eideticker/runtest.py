@@ -1,21 +1,14 @@
 from device import getDevice
-from test import get_test, TestException
+from test import get_test, get_testinfo, TestException, SRC_DIR, TEST_DIR
 import datetime
 import json
-import manifestparser
 import os
 import urllib
 import videocapture
 
-SRC_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
 CAPTURE_DIR = os.path.abspath(os.path.join(SRC_DIR, "../captures"))
-TEST_DIR = os.path.abspath(os.path.join(SRC_DIR, "tests"))
 GECKO_PROFILER_ADDON_DIR = os.path.join(SRC_DIR, "../src/GeckoProfilerAddon")
 EIDETICKER_TEMP_DIR = "/tmp/eideticker"
-
-def get_test_manifest():
-    return manifestparser.TestManifest(manifests=[os.path.join(
-                TEST_DIR, 'manifest.ini')])
 
 def run_test(testkey, capture_device, appname, capture_name,
              device_prefs, extra_prefs={}, test_type=None, profile_file=None,
@@ -23,14 +16,7 @@ def run_test(testkey, capture_device, appname, capture_name,
              log_checkerboard_stats=False, extra_env_vars={},
              capture_area=None, no_capture=False, capture_file=None,
              sync_time=True):
-    manifest = get_test_manifest()
-
-    # sanity check... does the test match a known test key?
-    testkeys = [test["key"] for test in manifest.active_tests()]
-    if testkey not in testkeys:
-        raise TestException("No tests matching '%s' (options: %s)" % (testkey, ", ".join(testkeys)))
-
-    testinfo = [test for test in manifest.active_tests() if test['key'] == testkey][0]
+    testinfo = get_testinfo(testkey)
     print "Testinfo: %s" % testinfo
 
     if device_prefs['devicetype'] == 'android' and not appname and \
