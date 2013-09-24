@@ -42,8 +42,6 @@ def main(args=sys.argv[1:]):
 
     options, args = parser.parse_args()
 
-    parser.validate_options(options)
-
     if len(args) != 1:
         parser.error("You must specify (only) a test key")
         sys.exit(1)
