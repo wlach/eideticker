@@ -62,7 +62,7 @@ def main(args=sys.argv[1:]):
                                   sync_time=options.sync_time)
 
     # save logs if applicable
-    testlog.save_logs(http_request_log_file=options.request_log_file,
-                      actions_log_file=options.actions_log_file)
+    testlog.save_logs(http_request_log_path=options.request_log_file,
+                      actions_log_path=options.actions_log_file)
 
 main()
