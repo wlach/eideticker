@@ -48,8 +48,12 @@ class Capture(object):
         self.filename = filename
 
     @property
+    def fps(self):
+        return 60.0
+
+    @property
     def length(self):
-        return self.num_frames / 60.0
+        return self.num_frames / self.fps
 
     def get_video(self):
         buf = StringIO.StringIO()
