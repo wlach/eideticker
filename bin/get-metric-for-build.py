@@ -73,6 +73,7 @@ def runtest(device_prefs, testname, options, apk=None, appname = None,
                 # bunch of visual noise -- try to compensate for this by setting
                 # a higher threshold for frames to be considered different
                 difference_threshold = 4096
+            capture_result['capture_fps'] = capture.fps
 
             if stableframecapture:
                 capture_result['stableframe'] = videocapture.get_stable_frame(capture,
@@ -117,6 +118,9 @@ def runtest(device_prefs, testname, options, apk=None, appname = None,
         if stableframecapture:
             print "  First stable frames:"
             print "  %s" % map(lambda c: c['stableframe'], capture_results)
+            print
+            print "  Times to first stable frame (seconds):"
+            print "  %s" % map(lambda c: c['stableframe'] / c['capture_fps'], capture_results)
             print
         else:
             print "  Number of unique frames:"
