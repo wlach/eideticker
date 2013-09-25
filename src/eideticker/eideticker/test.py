@@ -464,29 +464,6 @@ class B2GTest(Test):
                                       track_start_frame=track_start_frame,
                                       track_end_frame=track_end_frame,
                                       **kwargs)
-        self.log("Setting up device")
-        self.device.setupDHCP()
-
-        self.device.setupMarionette()
-        session = self.device.marionette.session
-        if 'b2g' not in session:
-            raise Exception("bad session value %s returned by start_session" % session)
-
-        # unlock device, so it doesn't go to sleep
-        self.device.unlock()
-
-        # Wait for device to properly recognize network
-        # (FIXME: this timeout is terrible, can we do check for network
-        # connectivity with marionette somehow?)
-        time.sleep(5)
-
-        # reset orientation to default for this type of device
-        self.device.resetOrientation()
-
-    def cleanup(self):
-        self.device.marionette.delete_session()
-        self.device.cleanup()
-        self.device.restartB2G()
 
 class B2GWebTest(B2GTest, WebTest):
 

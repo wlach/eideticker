@@ -5,6 +5,7 @@ import json
 import os
 import urllib
 import videocapture
+import time
 
 CAPTURE_DIR = os.path.abspath(os.path.join(SRC_DIR, "../captures"))
 GECKO_PROFILER_ADDON_DIR = os.path.join(SRC_DIR, "../src/GeckoProfilerAddon")
@@ -42,6 +43,24 @@ def run_test(testkey, capture_device, appname, capture_name,
 
     # Create a device object to interface with the phone
     device = getDevice(**device_prefs)
+
+    if device_prefs['devicetype'] == 'b2g':
+        device.setupDHCP()
+        device.setupMarionette()
+        session = device.marionette.session
+        if 'b2g' not in session:
+            raise Exception("bad session value %s returned by start_session" % session)
+
+        # unlock device, so it doesn't go to sleep
+        device.unlock()
+
+        # Wait for device to properly recognize network
+        # (FIXME: this timeout is terrible, can we do check for network
+        # connectivity with marionette somehow?)
+        time.sleep(5)
+
+        # reset orientation to default for this type of device
+        device.resetOrientation()
 
     # synchronize time unless instructed not to
     if sync_time:
@@ -98,6 +117,11 @@ def run_test(testkey, capture_device, appname, capture_name,
 
     test.run()
     test.cleanup()
+
+    if device_prefs['devicetype'] == 'b2g':
+        device.marionette.delete_session()
+        device.cleanup()
+        device.restartB2G()
 
     if capture_file:
         try:
