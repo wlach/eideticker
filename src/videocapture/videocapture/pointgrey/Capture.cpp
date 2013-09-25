@@ -107,8 +107,8 @@ int main(int argc, char *argv[])
     }
 
   // turn off all auto adjustments for eideticker
-  PropertyType propTypes[4] = { AUTO_EXPOSURE, SHARPNESS, SHUTTER, GAIN };
-  for (int i=0; i<4; i++) {
+  PropertyType propTypes[5] = { AUTO_EXPOSURE, SHARPNESS, SHUTTER, GAIN, WHITE_BALANCE };
+  for (int i=0; i<5; i++) {
     Property prop;
     prop.type = propTypes[i];
     prop.autoManualMode = false;
