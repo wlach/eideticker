@@ -201,7 +201,7 @@ class Test(LoggingMixin):
         self.log("Test finished callback (framenum: %s)" % (
                 self.end_frame))
 
-    def execute_actions(self, actions):
+    def execute_actions(self, actions, test_finished_after_actions=True):
         self.log("Executing actions")
         def executeCallback():
             self.test_started()
@@ -214,7 +214,8 @@ class Test(LoggingMixin):
 
         self.testlog.actions = actions
 
-        self.test_finished()
+        if test_finished_after_actions:
+            self.test_finished()
 
 
 class WebTest(Test):
