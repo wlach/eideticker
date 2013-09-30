@@ -1,5 +1,7 @@
 "use strict";
 
+var serverPrefix = ""; // set this to e.g. `http://eideticker.mozilla.org/` to serve remote data to a local server
+
 function parseDate(datestr) {
   var parsed = datestr.split("-");
   var year = parsed[0];
@@ -21,7 +23,7 @@ var measures = {
 }
 
 function updateContent(testInfo, deviceId, testId, measureId) {
-  $.getJSON(deviceId + '/' + testId + '.json', function(dict) {
+  $.getJSON(serverPrefix + deviceId + '/' + testId + '.json', function(dict) {
     if (!dict || !dict['testdata']) {
       $('#content').html("<p><b>No data for that device/test combination. :(</b></p>");
       return;
@@ -102,7 +104,7 @@ function updateGraph(title, rawdata, measure) {
             sourceRepo = "http://hg.mozilla.org/mozilla-central";
           }
           metadataHash[seriesIndex].push({
-            'videoURL': sample.video,
+            'videoURL': serverPrefix + sample.video,
             'dateStr': datestr,
             'appDate': sample.appdate,
             'sourceRepo': sourceRepo,
@@ -111,10 +113,10 @@ function updateGraph(title, rawdata, measure) {
             'gaiaRevision': sample.gaiaRevision,
             'prevRevision': prevRevision,
             'buildId': sample.buildid,
-            'profileURL': sample.profile,
-            'frameDiff': sample.frameDiff,
-            'actionLog': sample.actionLog,
-            'httpLog': sample.httpLog
+            'profileURL': serverPrefix + sample.profile,
+            'frameDiff': serverPrefix + sample.frameDiff,
+            'actionLog': serverPrefix + sample.actionLog,
+            'httpLog': serverPrefix + sample.httpLog
           });
         }
       });
@@ -265,12 +267,12 @@ function updateGraph(title, rawdata, measure) {
 $(function() {
   var graphData = {};
 
-  $.getJSON('devices.json', function(deviceData) {
+  $.getJSON(serverPrefix + 'devices.json', function(deviceData) {
     var devices = deviceData['devices'];
     var deviceIds = Object.keys(devices);
 
     $.when.apply($, deviceIds.map(function(deviceId) {
-      return $.getJSON([deviceId, 'tests.json'].join('/'), function(testData) {
+      return $.getJSON(serverPrefix + [deviceId, 'tests.json'].join('/'), function(testData) {
         var tests = testData['tests'];
         devices[deviceId]['tests'] = tests;
       });
