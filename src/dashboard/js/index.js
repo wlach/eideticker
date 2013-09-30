@@ -19,7 +19,9 @@ var measures = {
   'fps': { 'shortDesc': 'Frames per second',
            'longDesc': 'The measure is a calculation of the average number of UNIQUE frames per second of capture. The theoretical maximum is 60 fps (which is what we are capturing), but note that if there periods where the page being captured is unchanging this number may be aritifically low.' },
   'timetostableframe': { 'shortDesc': 'Time to first stable frame (seconds)',
-                         'longDesc': 'The time to the first frame of the capture where the image is stable (i.e. mostly unchanging). This is a startup metric that indicates roughly when things have stopped loading. Lower values are better.' }
+                         'longDesc': 'The time to the first frame of the capture where the image is stable (i.e. mostly unchanging). This is a startup metric that indicates roughly when things have stopped loading. Lower values are better.' },
+  'timetoresponse': { 'shortDesc': 'Time to visible response (seconds)',
+                      'longDesc': 'Time between event being first sent to device and an observable response. A long pause may indicate that the application is unresponsive.' }
 }
 
 function updateContent(testInfo, deviceId, testId, measureId) {
