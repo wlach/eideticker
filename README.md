@@ -7,10 +7,10 @@ analyzes browser output via HDMI or an external camera.
 
 ### Common
 
-* Linux system with zip, ffmpeg, g++, python 2.7 development and virtualenv
+* Linux system with zip, ffmpeg, g++, ntp, python 2.7 development and virtualenv
   installed. On Ubuntu, you can get this setup by running:
 
-    `sudo apt-get install -y zip ffmpeg g++ python2.7-dev python-virtualenv`
+    `sudo apt-get install -y zip ffmpeg g++ python2.7-dev python-virtualenv ntp`
 
 * [Android Debug Bridge](https://developer.android.com/tools/help/adb.html) (adb)
 

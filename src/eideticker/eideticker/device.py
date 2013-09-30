@@ -4,6 +4,7 @@
 
 import json
 import mozdevice
+import moznetwork
 import mozb2g
 import mozlog
 import os
@@ -144,7 +145,7 @@ class EidetickerMixin(object):
 
     def synchronizeTime(self):
         self.shellCheckOutput([self.DEFAULT_NTPDATE_LOCATION, "-c", "1", "-d",
-                               "-h", "pool.ntp.org", "-s"], root=True)
+                               "-h", moznetwork.get_ip(), "-s"], root=True)
 
     def sendSaveProfileSignal(self, appName):
         pids = self.getPIDs(appName)
