@@ -3,7 +3,7 @@
 set -e
 
 SERVER_DIR=$(dirname $0)/../src/webapp/server/
-cd $SERVER_DIR && ../../../bin/python server.py &
+cd $SERVER_DIR && ../../../bin/python server.py $1 &
 PID=$!
 echo "Server running with PID $PID"
 
