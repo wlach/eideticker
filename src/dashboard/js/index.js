@@ -1,6 +1,13 @@
 "use strict";
 
 var serverPrefix = ""; // set this to e.g. `http://eideticker.mozilla.org/` to serve remote data to a local server
+function getResourceURL(path) {
+  if (!path)
+    return null;
+
+  return serverPrefix + path;
+}
+
 
 function parseDate(datestr) {
   var parsed = datestr.split("-");
@@ -25,7 +32,7 @@ var measures = {
 }
 
 function updateContent(testInfo, deviceId, testId, measureId) {
-  $.getJSON(serverPrefix + deviceId + '/' + testId + '.json', function(dict) {
+  $.getJSON(getResourceURL(deviceId + '/' + testId + '.json'), function(dict) {
     if (!dict || !dict['testdata']) {
       $('#content').html("<p><b>No data for that device/test combination. :(</b></p>");
       return;
@@ -106,7 +113,7 @@ function updateGraph(title, rawdata, measure) {
             sourceRepo = "http://hg.mozilla.org/mozilla-central";
           }
           metadataHash[seriesIndex].push({
-            'videoURL': serverPrefix + sample.video,
+            'videoURL': getResourceURL(sample.video),
             'dateStr': datestr,
             'appDate': sample.appdate,
             'sourceRepo': sourceRepo,
@@ -115,10 +122,10 @@ function updateGraph(title, rawdata, measure) {
             'gaiaRevision': sample.gaiaRevision,
             'prevRevision': prevRevision,
             'buildId': sample.buildid,
-            'profileURL': serverPrefix + sample.profile,
-            'frameDiff': serverPrefix + sample.frameDiff,
-            'actionLog': serverPrefix + sample.actionLog,
-            'httpLog': serverPrefix + sample.httpLog
+            'profileURL': getResourceURL(sample.profile),
+            'frameDiff': getResourceURL(sample.frameDiff),
+            'actionLog': getResourceURL(sample.actionLog),
+            'httpLog': getResourceURL(sample.httpLog)
           });
         }
       });
@@ -269,15 +276,16 @@ function updateGraph(title, rawdata, measure) {
 $(function() {
   var graphData = {};
 
-  $.getJSON(serverPrefix + 'devices.json', function(deviceData) {
+  $.getJSON(getResourceURL('devices.json'), function(deviceData) {
     var devices = deviceData['devices'];
     var deviceIds = Object.keys(devices);
 
     $.when.apply($, deviceIds.map(function(deviceId) {
-      return $.getJSON(serverPrefix + [deviceId, 'tests.json'].join('/'), function(testData) {
-        var tests = testData['tests'];
-        devices[deviceId]['tests'] = tests;
-      });
+      return $.getJSON(getResourceURL([deviceId, 'tests.json'].join('/')),
+                       function(testData) {
+                         var tests = testData['tests'];
+                         devices[deviceId]['tests'] = tests;
+                       });
     })).done(function() {
 
       // initialize device chooser
