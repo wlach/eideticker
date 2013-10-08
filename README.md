@@ -172,23 +172,31 @@ you are just working on a test and/or don't have a capture rig), pass the
 
 ### Console profiling
 
-Console mode is meant for internal profiling. You run a program
-called get-metric-for-build.py with a specific test against an Android apk,
-and out will pop several results. This is not yet supported for B2G.
+Console mode allows you to get one-off results of running Eideticker for a
+single test. You run a program called get-metric-for-build.py and it will
+print some numbers to standard output.
+
+#### get-metric-for-build on Android
+
+To run get-metric-for-build against an already-installed version of
+Fennec, specify the name of the test followed by the names of the
+applications you want to test:
+
+    ./bin/get-metric-for-build.py <test> [app name 1] [app name 2] ...
+
+If you want to test a set of apks, use the `--use-apks` option and specify
+the set of apks you want to test after the test name.
 
     ./bin/get-metric-for-build.py --use-apks <test> <apk of build 1> [apk of build 2] ...
 
-For example, to run the canvas clock example against Fennec nightly, try
-this:
+For example, to run the canvas clock test against the copy of Fennec nightly
+currently installed on the device, do:
+
+    ./bin/get-metric-for-build.py --use-apks clock org.mozilla.fennec
+
+To run the same test against an uninstalled copy of Fennec nightly, try:
 
     ./bin/get-metric-for-build.py --use-apks clock nightly.apk
-
-Typically, you want to run Eideticker more than once on a particular test to
-get a range of results as tests are not 100% deterministic (partly due to the
-way we run tests, partly due to Android itself). You can do this with the
-`--num-runs` option. For example:
-
-    ./bin/get-metric-for-build.py --use-apks --num-runs 5 clock nightly.apk
 
 Occasionally you may want to run Fennec with a custom preference or two set,
 you can do this with the "extra prefs" option. Just pass a json dictionary
@@ -198,6 +206,39 @@ of preferences, and they will be merged into the profile used by fennec:
         --extra-prefs "{gfx.color_management.enablev4: true}" clock \
         nightly.apk
 
+In addition to supporting HDMI capture and analysis on Fennec, it is also
+possible to run the Eideticker harness in a mode that simply "captures" a
+performance log of the amnount of checkerboarding in Fennec and outputs
+results. This has two advantages: first, you don't need any kind of
+specialized hardware. Second, it's much faster (since there's no
+video encoding/decoding/analysis step). For this you want to pass in
+"--no-capture" and "--get-internal-checkerboard-stats", like so:
+
+    ./bin/get-metric-for-build.py --use-apks --no-capture --get-internal-checkerboard-stats src/tests/ep1/taskjs.org/index.html nightly.apk
+
+#### get-metric-for-build on FirefoxOS
+
+Running get-metric-for-build on FirefoxOS is almost exactly the same, except
+you do not have to specify apk or application information. Just specify the
+name of the test you'd like to run. For example:
+
+    ./bin/get-metric-for-build.py b2g-contacts-scrolling
+
+#### Getting more results
+
+Typically, you want to run Eideticker more than once on a particular test to
+get a range of results as tests are not 100% deterministic (both due to the
+nature of the tests and the device we are running the test on). You can do
+this with the `--num-runs` option. For example on Android:
+
+    ./bin/get-metric-for-build.py --use-apks --num-runs 5 clock nightly.apk
+
+Or on FirefoxOS:
+
+    ./bin/get-metric-for-build.py --num-runs 5 clock
+
+#### Interpreting results
+
 If you want to know more about the results (where the numbers are coming from)
 you can open them up inside the Eideticker web interface. To open it, execute:
 
@@ -205,15 +246,6 @@ you can open them up inside the Eideticker web interface. To open it, execute:
 
 Then connect to http://localhost:8080. You should see a list of captures, select
 the one you're interested in to dive into fine grained detail.
-
-In addition to supporting HDMI capture and analysis, it is also possible to run
-the Eideticker harness in a mode that simply "captures" the performance log
-of Fennec and outputs results. This has two advantages: first, you don't need
-any kind of specialized hardware. Second, it's much faster (since there's no
-video encoding/decoding/analysis step). For this you want to pass in
-"--no-capture" and "--get-internal-checkerboard-stats", like so:
-
-    ./bin/get-metric-for-build.py --use-apks --no-capture --get-internal-checkerboard-stats src/tests/ep1/taskjs.org/index.html nightly.apk
 
 ## Eideticker "dashboard"
 
