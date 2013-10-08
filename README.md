@@ -91,8 +91,8 @@ ip address of your phone, then set the following environment variables:
     export DM_TRANS=sut
     export TEST_DEVICE=<device ip of phone>
 
-If you are using a B2G device with adb, then you might need sudo privileges for
-adb:
+If you are using a FirefoxOS device with adb, then you might need sudo
+privileges for adb:
 
     adb kill-server
     sudo adb start-server
@@ -150,14 +150,14 @@ To get a list of tests to run, use the list tests script:
 Once you've selected a test to run, you can launch it with the following
 command line:
 
-    ./bin/runtest.py [options] <testname>
+    ./bin/runtest.py [options] <test>
 
 On Android, you need to specify the name of the application you want to run
 the test. For fennec nightly, you'd use:
 
-    ./bin/runtest.py --app-name org.mozilla.fennec <testname>
+    ./bin/runtest.py --app-name org.mozilla.fennec <test>
 
-On Firefox OS, you can just specify the testname and you should be good to go.
+On Firefox OS, you can just specify the test and you should be good to go.
 
 If you have a proper camera set up, you should get a recorded capture in the
 captures/ subdirectory. You can view some details of this capture with the
@@ -222,7 +222,7 @@ what you see at http://wrla.ch/eideticker/dashboard. From a toplevel, it
 is run from a script called `bin/run-update-dashboard.sh`, which can be called
 standalone. This script then in turn calls another script called
 `bin/update-dashboard.py` with various arguments corresponding to Firefox
-version, test to run, etc. This is not yet supported for B2G.
+version, test to run, etc. This is not yet supported for FirefoxOS.
 
 Setting up a new instance of the dashboard has two components: setting up one
 or more "clients" (machines that run the tests) and setting up the server
@@ -284,10 +284,10 @@ To setup to synchronize to the Eideticker server:
 ## Creating New Eideticker Tests
 
 There are several types of Eideticker tests: startup tests, web tests, and
-b2g tests. Startup tests measure the amount of time it takes to load a
-particular web site. Web tests load a website and then perform a set of
+b2g (FirefoxOS) tests. Startup tests measure the amount of time it takes to
+load a particular web site. Web tests load a website and then perform a set of
 actions on them (e.g. panning). B2G tests record the performance of some set
-of actions inside a Firefox OS application (e.g. scrolling through a list of
+of actions inside a FirefoxOS application (e.g. scrolling through a list of
 contacts).
 
 The first step in adding a new test is to create a subdirectory in `src/tests`
