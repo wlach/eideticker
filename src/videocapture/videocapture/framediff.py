@@ -2,6 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 
+import math
 import numpy
 from PIL import Image
 import cPickle as pickle
@@ -82,6 +83,32 @@ def get_framediff_sums(capture, threshold = PIXEL_DIFF_THRESHOLD):
 
     return diffsums
 
+def image_entropy(img):
+    """calculate the entropy of an image"""
+    # based on: http://brainacle.com/calculating-image-entropy-with-python-how-and-why.html
+    # this could be made more efficient using numpy
+    histogram = img.histogram()
+    histogram_length = sum(histogram)
+    samples_probability = [float(h) / histogram_length for h in histogram]
+    return -sum([p * math.log(p, 2) for p in samples_probability if p != 0])
+
+def get_entropy_diffs(capture, num_samples=5):
+    prev_samples = []
+    entropy_diffs = []
+    for i in range(1, capture.num_frames+1):
+        frame = capture.get_frame_image(i)
+        frame_entropy = image_entropy(frame)
+        if prev_samples:
+            entropy_diff = 0
+            for prev_sample in prev_samples:
+                entropy_diff += abs(frame_entropy-prev_sample)
+            entropy_diff /= (1 + len(prev_samples))
+            entropy_diffs.append(entropy_diff)
+        prev_samples.append(frame_entropy)
+        if len(prev_samples) > num_samples:
+            prev_samples = prev_samples[1:]
+    return entropy_diffs
+
 def get_num_unique_frames(capture, threshold=0):
     framediff_sums = get_framediff_sums(capture)
     return 1 + len([framediff for framediff in framediff_sums if framediff > threshold])
@@ -89,12 +116,19 @@ def get_num_unique_frames(capture, threshold=0):
 def get_fps(capture, threshold=0):
     return get_num_unique_frames(capture, threshold=threshold) / capture.length
 
-def get_stable_frame(capture, threshold = 4096):
-    framediff_sums = get_framediff_sums(capture)
-    for i in range(len(framediff_sums)-1, 0, -1):
-        if framediff_sums[i] > threshold:
-            return i+1
-    return len(framediff_sums)-1
+def get_stable_frame(capture, method='framediff', threshold=4096):
+    if method == 'framediff':
+        framediff_sums = get_framediff_sums(capture)
+        for i in range(len(framediff_sums)-1, 0, -1):
+            if framediff_sums[i] > threshold:
+                return i+1
+        return len(framediff_sums)-1
+    elif method == 'entropy':
+        entropy_diffs = get_entropy_diffs(capture)
+        for i in range(len(entropy_diffs)-1, 0, -1):
+            if abs(entropy_diffs[i]) > threshold:
+                return i+1
+        return len(entropy_diffs)-1
 
 def get_stable_frame_time(capture, threshold = 4096):
     return get_stable_frame(capture, threshold) / 60.0
