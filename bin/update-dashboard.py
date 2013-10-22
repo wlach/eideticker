@@ -106,24 +106,18 @@ def runtest(dm, device_prefs, capture_device, capture_area, product, appname,
     if baseline:
         datapoint.update({ 'baseline': True })
 
-    threshold = 0
     if testinfo['type'] == 'startup' or testinfo['type'] == 'webstartup' or \
             testinfo['defaultMeasure'] == 'timetostableframe':
-        datapoint['timetostableframe'] = videocapture.get_stable_frame_time(capture)
+        datapoint['timetostableframe'] = eideticker.get_stable_frame_time(capture)
     else:
         # standard test metrics
-        if capture_device == "pointgrey":
-            # even with median filtering, pointgrey captures tend to have a
-            # bunch of visual noise -- try to compensate for this by setting
-            # a higher threshold for frames to be considered different
-            threshold = 2000
-        datapoint.update(eideticker.get_standard_metrics(
-                capture, testlog.actions, difference_threshold=threshold))
+        datapoint.update(eideticker.get_standard_metrics(capture,
+                                                         testlog.actions))
 
     framediff_relpath = os.path.join('framediffs', 'framediff-%s.json' % time.time())
     framediff_path = os.path.join(outputdir, framediff_relpath)
     with open(framediff_path, 'w') as f:
-        framediff = videocapture.get_framediff_sums(capture, threshold=threshold)
+        framediff = videocapture.get_framediff_sums(capture)
         f.write(json.dumps({ 'diffsums': framediff }))
     datapoint['frameDiff'] = framediff_relpath
 

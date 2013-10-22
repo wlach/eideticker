@@ -135,8 +135,8 @@ def main(args=sys.argv[1:]):
     result_queue = multiprocessing.Queue()
 
     def _get_biggest_framediff_square(result_queue, capture, framenum):
-        imgarray = videocapture.get_framediff_imgarray(capture, framenum-2, framenum,
-                                                       threshold=8.0)
+        imgarray = videocapture.get_framediff_imgarray(capture, framenum-2,
+                                                       framenum)
         biggest = square.get_biggest_square([255,0,0],
                                             imgarray,
                                             x_tolerance_min=100,

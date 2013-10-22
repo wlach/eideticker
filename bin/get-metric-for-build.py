@@ -69,29 +69,10 @@ def runtest(device_prefs, testname, options, apk=None, appname = None,
             capture_result['capture_fps'] = capture.fps
 
             if stableframecapture:
-                analysis_method = 'framediff'
-                threshold = 2048
-                if options.capture_device == 'pointgrey':
-                    # analyzing frames for differences in entropy more
-                    # effective than pixel differences on pointgrey devices
-                    analysis_method = 'entropy'
-                    threshold = 0.05
-
-                capture_result['stableframe'] = \
-                    videocapture.get_stable_frame(capture,
-                                                  method=analysis_method,
-                                                  threshold=threshold)
+                capture_result['stableframe'] = eideticker.get_stable_frame(capture)
             else:
-                difference_threshold = 2048
-                if options.capture_device == "pointgrey":
-                    # even with median filtering, pointgrey captures tend to have a
-                    # bunch of visual noise -- try to compensate for this by setting
-                    # a higher threshold for frames to be considered different
-                    difference_threshold = 4096
-
                 capture_result.update(
-                    eideticker.get_standard_metrics(capture, testlog.actions,
-                                                    difference_threshold=difference_threshold))
+                    eideticker.get_standard_metrics(capture, testlog.actions))
             if options.outputdir:
                 video_path = os.path.join('videos', 'video-%s.webm' % time.time())
                 video_file = os.path.join(options.outputdir, video_path)

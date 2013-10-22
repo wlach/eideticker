@@ -299,7 +299,8 @@ class CaptureController(object):
         zipfile = ZipFile(self.output_filename, 'a')
 
         zipfile.writestr('metadata.json',
-                         json.dumps(dict({ 'date': self.capture_time.isoformat(),
+                         json.dumps(dict({ 'captureDevice': self.capture_device,
+                                           'date': self.capture_time.isoformat(),
                                            'frameDimensions': frame_dimensions,
                                            'version': 1 },
                                          **self.capture_metadata)))
