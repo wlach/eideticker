@@ -69,6 +69,7 @@ class CaptureProcess(multiprocessing.Process):
                     self.output_raw_filename)
         elif self.capture_device == "pointgrey":
             args = (os.path.join(POINTGREY_DIR, 'pointgrey-capture'),
+                    '-o',
                     '-n',
                     '1200',
                     '-f',

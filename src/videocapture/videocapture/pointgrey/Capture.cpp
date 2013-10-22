@@ -23,18 +23,20 @@ void term(int signum)
   g_finished = true;
 }
 
-int usage(int status)
+int usage(char *progname, int status)
 {
     fprintf(stderr,
-            "Usage: Capture -m <mode id> [OPTIONS]\n"
+            "Usage: %s [OPTIONS]\n"
             "\n"
+            "    -d                  Output debugging information\n"
+            "    -o                  If specified, print frame numbers while capturing\n"
             "    -f <outputdir>      Directory video files will be written to\n"
             "    -n <frames>         Max number of frames to capture (default is 20 * 60)\n"
             "\n"
             "Capture video to a set of pngs.\n"
             "\n"
-            "    ptgrey-capture -d /tmp/eideticker/dirname\n"
-	);
+            "Ex:    %s -f /tmp/eideticker/dirname\n",
+            basename(progname), basename(progname));
 
     exit(status);
 }
@@ -50,11 +52,12 @@ int main(int argc, char *argv[])
   int ch;
   const char *videoOutputDir = NULL;
   int maxFrames = 20*60; // 20 seconds at 60fps
-  bool printFrameNums = true;
+  int fps = 60;
+  bool printFrameNums = false;
   bool debug = false;
 
   // Parse command line options
-  while ((ch = getopt(argc, argv, "do?h3f:n:")) != -1) 
+  while ((ch = getopt(argc, argv, "do?h3f:n:r:")) != -1)
     {
       switch (ch)
         {
@@ -72,7 +75,7 @@ int main(int argc, char *argv[])
           break;
         case '?':
         case 'h':
-          usage(0);
+          usage(argv[0], 0);
         }
     }
   if (!videoOutputDir)
@@ -98,8 +101,10 @@ int main(int argc, char *argv[])
       return -1;
     }
 
+  FrameRate frameRate = FRAMERATE_60; // hardcoded for now
+
   error = cam.SetVideoModeAndFrameRate(VIDEOMODE_1280x960Y8,
-                                       FRAMERATE_60);
+                                       frameRate);
   if (error != PGRERROR_OK)
     {
       printError(error);
@@ -114,11 +119,6 @@ int main(int argc, char *argv[])
     prop.autoManualMode = false;
     cam.SetProperty(&prop);
   }
-
-  // FIXME: should we be using pointgrey's various apis/techniques for detecting framerate?
-  float frameRate = 60.0f;
-  AVIOption option;
-  option.frameRate = frameRate;
 
   // setup signal handler for termination
   signal(SIGTERM, term);
