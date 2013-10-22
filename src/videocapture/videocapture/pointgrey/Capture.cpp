@@ -31,7 +31,8 @@ int usage(char *progname, int status)
             "    -d                  Output debugging information\n"
             "    -o                  If specified, print frame numbers while capturing\n"
             "    -f <outputdir>      Directory video files will be written to\n"
-            "    -n <frames>         Max number of frames to capture (default is 20 * 60)\n"
+            "    -r <framerate>      Framerate to capture at (default is 60)\n"
+            "    -n <frames>         Max number of frames to capture (default is 20 * framerate)\n"
             "\n"
             "Capture video to a set of pngs.\n"
             "\n"
@@ -51,7 +52,7 @@ int main(int argc, char *argv[])
   Error error;
   int ch;
   const char *videoOutputDir = NULL;
-  int maxFrames = 20*60; // 20 seconds at 60fps
+  int maxFrames = 0;
   int fps = 60;
   bool printFrameNums = false;
   bool debug = false;
@@ -73,6 +74,9 @@ int main(int argc, char *argv[])
         case 'n':
           maxFrames = atoi(optarg);
           break;
+        case 'r':
+          fps = atoi(optarg);
+          break;
         case '?':
         case 'h':
           usage(argv[0], 0);
@@ -82,6 +86,11 @@ int main(int argc, char *argv[])
     {
       fprintf(stderr, "No video output file specified\n");
       exit(1);
+    }
+
+  if (!maxFrames)
+    {
+      maxFrames = 20 * fps;
     }
 
   BusManager busMgr;
@@ -101,21 +110,63 @@ int main(int argc, char *argv[])
       return -1;
     }
 
-  FrameRate frameRate = FRAMERATE_60; // hardcoded for now
-
-  error = cam.SetVideoModeAndFrameRate(VIDEOMODE_1280x960Y8,
-                                       frameRate);
+  // do different things depending on camera model detected...
+  CameraInfo camInfo;
+  error = cam.GetCameraInfo(&camInfo);
   if (error != PGRERROR_OK)
     {
       printError(error);
       return -1;
     }
 
+  if (strcmp(camInfo.modelName, "Flea3 FL3-U3-13Y3M") == 0)
+    {
+      Format7ImageSettings f7Settings;
+      f7Settings.width = 1280;
+      f7Settings.height = 1024;
+      f7Settings.pixelFormat = PIXEL_FORMAT_RAW8;
+      error = cam.SetFormat7Configuration(&f7Settings, (unsigned int)24764);
+      if (error != PGRERROR_OK)
+        {
+          printError(error);
+          return -1;
+        }
+
+      Property frameRateProp;
+      frameRateProp.type = FRAME_RATE;
+      cam.GetProperty(&frameRateProp);
+      frameRateProp.onOff = true;
+      frameRateProp.autoManualMode = false;
+      frameRateProp.valueA = fps;
+      frameRateProp.absValue = (float)fps;
+      cam.SetProperty(&frameRateProp);
+    }
+  else
+    {
+      if (fps != 60)
+        {
+          fprintf(stderr, "Currently only 60fps is supported with this model\n");
+          exit(1);
+        }
+
+    FrameRate frameRate = FRAMERATE_60; // hardcoded for now
+
+    error = cam.SetVideoModeAndFrameRate(VIDEOMODE_1280x960Y8,
+                                         frameRate);
+    if (error != PGRERROR_OK)
+      {
+        printError(error);
+        return -1;
+      }
+  }
   // turn off all auto adjustments for eideticker
   PropertyType propTypes[5] = { AUTO_EXPOSURE, SHARPNESS, SHUTTER, GAIN, WHITE_BALANCE };
   for (int i=0; i<5; i++) {
     Property prop;
     prop.type = propTypes[i];
+    cam.GetProperty(&prop);
+    if (propTypes[i] == AUTO_EXPOSURE)
+      prop.onOff = true;
     prop.autoManualMode = false;
     cam.SetProperty(&prop);
   }
