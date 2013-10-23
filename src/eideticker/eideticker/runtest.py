@@ -55,9 +55,12 @@ def run_test(testkey, capture_device, appname, capture_name,
         device.unlock()
 
         # Wait for device to properly recognize network
-        # (FIXME: this timeout is terrible, can we do check for network
-        # connectivity with marionette somehow?)
-        time.sleep(5)
+        device.marionette.execute_async_script("""
+waitFor(
+  function() { marionetteScriptFinished(true); },
+  function() { return window.navigator.onLine; }
+);
+""")
 
         # reset orientation to default for this type of device
         device.resetOrientation()
