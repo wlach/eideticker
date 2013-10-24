@@ -34,7 +34,7 @@ var measures = {
 function updateContent(testInfo, deviceId, testId, measureId) {
   $.getJSON(getResourceURL(deviceId + '/' + testId + '.json'), function(dict) {
     if (!dict || !dict['testdata']) {
-      $('#content').html("<p><b>No data for that device/test combination. :(</b></p>");
+      $('#data-view').html("<p><b>No data for that device/test combination. :(</b></p>");
       return;
     }
 
@@ -55,7 +55,7 @@ function updateContent(testInfo, deviceId, testId, measureId) {
       });
     });
 
-    $('#content').html(ich.graph({'title': testInfo.shortDesc,
+    $('#data-view').html(ich.graph({'title': testInfo.shortDesc,
                                   'measureDescription': measures[measureId].longDesc,
                                   'measures': availableMeasures.map(
                                     function(measureId) {
@@ -75,6 +75,12 @@ function updateContent(testInfo, deviceId, testId, measureId) {
     });
 
   });
+}
+
+function updateFooter() {
+  $("#footer").css('margin-top', Math.max($("#chooser").height(),
+                                          ($("#data-view").height() +
+                                           $("#graph-main").height())));
 }
 
 function updateGraph(title, rawdata, measure) {
@@ -171,105 +177,126 @@ function updateGraph(title, rawdata, measure) {
     seriesIndex += 2;
   });
 
-  var plot = $.plot($("#graph-container"), graphdata, {
-    xaxis: {
-      mode: "time",
-      timeformat: "%m-%d"
-    },
-    yaxis: {
-      axisLabel: measures[measure].shortDesc,
-      min: 0
-    },
-    legend: {
-      container: $("#legend"),
-    },
-    grid: { clickable: true, hoverable: true },
-    zoom: { interactive: true },
-    pan: { interactive: true }
-  });
-
-    // add zoom out button
-  $('<div class="button" style="right:20px;top:20px">zoom out</div>').appendTo($("#graph-container")).click(function (e) {
-        e.preventDefault();
-        plot.zoomOut();
-  });
-
-  function showTooltip(x, y, contents) {
-      $('<div id="tooltip">' + contents + '</div>').css( {
-          position: 'absolute',
-          display: 'none',
-          top: y + 5,
-          left: x + 5,
-          border: '1px solid #fdd',
-          padding: '2px',
-          'background-color': '#fee',
-          opacity: 0.80
-      }).appendTo("body").fadeIn(200);
+  function updateDataPointDisplay() {
+    $('#datapoint-info').css('left', $('#graph-main').width() + 20);
+    $('#video').css('width', $('#video').parent().width());
+    $('#video').css('max-height', $('#graph-container').height());
   }
 
-  // Plot Hover tooltip
-  var previousPoint = null;
-  $("#graph-container").bind("plothover", function (event, pos, item) {
-    if (item) {
-      if (previousPoint != item.dataIndex) {
-        var toolTip;
-        var x = item.datapoint[0].toFixed(2),
-            y = item.datapoint[1].toFixed(2);
+  function updateGraphDisplay() {
+    var plot = $.plot($("#graph-container"), graphdata, {
+      xaxis: {
+        mode: "time",
+        timeformat: "%m-%d"
+      },
+      yaxis: {
+        axisLabel: measures[measure].shortDesc,
+        min: 0
+      },
+      legend: {
+        position: "ne",
+      },
+      grid: { clickable: true, hoverable: true },
+      zoom: { interactive: true },
+      pan: { interactive: true }
+    });
 
-        if (metadataHash[item.seriesIndex] && metadataHash[item.seriesIndex][item.dataIndex]) {
-          var metadata = metadataHash[item.seriesIndex][item.dataIndex];
-          toolTip = (item.series.label || item.series.hoverLabel) + " of " + (metadata.appDate || "'Unknown Date'") + " = " + y;
-        } else {
-          console.log(JSON.stringify(item.series));
-          toolTip = (item.series.label || item.series.hoverLabel) + " = " + y;
+    updateFooter();
+
+    // add zoom out button
+    $('<div class="button" style="left:50px;top:20px">zoom out</div>').appendTo($("#graph-container")).click(function (e) {
+      e.preventDefault();
+      plot.zoomOut();
+    });
+
+    function showTooltip(x, y, contents) {
+      $('<div id="tooltip">' + contents + '</div>').css( {
+        position: 'absolute',
+        display: 'none',
+        top: y + 5,
+        left: x + 5,
+        border: '1px solid #fdd',
+        padding: '2px',
+        'background-color': '#fee',
+        opacity: 0.80
+      }).appendTo("body").fadeIn(200);
+    }
+
+    // Plot Hover tooltip
+    var previousPoint = null;
+    $("#graph-container").bind("plothover", function (event, pos, item) {
+      if (item) {
+        if (previousPoint != item.dataIndex) {
+          var toolTip;
+          var x = item.datapoint[0].toFixed(2),
+          y = item.datapoint[1].toFixed(2);
+
+          if (metadataHash[item.seriesIndex] && metadataHash[item.seriesIndex][item.dataIndex]) {
+            var metadata = metadataHash[item.seriesIndex][item.dataIndex];
+            toolTip = (item.series.label || item.series.hoverLabel) + " of " + (metadata.appDate || "'Unknown Date'") + " = " + y;
+          } else {
+            console.log(JSON.stringify(item.series));
+            toolTip = (item.series.label || item.series.hoverLabel) + " = " + y;
+          }
+
+          previousPoint = item.dataIndex;
+
+          $("#tooltip").remove();
+          showTooltip(item.pageX, item.pageY, toolTip);
         }
-
-        previousPoint = item.dataIndex;
-
+      } else {
         $("#tooltip").remove();
-        showTooltip(item.pageX, item.pageY, toolTip);
+        previousPoint = null;
       }
-    } else {
-      $("#tooltip").remove();
-      previousPoint = null;
-    }
-  });
+    });
 
-  $("#graph-container").bind("plotclick", function (event, pos, item) {
-    function sliceIfExist(str) {
-      if (str) {
-        return str.slice(0, 12);
+    $("#graph-container").bind("plotclick", function (event, pos, item) {
+      function sliceIfExist(str) {
+        if (str) {
+          return str.slice(0, 12);
+        }
+        return null;
       }
-      return null;
-    }
-    
-    plot.unhighlight();
-    if (item) {
-      var metadata = metadataHash[item.seriesIndex][item.dataIndex];
-      $('#datapoint-info').html(ich.graphDatapoint({ 'graphTitle': title,
-                                                     'videoURL': metadata.videoURL,
-                                                     'profileURL': metadata.profileURL,
-                                                     'frameDiff': metadata.frameDiff,
-                                                     'actionLog': metadata.actionLog,
-                                                     'httpLog': metadata.httpLog,
-                                                     'measureName': measure,
-                                                     'date': metadata.dateStr,
-                                                     'appDate': metadata.appDate,
-                                                     'buildRevision': sliceIfExist(metadata.buildRevision),
-                                                     'gaiaRevision': sliceIfExist(metadata.gaiaRevision),
-                                                     'revision': metadata.revision,
-                                                     'sourceRepo': metadata.sourceRepo,
-                                                     'prevRevision': metadata.prevRevision,
-                                                     'buildId': metadata.buildId,
-                                                     'measureValue': Math.round(100.0*item.datapoint[1])/100.0
-                                                   }));
-      $('#video').css('width', $('#video').parent().width());
-      $('#video').css('max-height', $('#graph-container').height());
 
-      plot.highlight(item.series, item.datapoint);
-    } else {
-      $('#datapoint-info').html(null);
-    }
+      plot.unhighlight();
+      if (item) {
+        var metadata = metadataHash[item.seriesIndex][item.dataIndex];
+        $('#datapoint-info').html(ich.graphDatapoint({ 'graphTitle': title,
+                                                       'videoURL': metadata.videoURL,
+                                                       'profileURL': metadata.profileURL,
+                                                       'frameDiff': metadata.frameDiff,
+                                                       'actionLog': metadata.actionLog,
+                                                       'httpLog': metadata.httpLog,
+                                                       'measureName': measure,
+                                                       'date': metadata.dateStr,
+                                                       'appDate': metadata.appDate,
+                                                       'buildRevision': sliceIfExist(metadata.buildRevision),
+                                                       'gaiaRevision': sliceIfExist(metadata.gaiaRevision),
+                                                       'revision': metadata.revision,
+                                                       'sourceRepo': metadata.sourceRepo,
+                                                       'prevRevision': metadata.prevRevision,
+                                                       'buildId': metadata.buildId,
+                                                       'measureValue': Math.round(100.0*item.datapoint[1])/100.0
+                                                     }));
+        updateDataPointDisplay();
+        plot.highlight(item.series, item.datapoint);
+
+      } else {
+        $('#datapoint-info').html(null);
+      }
+    });
+  }
+
+  updateGraphDisplay();
+  var redisplayTimeout = null;
+  $(window).resize(function() {
+    if (redisplayTimeout)
+      return;
+    redisplayTimeout = window.setTimeout(function() {
+      redisplayTimeout = null;
+      updateGraphDisplay();
+      updateDataPointDisplay();
+    }, 200);
   });
 }
 
@@ -295,8 +322,7 @@ $(function() {
         var defaultMeasure = tests[firstTestKey].defaultMeasure;
 
         var deviceURL = "#/" + [ deviceId, firstTestKey, defaultMeasure ].join('/');
-        $('<li id="device-' + deviceId + '-li" deviceid= ' + deviceId +
-          '><a href="' + deviceURL + '">' + devices[deviceId].name+'</a></li>').appendTo(
+        $('<a href="' + deviceURL + '" id="device-' + deviceId + '" deviceid= ' + deviceId + ' class="list-group-item">' + devices[deviceId].name+'</a></li>').appendTo(
             $('#device-chooser'));
       });
 
@@ -304,13 +330,13 @@ $(function() {
         '/:deviceId/:testId/:measureId': {
           on: function(deviceId, testId, measure) {
             if (!devices[deviceId] || !devices[deviceId]['tests'][testId]) {
-              $('#content').html("<p><b>That device/test/measure combination does not seem to exist. Maybe you're using an expired link? <a href=''>Reload page</a>?</b></p>");
+              $('#data-view').html("<p><b>That device/test/measure combination does not seem to exist. Maybe you're using an expired link? <a href=''>Reload page</a>?</b></p>");
               return;
             }
 
             // update device chooser
-            $('#device-chooser').children('li').removeClass("active");
-            $('#device-chooser').children('#device-'+deviceId+'-li').addClass("active");
+            $('#device-chooser').children('a').removeClass("active");
+            $('#device-chooser').children('#device-'+deviceId).addClass("active");
 
             // update list of tests to be consistent with those of this
             // particular device (in case it changed)
@@ -319,24 +345,25 @@ $(function() {
             var tests = devices[deviceId].tests;
             var testKeys = Object.keys(tests).sort();
             testKeys.forEach(function(testKey) {
-              $('<li id="' + testKey + '-li" testid = ' + testKey + '><a>' + testKey + '</a></li>').appendTo($('#test-chooser'));
+              $('<a id="' + testKey + '" class="list-group-item">' + testKey + '</a>').appendTo($('#test-chooser'));
             });
 
             // update all test links to be relative to the new test or device
-            $('#test-chooser').children('li').removeClass("active");
-            $('#test-chooser').children('#'+testId+'-li').addClass("active");
+            $('#test-chooser').children('a').removeClass("active");
+            $('#test-chooser').children('#'+testId).addClass("active");
 
-            $('#test-chooser').children('li').each(function() {
-              var testIdAttr = $(this).attr('testid');
+            $('#test-chooser').children('a').each(function() {
+              var testIdAttr = $(this).attr('id');
               if (testIdAttr) {
                 var defaultMeasure = tests[testIdAttr].defaultMeasure;
-                $(this).children('a').attr('href', '#/' +
-                                           [ deviceId, testIdAttr,
-                                             defaultMeasure ].join('/'));
+                $(this).attr('href', '#/' +
+                             [ deviceId, testIdAttr,
+                               defaultMeasure ].join('/'));
               }
             });
 
             var testInfo = tests[testId];
+            updateFooter();
             updateContent(testInfo, deviceId, testId, measure);
           }
         }

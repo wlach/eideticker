@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <title>Eideticker Dashboard</title>
 
-    <link href="css/bootstrap.css" rel="stylesheet">
+    <link href="css/bootstrap.min.css" rel="stylesheet">
 
     <style type="text/css">
       body {
@@ -24,11 +24,14 @@
         margin: 0 -20px;
         padding: 20px;
       }
-      .page-header {
+      #header {
         background-color: #F5F5F5;
         margin: -20px -20px 20px;
-        padding: 20px 20px 10px;
+        padding: 10px 20px 10px;
         border-bottom: none;
+      }
+      #page-title {
+        margin-top: 8px;
       }
       #graph-container {
         padding-top: 18px;
@@ -61,7 +64,6 @@
       </div>
     </div>
     <script src="js/jquery-1.7.1.min.js"></script>
-    <script src="js/bootstrap.min.js"></script>
     <script src="js/ICanHaz.min.js"></script>
     <script src="js/jquery.flot.js"></script>
     <script src="js/jquery.flot.time.js"></script>
@@ -71,9 +73,7 @@
     <script src="js/framediff.js"></script>
 
     <script id="pageHeader" type="text/html">
-      <div class="page-header">
-        <h1>{{title}}</h1>
-      </div>
+        <h1 id="page-title">{{title}}</h1>
     </script>
 
     <script id="pageContent" type="text/html">
@@ -81,10 +81,10 @@
         <div id="graph-container"></div>
       </div>
       <div class="row">
-        <div class="span6">
+        <div class="col-md-6">
           <video src="{{videoPath}}" class="inline-video" id="frameview">
         </div>
-        <div class="span5" id="datapoint">
+        <div class="col-md-6" id="datapoint">
         </div>
       </div>
     </script>
