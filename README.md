@@ -5,62 +5,73 @@ analyzes browser output via HDMI or an external camera.
 
 ## Requirements
 
-### Common
-
 * Linux system with zip, ffmpeg, g++, ntp, python 2.7 development and virtualenv
   installed. On Ubuntu, you can get this setup by running:
 
     `sudo apt-get install -y zip ffmpeg g++ python2.7-dev python-virtualenv ntp`
 
-* [Android Debug Bridge](https://developer.android.com/tools/help/adb.html) (adb)
+  The recommended Linux distribution to use is Ubuntu 12.04 64-bit (32-bit is
+  known not to work with the PointGrey cameras). Later versions
+  of Ubuntu are probably also fine.
+
+* A supported mobile phone running Firefox OS or Android. Your phone must be
+  connected to the same network as the machine running the tests. In the case
+  of Android, it is currently required that your device be rooted and must be
+  configured to communicate with the host using either the
+  [Android Debug Bridge](https://developer.android.com/tools/help/adb.html) (adb)
+  or [SUTAgent](https://wiki.mozilla.org/Auto-tools/Projects/SUTAgent). If
+  the latter on Android, you must configure the su binary to automatically
+  allow SUTAgent to run commands as root in silent mode (so that
+  notifications don't pop up while running tests.
+
+The remaining requirements depend on whether you are capturing with the phone's HDMI
+out. It is also possible to use the Eideticker harness without video capture,
+which can be useful for certain cases: see below.
 
 ### HDMI
 
-* Blackmagic Design DeckLink HD Extreme 3D card and the appropriate drivers if
-  you want to actually capture video (it is possible to use the Eideticker
-  harness without the video capture step, which can be useful for certain
-  cases: see below).
+For HDMI capture, the Linux system you are using must be a desktop class
+machine with a spare PCI express slot (we used the Dell Precision T1600
+workstation, but that seems to be no longer sold) with a Blackmagic Design
+DeckLink HD Extreme 3D card installed. The mobile phone you are using must
+also support HDMI out with a clean 720p or 1080p signal: the Samsung Galaxy
+Nexus (with an MHL adaptor) and the LG G2X are known to work. Note that the
+Samsung Nexus 4 is known NOT to work, even with a MHL HDMI adapter as it does
+not output an exact 720p signal (and thus the Decklink card can not understand
+what it is outputting).
 
-* A supported mobile phone running Android with Orangutan installed. Eideticker's
-  tests are specifically tuned for specific screen dimensions. Currently only the
-  LG G2X (running in portrait mode) and the Galaxy Nexus (running in landscape)
-  are supported. Your device must also be rooted and, if using SUTAgent, you must
-  configure the su binary to automatically allow SUTAgent to run commands as
-  root in silent mode (so that notifications don't pop up while running tests). For
-  information on installing Orangutan, see that project's
-  [README](https://github.com/wlach/orangutan/blob/master/README.md).
+For more information on the Decklink cards, see the
+[Decklink Primer](https://wiki.mozilla.org/Project_Eideticker/DeckLink_Primer)
 
 ### Camera
 
-* Ubuntu 12.04 64-bit. 32-bit is known not to work with the PointGrey cameras
-  for some reason.
-
-* USB3 port (USB3 ports are usually blue). If you have a desktop machine
-  without a USB3 port, there are [PCI cards](http://www.ptgrey.com/products/usb3-components/usb3-components.asp)
+* The Linux system you are using must have USB3 ports (USB3 ports are usually
+  blue). If you have a desktop machine without a USB3 port, there are
+  [PCI cards](http://www.ptgrey.com/products/usb3-components/usb3-components.asp)
   to add this capability.
+
 * [USB3 micro-b cable](http://www.ptgrey.com/products/usb3-components/usb3-components.asp)
   (possibly add a hub depending on machine)
+
 * [PointGrey Flea3 FL3-U3-13E4C-C](http://www.ptgreystore.com/products/229-flea3-13mp-color-usb-30-e2v-ev76c560.aspx)
   camera.
+
 * [Fujinon HF12.5HA-1B](http://www.ptgreystore.com/products/98-fujinon-hf125ha-1b-lens.aspx)
   camera lens.
+
 * [Joby GorillaPod](http://joby.com/gorillapod/original/) flexible tripod for
   the camera.
+
 * The following dependencies for the FlyCapture software will need to be
   installed: libgtk-mm-2.4-dev, libglademm-2.4-dev, libusb-1.0. You can get
   these by running:
 
     `sudo apt-get install -y libgtk-mm-2.4-dev libglademm-2.4-dev libusb-1.0`
+
 * FlyCapture camera software available from
   [PointGrey](http://www.ptgrey.com/support/downloads) (you will need to
   register an account to access the downloads). Note that you may also need to
   run this using `sudo` in order to get it to detect the camera.
-* A supported mobile phone running Firefox OS with Orangutan installed in
-  `/data/local/` with execute permissions. For information on installing
-  Orangutan, see that project's
-  [README](https://github.com/wlach/orangutan/blob/master/README.md).
-* Your device must be connected to the same network as the machine running the
-  tests.
 
 ## Installation
 
