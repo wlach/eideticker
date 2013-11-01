@@ -1,0 +1,39 @@
+{
+    "properties": {
+        "AUTO_EXPOSURE": {
+            "absValue": 1.32196,
+            "autoManualMode": false,
+            "onOff": true,
+            "valueA": 480,
+            "valueB": 0
+        },
+        "GAIN": {
+            "absValue": 18.06179,
+            "autoManualMode": false,
+            "onOff": true,
+            "valueA": 162,
+            "valueB": 0
+        },
+        "SHARPNESS": {
+            "absValue": 0.0,
+            "autoManualMode": false,
+            "onOff": false,
+            "valueA": 512,
+            "valueB": 0
+        },
+        "SHUTTER": {
+            "absValue": 3.078401,
+            "autoManualMode": false,
+            "onOff": true,
+            "valueA": 196,
+            "valueB": 0
+        },
+        "WHITE_BALANCE": {
+            "absValue": 0.0,
+            "autoManualMode": false,
+            "onOff": false,
+            "valueA": 0,
+            "valueB": 0
+        }
+    }
+}

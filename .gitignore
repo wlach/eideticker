@@ -1,3 +1,5 @@
+*.d
+*.o
 *.pyc
 *~
 bin/activate
@@ -29,4 +31,7 @@ lib/
 src/videocapture/build/*
 src/videocapture/videocapture.egg-info/
 src/videocapture/videocapture/decklink/decklink-capture
-src/dashboard/httplogs/*.json
+src/videocapture/videocapture/pointgrey/pointgrey-capture
+src/videocapture/videocapture/pointgrey/get-camera-id
+src/videocapture/videocapture/pointgrey/dump-current-settings
+rc/dashboard/httplogs/*.json

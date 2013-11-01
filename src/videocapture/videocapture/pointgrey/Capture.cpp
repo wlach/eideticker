@@ -4,6 +4,7 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/wait.h>
 #include <signal.h>
@@ -11,6 +12,7 @@
 #include <sstream>
 #include <vector>
 
+#include "JSON.h"
 #include "FlyCapture2.h"
 
 using namespace FlyCapture2;
@@ -31,7 +33,7 @@ int usage(char *progname, int status)
           "    -d                  Output debugging information\n"
           "    -o                  If specified, print frame numbers while capturing\n"
           "    -f <outputdir>      Directory video files will be written to\n"
-          "    -r <framerate>      Framerate to capture at (default is 60)\n"
+          "    -c <configfile>     Configuration file for camera (in JSON format)\n"
           "    -n <frames>         Max number of frames to capture (default is 20 * framerate)\n"
           "\n"
           "Capture video to a set of pngs.\n"
@@ -47,18 +49,98 @@ void printError( Error error )
   error.PrintErrorTrace();
 }
 
+PropertyType getPropertyType(const std::wstring propertyTypeStr)
+{
+  if (propertyTypeStr == L"BRIGHTNESS") return BRIGHTNESS;
+  else if (propertyTypeStr == L"AUTO_EXPOSURE") return AUTO_EXPOSURE;
+  else if (propertyTypeStr == L"SHARPNESS") return SHARPNESS;
+  else if (propertyTypeStr == L"SHUTTER") return SHUTTER;
+  else if (propertyTypeStr == L"GAIN") return GAIN;
+  else if (propertyTypeStr == L"FRAME_RATE") return FRAME_RATE;
+  else if (propertyTypeStr == L"WHITE_BALANCE") return WHITE_BALANCE;
+
+  char propertyLabel[40];
+  wcstombs(propertyLabel, propertyTypeStr.c_str(), 40);
+  fprintf(stderr, "Error: Unknown property type '%s'\n", propertyLabel);
+  exit(1);
+}
+
+void processPropertiesFile(const char *filename, Camera &cam)
+{
+  struct stat st;
+  if (stat(filename, &st) != 0) {
+    fprintf(stderr, "Error processing prefs file '%s': can't stat", filename);
+  }
+  char *contents = new char[st.st_size + 1];
+  FILE *fp = fopen(filename, "r");
+  fread(contents, st.st_size, 1, fp);
+  contents[st.st_size] = '\0';
+  JSONValue *prefdict = JSON::Parse(contents);
+  if (!prefdict) {
+    fprintf(stderr, "Error processing prefs file '%s': not valid JSON\n", filename);
+    exit(1);
+  }
+  if (!prefdict->IsObject()) {
+    fprintf(stderr, "Error processing prefs file '%s': root not a JSON object\n", filename);
+    exit(1);
+  }
+
+  JSONObject root = prefdict->AsObject();
+  JSONObject properties = root[L"properties"]->AsObject();
+  for (JSONObject::iterator iter = properties.begin();
+       iter != properties.end(); iter++) {
+    Property property;
+
+    property.type = getPropertyType(iter->first);
+    cam.GetProperty(&property);
+    char pname[512];
+    wcstombs(pname, iter->first.c_str(), 512);
+
+    JSONObject propertySettings = iter->second->AsObject();
+    for (JSONObject::iterator iter2 = propertySettings.begin();
+         iter2 != propertySettings.end(); iter2++) {
+      if (iter2->first == L"onOff" || iter2->first == L"autoManualMode") {
+        if (!iter2->second->IsBool()) {
+          fprintf(stderr, "Error: Expected onOff/auto property to be boolean, was not\n");
+          exit(1);
+        }
+        if (iter2->first == L"onOff")
+          property.onOff = iter2->second->AsBool();
+        else
+          property.autoManualMode = iter2->second->AsBool();
+      }
+      else if (iter2->first == L"absValue" || iter2->first == L"valueA" ||
+               iter2->first == L"valueB") {
+        if (!iter2->second->IsNumber()) {
+          fprintf(stderr, "Error: Expected absValue/valueA/valueB property "
+                  "to be a number, was not\n");
+          exit(1);
+        }
+        if (iter2->first == L"absValue")
+          property.absValue = iter2->second->AsNumber();
+        else if (iter2->first == L"valueA")
+          property.valueA = iter2->second->AsNumber();
+        else
+          property.valueB = iter2->second->AsNumber();
+      }
+    }
+    cam.SetProperty(&property);
+  }
+}
+
 int main(int argc, char *argv[])
 {
   Error error;
   int ch;
   const char *videoOutputDir = NULL;
+  const char *configFilename = NULL;
   int maxFrames = 0;
   int fps = 60;
   bool printFrameNums = false;
   bool debug = false;
 
   // Parse command line options
-  while ((ch = getopt(argc, argv, "do?h3f:n:r:")) != -1) {
+  while ((ch = getopt(argc, argv, "do?h3f:n:r:c:")) != -1) {
     switch (ch) {
     case 'd':
       debug = true;
@@ -74,6 +156,9 @@ int main(int argc, char *argv[])
       break;
     case 'r':
       fps = atoi(optarg);
+      break;
+    case 'c':
+      configFilename = optarg;
       break;
     case '?':
     case 'h':
@@ -127,7 +212,6 @@ int main(int argc, char *argv[])
     cam.GetProperty(&frameRateProp);
     frameRateProp.onOff = true;
     frameRateProp.autoManualMode = false;
-    frameRateProp.valueA = fps;
     frameRateProp.absValue = (float)fps;
     cam.SetProperty(&frameRateProp);
   }
@@ -146,17 +230,9 @@ int main(int argc, char *argv[])
       return -1;
     }
   }
-  // turn off all auto adjustments for eideticker
-  PropertyType propTypes[5] = { AUTO_EXPOSURE, SHARPNESS, SHUTTER, GAIN, WHITE_BALANCE };
-  for (int i=0; i<5; i++) {
-    Property prop;
-    prop.type = propTypes[i];
-    cam.GetProperty(&prop);
-    if (propTypes[i] == AUTO_EXPOSURE)
-      prop.onOff = true;
-    prop.autoManualMode = false;
-    cam.SetProperty(&prop);
-  }
+
+  if (configFilename)
+    processPropertiesFile(configFilename, cam);
 
   // setup signal handler for termination
   signal(SIGTERM, term);

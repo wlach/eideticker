@@ -36,6 +36,11 @@ supported_formats = {
     "720p@59.94": { "decklink_mode": 12 }
  }
 
+camera_configs = {
+    "Flea3 FL3-U3-13Y3M": "FL3-U3-13Y3M.json",
+    "Flea3 FL3-U3-13E4C": "FL3-U3-13E4C.json"
+}
+
 class CaptureProcess(multiprocessing.Process):
 
     def __init__(self, capture_device, video_format, frame_counter,
@@ -68,7 +73,14 @@ class CaptureProcess(multiprocessing.Process):
                     '-f',
                     self.output_raw_filename)
         elif self.capture_device == "pointgrey":
+            # get the device type
+            camera_id = subprocess.check_output([os.path.join(POINTGREY_DIR, "get-camera-id")]).strip()
+            camera_config = camera_configs.get(camera_id)
+            if not camera_config:
+                raise Exception("No camera configuration for model '%s'" % camera_id)
             args = (os.path.join(POINTGREY_DIR, 'pointgrey-capture'),
+                    '-c',
+                    os.path.join(POINTGREY_DIR, camera_config),
                     '-o',
                     '-n',
                     '1200',
