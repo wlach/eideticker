@@ -69,7 +69,7 @@ def runtest(device_prefs, testname, options, apk=None, appname = None,
             capture_result['capture_fps'] = capture.fps
 
             if stableframecapture:
-                capture_result['stableframe'] = eideticker.get_stable_frame(capture)
+                capture_result['stableframetime'] = eideticker.get_stable_frame_time(capture)
             else:
                 capture_result.update(
                     eideticker.get_standard_metrics(capture, testlog.actions))
@@ -107,11 +107,8 @@ def runtest(device_prefs, testname, options, apk=None, appname = None,
 
     if not options.no_capture:
         if stableframecapture:
-            print "  First stable frames:"
-            print "  %s" % map(lambda c: c['stableframe'], capture_results)
-            print
             print "  Times to first stable frame (seconds):"
-            print "  %s" % map(lambda c: c['stableframe'] / c['capture_fps'], capture_results)
+            print "  %s" % map(lambda c: c['stableframetime'], capture_results)
             print
         else:
             print "  Number of unique frames:"
