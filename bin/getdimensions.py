@@ -9,6 +9,7 @@ import time
 import videocapture
 import os
 import videocapture.square as square
+from PIL import ImageDraw
 
 class CaptureServer(object):
 
@@ -116,6 +117,10 @@ def main(args=sys.argv[1:]):
     parser.add_option("--output-file", action="store",
                       type="string", dest="output_file",
                       help="Output the results to file")
+    parser.add_option("--output-screenshot", action="store",
+                      type="string", dest="output_screenshot",
+                      help="Output screenshot of a capture frame with capture "
+                      "area overlayed")
 
     options, args = parser.parse_args()
 
@@ -169,6 +174,11 @@ def main(args=sys.argv[1:]):
         if options.output_file:
             with open(options.output_file, 'w+') as f:
                 f.write('CAPTURE_AREA=%s\n' % largest_square)
+        if options.output_screenshot:
+            im = capture.get_frame_image(int(capture.length/2))
+            draw = ImageDraw.Draw(im)
+            draw.rectangle(largest_square, outline=(255,0,0))
+            im.save(options.output_screenshot)
     else:
         print "Couldn't find capture area"
 
