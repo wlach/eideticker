@@ -32,6 +32,7 @@ int usage(char *progname, int status)
           "\n"
           "    -d                  Output debugging information\n"
           "    -o                  If specified, print frame numbers while capturing\n"
+          "    -r                  Frames per second (default is 60)\n"
           "    -f <outputdir>      Directory video files will be written to\n"
           "    -c <configfile>     Configuration file for camera (in JSON format)\n"
           "    -n <frames>         Max number of frames to capture (default is 20 * framerate)\n"

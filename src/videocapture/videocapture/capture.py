@@ -49,7 +49,7 @@ class Capture(object):
 
     @property
     def fps(self):
-        return 60.0
+        return self.metadata.get('fps', 60.0)
 
     @property
     def length(self):

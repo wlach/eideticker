@@ -16,7 +16,7 @@ def run_test(testkey, capture_device, appname, capture_name,
              request_log_file=None, actions_log_file=None,
              log_checkerboard_stats=False, extra_env_vars={},
              capture_area=None, no_capture=False, capture_file=None,
-             sync_time=True):
+             sync_time=True, fps=None):
     testinfo = get_testinfo(testkey)
     print "Testinfo: %s" % testinfo
 
@@ -87,7 +87,8 @@ waitFor(
         testpath_rel += "?%s" % urllib.quote_plus(testinfo.get('urlParams'))
 
     capture_controller = videocapture.CaptureController(capture_device, capture_area,
-                                                        custom_tempdir=EIDETICKER_TEMP_DIR)
+                                                        custom_tempdir=EIDETICKER_TEMP_DIR,
+                                                        fps=fps)
 
     testtype = test_type or testinfo['type']
 

@@ -45,7 +45,7 @@ class CaptureProcess(multiprocessing.Process):
 
     def __init__(self, capture_device, video_format, frame_counter,
                  finished_semaphore, output_raw_filename=None,
-                 outputdir=None):
+                 outputdir=None, fps=None):
         multiprocessing.Process.__init__(self, args=(frame_counter,
                                                      finished_semaphore,))
         self.frame_counter = frame_counter
@@ -54,6 +54,7 @@ class CaptureProcess(multiprocessing.Process):
         self.capture_device = capture_device
         self.video_format = video_format
         self.finished_semaphore = finished_semaphore
+        self.fps = fps
 
     def stop(self):
         self.finished_semaphore.value = True
@@ -62,7 +63,7 @@ class CaptureProcess(multiprocessing.Process):
         timeout = 10
         if self.capture_device == "decklink":
             mode = supported_formats[self.video_format]["decklink_mode"]
-            args = (os.path.join(DECKLINK_DIR, 'decklink-capture'),
+            args = [os.path.join(DECKLINK_DIR, 'decklink-capture'),
                     '-o',
                     '-m',
                     '%s' % mode,
@@ -71,21 +72,23 @@ class CaptureProcess(multiprocessing.Process):
                     '-n',
                     '6000',
                     '-f',
-                    self.output_raw_filename)
+                    self.output_raw_filename]
         elif self.capture_device == "pointgrey":
             # get the device type
             camera_id = subprocess.check_output([os.path.join(POINTGREY_DIR, "get-camera-id")]).strip()
             camera_config = camera_configs.get(camera_id)
             if not camera_config:
                 raise Exception("No camera configuration for model '%s'" % camera_id)
-            args = (os.path.join(POINTGREY_DIR, 'pointgrey-capture'),
+            args = [os.path.join(POINTGREY_DIR, 'pointgrey-capture'),
                     '-c',
                     os.path.join(POINTGREY_DIR, camera_config),
                     '-o',
                     '-n',
                     '1200',
                     '-f',
-                    self.outputdir)
+                    self.outputdir]
+            if self.fps:
+                args.extend([ '-r', str(self.fps) ])
             timeout = 300 # pointgrey devices need an extra long timeout
         else:
             raise Exception("Unknown capture device '%s'" % self.capture_device)
@@ -127,7 +130,7 @@ class CaptureController(object):
 
     def __init__(self, capture_device, capture_area = None,
                  find_start_signal=True, find_end_signal=True,
-                 custom_tempdir=None):
+                 custom_tempdir=None, fps=None):
         self.capture_process = None
         self.null_read = file('/dev/null', 'r')
         self.null_write = file('/dev/null', 'w')
@@ -141,6 +144,7 @@ class CaptureController(object):
         self.capture_area = capture_area
         self.find_start_signal = find_start_signal
         self.find_end_signal = find_end_signal
+        self.fps = fps
 
     def log(self, msg):
         print "%s Capture Controller | %s" % (datetime.datetime.now().strftime("%b %d %H:%M:%S %Z"), msg)
@@ -170,7 +174,8 @@ class CaptureController(object):
                                               self.frame_counter,
                                               self.finished_semaphore,
                                               output_raw_filename=output_raw_filename,
-                                              outputdir=self.outputdir)
+                                              outputdir=self.outputdir,
+                                              fps=self.fps)
         self.log("Starting capture...")
         self.capture_process.start()
         # wait for capture to actually start...
@@ -300,11 +305,17 @@ class CaptureController(object):
         for p in multiprocesses:
             p.join()
 
+
+        capturefps = self.fps
+        if not capturefps:
+            capturefps = 60
+
         if create_webm:
             self.log("Creating movie ...")
+
             moviefile = tempfile.NamedTemporaryFile(dir=self.custom_tempdir,
                                                     suffix=".webm")
-            subprocess.Popen(('ffmpeg', '-y', '-r', '60', '-i',
+            subprocess.Popen(('ffmpeg', '-y', '-r', str(capturefps), '-i',
                               os.path.join(rewritten_imagedir, '%d.png'),
                               moviefile.name), close_fds=True).wait()
 
@@ -315,6 +326,7 @@ class CaptureController(object):
                          json.dumps(dict({ 'captureDevice': self.capture_device,
                                            'date': self.capture_time.isoformat(),
                                            'frameDimensions': frame_dimensions,
+                                           'fps': capturefps,
                                            'version': 1 },
                                          **self.capture_metadata)))
 

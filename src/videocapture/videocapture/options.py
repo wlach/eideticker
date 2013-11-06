@@ -20,6 +20,10 @@ class OptionParser(optparse.OptionParser):
                         type = "string", dest = "mode",
                         default = None,
                         help = "mode to use with decklink cards (%s)" % " or ".join(valid_decklink_modes))
+        self.add_option("--fps", action="store", type="int", dest="fps",
+                        help="Custom fps value to use (certain pointgrey "
+                        "cameras only)", default=None)
+
         if self.capture_area_option:
             self.add_option("--capture-area", action="store",
                             default=os.environ.get('CAPTURE_AREA', None),

@@ -139,4 +139,4 @@ def get_stable_frame(capture, method='framediff', threshold=4096):
         return len(entropy_diffs)-1
 
 def get_stable_frame_time(capture, method='framediff', threshold = 4096):
-    return get_stable_frame(capture, method=method, threshold=threshold) / 60.0
+    return get_stable_frame(capture, method=method, threshold=threshold) / float(capture.fps)
