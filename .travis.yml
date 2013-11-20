@@ -5,7 +5,10 @@ install: sudo apt-get update && sudo apt-get install -y python-virtualenv g++ ff
 script: ./bin/python bin/list-tests.py
 notifications:
   irc:
-    - "irc.mozilla.org#ateam"
+    channels:
+      - "irc.mozilla.org#ateam"
+    on_success: change
+    on_failure: always
   email:
     recipients:
       - wlachance@mozilla.com
