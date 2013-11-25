@@ -34,4 +34,5 @@ src/videocapture/videocapture/decklink/decklink-capture
 src/videocapture/videocapture/pointgrey/pointgrey-capture
 src/videocapture/videocapture/pointgrey/get-camera-id
 src/videocapture/videocapture/pointgrey/dump-current-settings
+src/videocapture/videocapture/pointgrey/setup-camera
 rc/dashboard/httplogs/*.json
