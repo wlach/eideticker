@@ -37,12 +37,12 @@
     </div>
 
     <script src="js/jquery-1.7.1.min.js"></script>
-    <script src="js/bootstrap.min.js"></script>
     <script src="js/ICanHaz.min.js"></script>
     <script src="js/SS.min.js"></script>
     <script src="js/jquery.flot.js"></script>
     <script src="js/jquery.flot.stack.js"></script>
     <script src="js/jquery.flot.axislabels.js"></script>
+    <script src="js/common.js"></script>
     <script src="js/metric.js"></script>
 
   <script id="graph" type="text/html">
@@ -58,13 +58,15 @@
         <div id="measure-form">
           <form>
             <select id="measure" type="text">
-              <option id="measure-fps" value="fps">Frames Per Second</option>
-              <option id="measure-uniqueframes" value="uniqueframes">Unique Frames</option>
-              <option id="measure-checkerboard" value="checkerboard">Checkerboard</option>
+              {{#measures}}
+              <option id="measure-{{id}}" value="{{id}}">{{desc}}</option>
+              {{/measures}}
             </select>
-            <span class="help-inline">
-              {{measureDescription}}
-            </span>
+            <p>
+              <span class="help-inline">
+                {{measureDescription}}
+              </span>
+            </p>
           </form>
         </div>
         <p class="help-block"><strong>Hint:</strong> Click on the bars to see a video of the testrun!</p>
@@ -107,6 +109,9 @@
         <dt>{{measureName}}</dt>
         <dd>{{measureValue}}</dd>
       </dl>
+      {{#frameDiff}}
+      <p><a href="framediff-view.html?title=Frame Difference&video={{videoURL}}&framediff={{frameDiff}}&fps={{fps}}" target="_blank">Frame difference view</a></p>
+      {{/frameDiff}}
     </div>
   </script>
 

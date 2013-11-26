@@ -4,12 +4,14 @@ import datetime
 import eideticker
 import json
 import os
+import shutil
 import sys
 import time
 import videocapture
 
 CAPTURE_DIR = os.path.join(os.path.dirname(__file__), "../captures")
 PROFILE_DIR = os.path.join(os.path.dirname(__file__), "../profiles")
+DASHBOARD_DIR = os.path.join(os.path.dirname(__file__), "../src/dashboard")
 
 def runtest(device_prefs, testname, options, apk=None, appname = None,
             appdate = None):
@@ -67,18 +69,29 @@ def runtest(device_prefs, testname, options, apk=None, appname = None,
             capture_result['file'] = capture_file
 
             capture = videocapture.Capture(capture_file)
-            capture_result['capture_fps'] = capture.fps
+            capture_result['captureFPS'] = capture.fps
 
             if stableframecapture:
-                capture_result['stableframetime'] = eideticker.get_stable_frame_time(capture)
+                capture_result['timetostableframe'] = eideticker.get_stable_frame_time(capture)
             else:
                 capture_result.update(
                     eideticker.get_standard_metrics(capture, testlog.actions))
             if options.outputdir:
-                video_path = os.path.join('videos', 'video-%s.webm' % time.time())
-                video_file = os.path.join(options.outputdir, video_path)
-                open(video_file, 'w').write(capture.get_video().read())
-                capture_result['video'] = video_path
+                # video
+                video_relpath = os.path.join('videos', 'video-%s.webm' % time.time())
+                video_path = os.path.join(options.outputdir, video_relpath)
+                open(video_path, 'w').write(capture.get_video().read())
+                capture_result['video'] = video_relpath
+
+                # framediff
+                framediff_relpath = os.path.join('framediffs', 'framediff-%s.json' % time.time())
+                framediff_path = os.path.join(options.outputdir, framediff_relpath)
+                with open(framediff_path, 'w') as f:
+                    framediff = videocapture.get_framediff_sums(capture)
+                    f.write(json.dumps({ 'diffsums': framediff }))
+                capture_result['frameDiff'] = framediff_relpath
+
+
 
         if options.enable_profiling:
             capture_result['profile'] = profile_file
@@ -91,7 +104,7 @@ def runtest(device_prefs, testname, options, apk=None, appname = None,
     if options.devicetype == "b2g":
         # FIXME: get information from sources.xml and application.ini on
         # device, as we do in update-dashboard.py
-        display_key = "FirefoxOS"
+        display_key = appkey = "FirefoxOS"
     else:
         appkey = appname
         if appdate:
@@ -109,7 +122,7 @@ def runtest(device_prefs, testname, options, apk=None, appname = None,
     if not options.no_capture:
         if stableframecapture:
             print "  Times to first stable frame (seconds):"
-            print "  %s" % map(lambda c: c['stableframetime'], capture_results)
+            print "  %s" % map(lambda c: c['timetostableframe'], capture_results)
             print
         else:
             print "  Number of unique frames:"
@@ -143,7 +156,7 @@ def runtest(device_prefs, testname, options, apk=None, appname = None,
         print
 
     if options.outputdir:
-        outputfile = os.path.join(options.outputdir, "metric-test-%s.json" % time.time())
+        outputfile = os.path.join(options.outputdir, "metric.json")
         resultdict = { 'title': testname, 'data': {} }
         if os.path.isfile(outputfile):
             resultdict.update(json.loads(open(outputfile).read()))
@@ -164,7 +177,7 @@ def main(args=sys.argv[1:]):
                       help = "number of runs (default: 1)")
     parser.add_option("--output-dir", action="store",
                       type="string", dest="outputdir",
-                      help="output results to json file")
+                      help="output results to web site")
     parser.add_option("--no-capture", action="store_true",
                       dest = "no_capture",
                       help = "run through the test, but don't actually "
@@ -221,6 +234,35 @@ def main(args=sys.argv[1:]):
         parser.error("On Android, must specify date, date range, a set of appnames (e.g. org.mozilla.fennec) or a set of apks (if --use-apks is specified)")
 
     device_prefs = eideticker.getDevicePrefs(options)
+
+    if options.outputdir:
+        for dirname in [ options.outputdir,
+                         os.path.join(options.outputdir, 'css'),
+                         os.path.join(options.outputdir, 'js'),
+                         os.path.join(options.outputdir, 'videos'),
+                         os.path.join(options.outputdir, 'framediffs'),
+                         ]:
+            if not os.path.exists(dirname):
+                os.makedirs(dirname)
+        for filename in [
+            'metric.html',
+            'framediff-view.html',
+            'css/bootstrap.min.css',
+            'js/ICanHaz.min.js',
+            'js/SS.min.js',
+            'js/common.js',
+            'js/framediff.js',
+            'js/jquery-1.7.1.min.js',
+            'js/jquery.flot.axislabels.js',
+            'js/jquery.flot.js',
+            'js/jquery.flot.stack.js',
+            'js/metric.js' ]:
+            if filename == 'metric.html':
+                outfilename = 'index.html'
+            else:
+                outfilename = filename
+            shutil.copyfile(os.path.join(DASHBOARD_DIR, filename),
+                            os.path.join(options.outputdir, outfilename))
 
     if options.devicetype == "b2g":
         runtest(device_prefs, testname, options)

@@ -1,24 +1,19 @@
 "use strict";
 
-function getParameterByName(name) {
-  var match = RegExp('[?&]' + name + '=([^&]*)').exec(window.location.search);
-
-  return match && decodeURIComponent(match[1].replace(/\+/g, ' '));
-}
+var availableMeasures = [];
 
 function updateContent(title, measure) {
 
-  var measureDescription;
-  if (measure === "checkerboard") {
-    measureDescription = 'The measure is the sum of the percentages of frames that are checkerboarded over the entire capture. Lower values are better.';
-  } else if (measure === "fps") {
-    measureDescription = 'The measure is a calculation of the average number of UNIQUE frames per second of capture. The theoretical maximum is 60 fps (which is what we are capturing), but note that if there periods where the page being captured is unchanging this number may be artifically low.';
-  } else {
-    measureDescription = 'The measure is a calculation of the total number of UNIQUE frames in the capture. Higher values generally indicate more fluid animations.';
-  }
+  var measureDescription = measures[measure].longDesc;
 
   $('#content').html(ich.graph({'title': title,
-                                'measureDescription': measureDescription
+                                'measureDescription': measureDescription,
+                                'measures': availableMeasures.map(
+                                  function(measureId) {
+                                    return { 'id': measureId,
+                                             'desc': measures[measureId].shortDesc
+                                           };
+                                  })
                                }));
   $('#measure-'+measure).attr("selected", "true");
   $('#measure').change(function() {
@@ -66,7 +61,7 @@ function updateGraph(rawdata, measure) {
     rawdata[appname].forEach(function(sample) {
       series.data.push([ barPosition, sample[measure] ]);
 
-      metadataHash[seriesIndex].push({'videoURL': sample.video, 'appDate': sample.appdate, 'revision': sample.revision, 'buildId': sample.buildid });
+      metadataHash[seriesIndex].push({'videoURL': sample.video, 'appDate': sample.appdate, 'revision': sample.revision, 'buildId': sample.buildid, 'frameDiff': sample.frameDiff, 'fps': sample.captureFPS });
       barPosition++;
     });
     graphdata.push(series);
@@ -106,7 +101,9 @@ function updateGraph(rawdata, measure) {
                                                      'appDate': metadata.appDate,
                                                      'revision': metadata.revision,
                                                      'buildId': metadata.buildId,
-                                                     'measureValue': Math.round(100.0*item.datapoint[1])/100.0
+                                                     'measureValue': Math.round(100.0*item.datapoint[1])/100.0,
+                                                     'frameDiff': metadata.frameDiff,
+                                                     'fps': metadata.fps
                                                    }));
       $('#video').css('width', $('#video').parent().width());
       $('#video').css('max-height', $('#graph-container').height());
@@ -119,16 +116,31 @@ function updateGraph(rawdata, measure) {
 }
 
 $(function() {
-  var router = Router({ '/(checkerboard|fps|uniqueframes)': {
-    on: function(measure) {
 
-      var jsonFile = getParameterByName('data');
-      $.getJSON(jsonFile, function(data) {
-        console.log(data);
-        updateContent(data['title'], measure);
-        updateGraph(data['data'], measure);
+  var dataFilename = getParameterByName('data');
+  if (!dataFilename)
+    dataFilename = 'metric.json';
+
+  $.getJSON(dataFilename, function(data) {
+    // figure out which measures could apply to this graph
+    Object.keys(data['data']).forEach(function(appname) {
+      data['data'][appname].forEach(function(sample) {
+        Object.keys(sample).forEach(function(potentialMeasure) {
+          if (jQuery.inArray(potentialMeasure, Object.keys(measures)) !== -1 &&
+              jQuery.inArray(potentialMeasure, availableMeasures) === -1) {
+            availableMeasures.push(potentialMeasure);
+          }
+        });
       });
-    }
-  } }).init('/fps');
+    });
 
+    var defaultMeasure = availableMeasures[0];
+
+    var router = Router({ '/:measureId': {
+      on: function(measureId) {
+        updateContent(data['title'], measureId);
+        updateGraph(data['data'], measureId);
+      }
+    } }).init('/' + defaultMeasure);
+  });
 });

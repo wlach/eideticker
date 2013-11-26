@@ -1,15 +1,6 @@
 "use strict";
 
 $(function() {
-  function getParameterByName(name) {
-    var match = RegExp('[?&]' + name + '=([^&]*)').exec(window.location.search);
-    if (!match)
-      return null;
-
-    return decodeURIComponent(match[1].replace(/\+/g, ' ')).replace(
-        /[\"\']/g, ' ');
-  }
-
   function render(diffsums, actions) {
     var seriesList = [];
     var currentSeries = null;
@@ -19,6 +10,9 @@ $(function() {
     var actionColorIndex = 0;
     var i = 0.0;
     var actionCount = {};
+
+    var fps = getParameterByName('fps');
+    if (!fps) fps = 60;
 
     diffsums.forEach(function(diffsum) {
       // if we have a current action, check to make sure
@@ -70,7 +64,7 @@ $(function() {
         lastSeries = null;
       }
       currentSeries.data.push([ i, diffsum ]);
-      i+=(1.0/60.0);
+      i+=(1.0/fps);
     });
 
     if (currentSeries)
