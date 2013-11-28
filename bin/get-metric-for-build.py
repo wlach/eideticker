@@ -238,6 +238,7 @@ def main(args=sys.argv[1:]):
     if options.outputdir:
         for dirname in [ options.outputdir,
                          os.path.join(options.outputdir, 'css'),
+                         os.path.join(options.outputdir, 'fonts'),
                          os.path.join(options.outputdir, 'js'),
                          os.path.join(options.outputdir, 'videos'),
                          os.path.join(options.outputdir, 'framediffs'),
@@ -245,18 +246,23 @@ def main(args=sys.argv[1:]):
             if not os.path.exists(dirname):
                 os.makedirs(dirname)
         for filename in [
-            'metric.html',
-            'framediff-view.html',
             'css/bootstrap.min.css',
+            'fonts/glyphicons-halflings-regular.eot',
+            'fonts/glyphicons-halflings-regular.svg',
+            'fonts/glyphicons-halflings-regular.ttf',
+            'fonts/glyphicons-halflings-regular.woff',
+            'framediff-view.html',
             'js/ICanHaz.min.js',
             'js/SS.min.js',
+            'js/bootstrap.min.js',
             'js/common.js',
             'js/framediff.js',
             'js/jquery-1.7.1.min.js',
             'js/jquery.flot.axislabels.js',
             'js/jquery.flot.js',
             'js/jquery.flot.stack.js',
-            'js/metric.js' ]:
+            'js/metric.js',
+            'metric.html' ]:
             if filename == 'metric.html':
                 outfilename = 'index.html'
             else:

@@ -1,6 +1,10 @@
 "use strict";
 
 $(function() {
+
+  var title = getParameterByName('title');
+  document.title = title;
+
   function render(diffsums, actions) {
     var seriesList = [];
     var currentSeries = null;
@@ -90,21 +94,112 @@ $(function() {
     });
 
     var previousPoint = null;
-    graphContainer.bind("plothover", function (event, pos, item) {
-      var video = $("#frameview").get(0);
-      video.currentTime = item.datapoint[0];
+    var currentTime = 0.0;
+    var frameNum = 0;
 
-      if (item) {
-	var t = item.datapoint[0].toFixed(8);
-        $("#datapoint").html(ich.graphDatapoint({ 'time': t,
-                                                  'framediff': item.datapoint[1],
-                                                  'eventName': item.series.label }));
+    function datumSelected(datum, series) {
+      plot.unhighlight();
+      plot.highlight(series, datum);
+      currentTime = datum[0];
+      frameNum = parseInt(currentTime * fps);
+
+      var video = $("#frameview").get(0);
+      video.currentTime = currentTime;
+      $("#datapoint").html(ich.graphDatapoint({ 'time': currentTime.toFixed(8),
+                                                'frameNum': frameNum,
+                                                'framediff': datum[1],
+                                                'eventName': series.label }));
+      var modal = $('#videoDetailModal');
+      if (modal.length) {
+        var largeVideo = $("#large-video").get(0);
+        largeVideo.currentTime = currentTime;
+        $(".modal-title").html("<h4>Frame " + frameNum + "</h4>");
       }
+      updateButtons();
+    }
+
+    function updateButtons() {
+      $(".btn-forward").unbind('click');
+      $(".btn-back").unbind('click');
+
+      function forward() {
+        var foundElement = false;
+        plot.getData().some(function(series) {
+          series.data.some(function(datum) {
+            if (datum[0] > currentTime) {
+              datumSelected(datum, series);
+              foundElement = true;
+            }
+            return foundElement;
+          });
+
+          return foundElement;
+        });
+      }
+
+      function backward() {
+        var foundElement = false;
+        plot.getData().some(function(series) {
+          var prevDatum = null;
+          var prevSeries = null;
+          series.data.some(function(datum) {
+            if (prevDatum && Math.abs(datum[0] - currentTime) < 0.00001) {
+              datumSelected(prevDatum, prevSeries);
+              foundElement = true;
+            }
+            prevDatum = datum;
+            prevSeries = series;
+            return foundElement;
+          });
+
+          return foundElement;
+        });
+      }
+
+      $(".btn-forward").click(function() {
+        $(".btn-forward").blur();
+        forward()
+        return false;
+      });
+
+      $(".btn-back").click(function() {
+        $(".btn-back").blur();
+        backward()
+        return false;
+      });
+
+      document.onkeydown = function(e) {
+        console.log("HEY");
+        if (e.keyCode == '37') {
+          // left arrow
+          backward();
+        }
+        else if (e.keyCode == '39') {
+          // right arrow
+          forward();
+        }
+      }
+    }
+    updateButtons();
+
+    graphContainer.bind("plothover", function (event, pos, item) {
+      if (item) {
+        datumSelected(item.datapoint, item.series);
+      }
+    });
+    $('#videobox').click(function() {
+      $('#videoDetailModal').remove();
+      $('body').after(ich.videoDetail({'title': 'Frame ' + frameNum,
+                                       'videoPath': getParameterByName('video') }));
+      $('#videoDetailModal').modal();
+      var video = $("#large-video").get(0);
+      video.addEventListener('loadedmetadata', function() { video.currentTime = currentTime; }, false);
+      updateButtons();
     });
   }
 
 
-  $('#header').html(ich.pageHeader({ 'title': getParameterByName('title') }));
+  $('#header').html(ich.pageHeader({ 'title': title }));
   $('#maincontent').html(ich.pageContent({ 'videoPath': getParameterByName('video') }));
 
   $.getJSON(getParameterByName('framediff'), function(framediff) {

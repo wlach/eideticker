@@ -47,12 +47,24 @@
         background-color: #eee;
         padding: 2px;
       }
+      .modal-title {
+        float: left;
+        padding-right: 4px;
+        padding-right: 10px;
+      }
+      .modal-title h4 {
+        margin-top: 6px;
+      }
       .inline-video {
-        height: 200px;
+        width: 100%;
+      }
+      #videobox {
+        cursor: pointer;
       }
     </style>
 
   </head>
+
   <body>
     <div class="container">
       <div class="content">
@@ -60,10 +72,11 @@
         </div>
         <div id="maincontent">
         </div>
-        <p class="help-block">Click on a point on the graph to see associated point in capture.</p>
+        <p class="help-block">Hover over a point on the graph to skip to associated point in capture.</p>
       </div>
     </div>
     <script src="js/jquery-1.7.1.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
     <script src="js/ICanHaz.min.js"></script>
     <script src="js/jquery.flot.js"></script>
     <script src="js/jquery.flot.time.js"></script>
@@ -72,6 +85,26 @@
     <script src="js/jquery.flot.navigate.js"></script>
     <script src="js/common.js"></script>
     <script src="js/framediff.js"></script>
+
+    <script id="videoDetail" type="text/html">
+      <div class="modal fade" id="videoDetailModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+              <div class="modal-title"><h4>{{title}}</h4></div>
+              <div class="btn-group">
+                <button type="button" class="btn btn-default btn-back"><span class="glyphicon glyphicon-step-backward"></span> Back</button>
+                <button type="button" class="btn btn-default btn-forward"><span class="glyphicon glyphicon-step-forward"></span> Forward</button>
+              </div>
+            </div>
+            <div class="modal-body">
+              <video src="{{videoPath}}" id="large-video" style="width:100%;"></video>
+            </div>
+          </div>
+        </div>
+      </div>
+    </script>
 
     <script id="pageHeader" type="text/html">
         <h1 id="page-title">{{title}}</h1>
@@ -82,8 +115,10 @@
         <div id="graph-container"></div>
       </div>
       <div class="row">
-        <div class="col-md-6">
-          <video src="{{videoPath}}" class="inline-video" id="frameview">
+        <div class="col-md-3">
+          <a class="thumbnail" id="videobox">
+            <video src="{{videoPath}}" class="inline-video" id="frameview"></video>
+          </a>
         </div>
         <div class="col-md-6" id="datapoint">
         </div>
@@ -94,6 +129,8 @@
       <dl>
         <dt>Time</dt>
         <dd>{{time}}s</dd>
+        <dt>Frame</dt>
+        <dd>{{frameNum}}</dd>
         <dt>Pixel Difference to Previous Frame</dt>
         <dd>{{framediff}}</dd>
         {{#eventName}}
@@ -101,6 +138,10 @@
         <dd>{{eventName}}</dd>
         {{/eventName}}
       </dl>
+      <div class="btn-group">
+        <button type="button" class="btn btn-default btn-back"><span class="glyphicon glyphicon-step-backward"></span> Back</button>
+        <button type="button" class="btn btn-default btn-forward"><span class="glyphicon glyphicon-step-forward"></span> Forward</button>
+      </div>
     </script>
   </body>
 </html>
