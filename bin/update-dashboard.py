@@ -274,6 +274,9 @@ def main(args=sys.argv[1:]):
     with open(testfile, 'w') as f:
         f.write(json.dumps({ 'tests': tests }))
 
+    if options.prepare_test:
+        eideticker.prepare_test(testkey, device_prefs)
+
     # Run the test the specified number of times
     for i in range(num_runs):
         runtest(device, device_prefs, options.capture_device, options.capture_area,

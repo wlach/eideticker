@@ -61,6 +61,10 @@ class TestOptionParser(CaptureOptionParser):
                         dest="sync_time",
                         help="don't synchronize time before running test",
                         default=True)
+        self.add_option("--no-prepare-test", action="store_false",
+                        dest="prepare_test",
+                        help="don't prepare test (e.g. repopulate databases for B2G)",
+                        default=True)
         self.add_option("--extra-env-vars", action="store", dest="extra_env_vars",
                         default="",
                         help='Extra environment variables to set in '

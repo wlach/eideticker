@@ -7,6 +7,9 @@ class Test(B2GAppActionTest):
         B2GAppActionTest.__init__(self, testinfo, appname, **kwargs)
         self.scrolldown_amount = testinfo.get('scrolldown_amount')
 
+    def populate_databases(self):
+        self.device.b2gpopulate.populate_calls(100, restart=False)
+
     def prepare_app(self):
         phone = Phone(self.device.marionette)
         phone.tap_call_log_toolbar_button()

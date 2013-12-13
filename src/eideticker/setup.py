@@ -3,7 +3,7 @@ setup(
     name = "eideticker",
     version = "0.1.0",
     packages = find_packages(),
-    install_requires = [ 'mozdevice', 'BeautifulSoup', 'gaiatest', 'httplib2' ]
+    install_requires = [ 'mozdevice', 'BeautifulSoup', 'gaiatest>=0.21.2', 'httplib2', 'b2gpopulate>=0.10' ]
 )
 
 # FIXME: Compile decklink-capture script automatically

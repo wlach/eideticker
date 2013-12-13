@@ -90,8 +90,10 @@ def get_testinfo(testkey):
 
     return [test for test in manifest.active_tests() if test['key'] == testkey][0]
 
-def get_test(testinfo, devicetype="android", testtype="web", **kwargs):
+def get_test(testinfo, devicetype="android", testtype=None, **kwargs):
     testpath = testinfo['path']
+    if not testtype:
+        testtype = testinfo['type']
 
     if devicetype == 'b2g':
         if testtype == 'web':
@@ -477,30 +479,71 @@ class B2GWebTest(B2GTest, WebTest):
         self.device.marionette.execute_script("window.location.href='%s';" % self.url)
         self.wait()
 
-class B2GAppActionTest(B2GTest):
+
+class B2GAppTest(B2GTest):
+
     def __init__(self, testinfo, appname, **kwargs):
-        super(B2GAppActionTest, self).__init__(testinfo, **kwargs)
+        super(B2GAppTest, self).__init__(testinfo, **kwargs)
         self.appname = appname
+
+class B2GAppActionTest(B2GAppTest):
+
+    def __init__(self, testinfo, appname, **kwargs):
+        super(B2GAppActionTest, self).__init__(testinfo, appname, **kwargs)
         # parent class must define self.cmds
 
-    def prepare_app(self):
-        # no action in default implementation
-        pass
-
-    def run(self):
-        apps = GaiaApps(self.device.marionette)
-
+    def launch_app(self):
         # launch app and wait for it to "settle" so that it's ready for use
+        # (this is a naive implementation that just assumes that we're done
+        # "loading" after 5 seconds -- feel free to override this method in
+        # your test)
+        apps = GaiaApps(self.device.marionette)
         app = apps.launch(self.appname)
         assert app.frame_id is not None
-        time.sleep(5) # FIXME: can we do better than a timeout here?
+        time.sleep(5)
 
-        # prepare the app for the test
-        self.prepare_app()
-
+    def run(self):
+        self.launch_app()
         self.start_capture()
         self.execute_actions(self.cmds)
         self.end_capture()
 
         # cleanup: switch back to main frame
         self.device.marionette.switch_to_frame()
+
+
+class B2GAppStartupTest(B2GAppTest):
+
+    def __init__(self, testinfo, appname, **kwargs):
+        super(B2GAppStartupTest, self).__init__(testinfo, appname, **kwargs)
+
+    def run(self):
+        # kill any open apps (e.g. "firstrun")
+        self.device.gaiaApps.kill_all()
+
+        from gaiatest.apps.homescreen.app import Homescreen
+        homescreen = Homescreen(self.device.marionette)
+        self.device.gaiaApps.switch_to_displayed_app() # switches to homescreen
+        appicon = None
+
+        while homescreen.homescreen_has_more_pages:
+            # skip the everything.me page by going to the next page at the
+            # beginning of this loop
+            homescreen.go_to_next_page()
+            appicon = self.device.marionette.find_element('css selector',
+                '#icongrid > div:not([aria-hidden=true]) .icon[aria-label="%s"]' % self.appname)
+            if appicon.is_displayed():
+                break
+
+        tap_x = appicon.location['x'] + (appicon.size['width'] / 2)
+        tap_y = appicon.location['y'] + (appicon.size['height'] / 2)
+
+        self.start_capture()
+        self.execute_actions([['tap', tap_x, tap_y]],
+                             test_finished_after_actions=False)
+        self.log("Waiting %s seconds for app to finish starting" %
+                 self.capture_timeout)
+        time.sleep(self.capture_timeout)
+
+        self.test_finished()
+        self.end_capture()

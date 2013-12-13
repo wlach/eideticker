@@ -12,7 +12,8 @@ import posixpath
 import re
 import tempfile
 import time
-from gaiatest.gaia_test import LockScreen, GaiaData
+from gaiatest.gaia_test import LockScreen, GaiaData, GaiaApps
+from b2gpopulate import B2GPopulate
 
 # I know specifying resolution manually like this is ugly, but as far as I
 # can tell there is no good, device-independant way of getting this
@@ -392,6 +393,9 @@ class EidetickerB2GMixin(EidetickerMixin):
         self.marionette.set_script_timeout(60000)
         self._logger.info("Marionette ready!")
 
+        self.b2gpopulate = B2GPopulate(self.marionette)
+        self.gaiaApps = GaiaApps(self.marionette)
+
     def connectWIFI(self, wifiSettings):
         """
         Tries to connect to the wifi network
@@ -401,10 +405,13 @@ class EidetickerB2GMixin(EidetickerMixin):
         data.connect_to_wifi(wifiSettings)
         self._logger.info("WIFI ready!")
 
-    def restartB2G(self):
-        """
-        Restarts the b2g process on the device.
-        """
+    def cleanup(self):
+        self.removeDir('/data/local/storage/persistent')
+        self.removeDir('/data/b2g/mozilla')
+        for item in self.listFiles('/sdcard/'):
+            self.removeDir('/'.join(['/sdcard', item]))
+
+    def stopB2G(self):
         #restart b2g so we start with a clean slate
         if self.marionette and self.marionette.session:
             self.marionette.delete_session()
@@ -416,8 +423,9 @@ class EidetickerB2GMixin(EidetickerMixin):
             time.sleep(0.1)
         if tries == 0:
             raise mozdevice.DMError("Could not kill b2g process")
-        self.shellCheckOutput(['start', 'b2g'])
 
+    def startB2G(self):
+        self.shellCheckOutput(['start', 'b2g'])
         self.setupMarionette()
 
         self.marionette.execute_async_script("""
@@ -430,6 +438,13 @@ marionetteScriptFinished();
 
         # TODO: Remove this sleep when Bug 924912 is addressed
         time.sleep(5)
+
+    def restartB2G(self):
+        """
+        Restarts the b2g process on the device.
+        """
+        self.stopB2G()
+        self.startB2G()
 
     def resetOrientation(self):
         self.setOrientation(self.deviceProperties['defaultOrientation'])
@@ -449,6 +464,7 @@ class B2GADB(EidetickerB2GMixin, mozdevice.DeviceManagerADB):
     def __init__(self, **kwargs):
         mozdevice.DeviceManagerADB.__init__(self, **kwargs)
         self._init() # custom eideticker init steps
+        self.setupMarionette()
 
     @property
     def type(self):

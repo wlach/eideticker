@@ -3,13 +3,41 @@ from test import get_test, get_testinfo, TestException, SRC_DIR, TEST_DIR
 import datetime
 import json
 import os
-import time
 import urllib
 import videocapture
+from log import logger
 
 CAPTURE_DIR = os.path.abspath(os.path.join(SRC_DIR, "../captures"))
 GECKO_PROFILER_ADDON_DIR = os.path.join(SRC_DIR, "../src/GeckoProfilerAddon")
 EIDETICKER_TEMP_DIR = "/tmp/eideticker"
+
+def prepare_test(testkey, device_prefs):
+    # prepare test logic -- currently only done on b2g
+    if device_prefs['devicetype'] == 'b2g':
+        testinfo = get_testinfo(testkey)
+        device = getDevice(**device_prefs)
+
+        test = get_test(testinfo, devicetype = device_prefs['devicetype'],
+                        device=device, appname=testinfo.get('appname'))
+
+        # reset B2G device's state for test
+        logger.info("Resetting B2G and cleaning up...")
+        device.stopB2G()
+        device.cleanup()
+
+        # even if we're populating the database, we need to restart b2g so
+        # b2gpopulate has access to a marionette connection
+
+        if hasattr(test, 'populate_databases'):
+            logger.info("Populating database...")
+            test.populate_databases()
+
+        logger.info("Restarting b2g")
+        device.startB2G()
+
+        if hasattr(test, 'prepare_app'):
+            logger.info("Doing initial setup on app for test")
+            test.prepare_app()
 
 def run_test(testkey, capture_device, appname, capture_name,
              device_prefs, extra_prefs={}, test_type=None, profile_file=None,

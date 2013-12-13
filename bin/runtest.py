@@ -49,6 +49,9 @@ def main(args=sys.argv[1:]):
 
     device_prefs = eideticker.getDevicePrefs(options)
 
+    if options.prepare_test:
+        eideticker.prepare_test(testkey, device_prefs)
+
     testlog = eideticker.run_test(testkey, options.capture_device,
                                   options.appname,
                                   options.capture_name, device_prefs,
