@@ -35,7 +35,7 @@ def get_revision_data(sources_xml):
 def runtest(dm, device_prefs, capture_device, capture_area, product, appname,
             appinfo, testinfo, capture_name, outputdir, datafile, data,
             enable_profiling=False, log_http_requests=False, log_actions=False,
-            baseline=False, sync_time=True):
+            baseline=False, wifi_settings_file=None, sync_time=True):
     capture_file = os.path.join(CAPTURE_DIR,
                                 "%s-%s-%s-%s.zip" % (testinfo['key'],
                                                      appname,
@@ -62,6 +62,7 @@ def runtest(dm, device_prefs, capture_device, capture_area, product, appname,
                                           profile_file=profile_file,
                                           capture_area=capture_area,
                                           capture_file=capture_file,
+                                          wifi_settings_file=wifi_settings_file,
                                           sync_time=sync_time)
             test_completed = True
             break
@@ -281,7 +282,9 @@ def main(args=sys.argv[1:]):
                 enable_profiling=options.enable_profiling,
                 log_http_requests=log_http_requests,
                 log_actions=log_actions,
-                baseline=options.baseline, sync_time=options.sync_time)
+                baseline=options.baseline,
+                wifi_settings_file=options.wifi_settings_file,
+                sync_time=options.sync_time)
         if options.devicetype == "android":
             # Kill app after test complete
             device.killProcess(appname)

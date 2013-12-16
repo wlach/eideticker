@@ -59,6 +59,7 @@ def main(args=sys.argv[1:]):
                                   no_capture=options.no_capture,
                                   capture_area=options.capture_area,
                                   capture_file=options.capture_file,
+                                  wifi_settings_file=options.wifi_settings_file,
                                   sync_time=options.sync_time)
 
     # save logs if applicable

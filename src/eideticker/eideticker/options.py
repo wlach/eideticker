@@ -29,6 +29,9 @@ class OptionParser(optparse.OptionParser):
                         help = "Device type (android or b2g, default to "
                         "android). If B2G, you do not need to pass in an "
                         "appname")
+        self.add_option("-w", "--wifi-settings", action="store",
+                        type = "string", dest = "wifi_settings_file",
+                        help = "WIFI settings file (required for b2g)")
         self.add_option("--debug", action="store_true",
                         dest="debug", help="show verbose debugging information")
 

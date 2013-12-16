@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import eideticker
+import json
 import mozhttpd
 import moznetwork
 import multiprocessing
@@ -80,8 +81,11 @@ def run_capture(options, capture_file):
     if device_prefs['devicetype'] == 'android':
         device.launchFennec(options.appname, url=url)
     else:
-        device.setupDHCP()
-        device.setupMarionette()
+        if not options.wifi_settings_file:
+            print "WIFI settings file (see --help) required for B2G!"
+            sys.exit(1)
+        device.restartB2G()
+        device.connectWIFI(json.loads(open(options.wifi_settings_file).read()))
         session = device.marionette.session
         if 'b2g' not in session:
             raise Exception("bad session value %s returned by start_session" % session)
@@ -126,8 +130,9 @@ def main(args=sys.argv[1:]):
 
     capture_file = options.capture_file
     if not capture_file:
-        capture_file = os.path.join(CAPTURE_DIR, "capture-test-%s.zip" % time.time())
-        print "Capturing to file %s" % capture_file
+        if not options.no_capture:
+            capture_file = os.path.join(CAPTURE_DIR, "capture-test-%s.zip" % time.time())
+            print "Capturing to file %s" % capture_file
         run_capture(options, capture_file)
 
     if options.no_capture:

@@ -3,16 +3,16 @@
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import json
+import marionette
 import mozdevice
 import moznetwork
-import mozb2g
 import mozlog
 import os
 import posixpath
 import re
 import tempfile
 import time
-from gaiatest.gaia_test import LockScreen
+from gaiatest.gaia_test import LockScreen, GaiaData
 
 # I know specifying resolution manually like this is ugly, but as far as I
 # can tell there is no good, device-independant way of getting this
@@ -379,24 +379,76 @@ class DroidSUT(EidetickerMixin, mozdevice.DroidSUT):
 class EidetickerB2GMixin(EidetickerMixin):
     """B2G-specific extensions to the eideticker mixin"""
 
+    marionette = None
+
+    def setupMarionette(self):
+        self.marionette = marionette.Marionette()
+        self._logger.info("Waiting for Marionette...")
+        self.marionette.wait_for_port()
+        self.marionette.start_session()
+        if 'b2g' not in self.marionette.session:
+            raise mozdevice.DMError("bad session value %s returned by start_session" %
+                            self.marionette.session)
+        self.marionette.set_script_timeout(60000)
+        self._logger.info("Marionette ready!")
+
+    def connectWIFI(self, wifiSettings):
+        """
+        Tries to connect to the wifi network
+        """
+        self._logger.info("Setting up wifi...")
+        data = GaiaData(self.marionette)
+        data.connect_to_wifi(wifiSettings)
+        self._logger.info("WIFI ready!")
+
+    def restartB2G(self):
+        """
+        Restarts the b2g process on the device.
+        """
+        #restart b2g so we start with a clean slate
+        if self.marionette and self.marionette.session:
+            self.marionette.delete_session()
+        self.shellCheckOutput(['stop', 'b2g'])
+        # Wait for a bit to make sure B2G has completely shut down.
+        tries = 100
+        while "b2g" in self.shellCheckOutput(['ps', 'b2g']) and tries > 0:
+            tries -= 1
+            time.sleep(0.1)
+        if tries == 0:
+            raise mozdevice.DMError("Could not kill b2g process")
+        self.shellCheckOutput(['start', 'b2g'])
+
+        self.setupMarionette()
+
+        self.marionette.execute_async_script("""
+window.addEventListener('mozbrowserloadend', function loaded(aEvent) {
+if (aEvent.target.src.indexOf('ftu') != -1 || aEvent.target.src.indexOf('homescreen') != -1) {
+window.removeEventListener('mozbrowserloadend', loaded);
+marionetteScriptFinished();
+}
+});""", script_timeout=60000)
+
+        # TODO: Remove this sleep when Bug 924912 is addressed
+        time.sleep(5)
+
     def resetOrientation(self):
         self.setOrientation(self.deviceProperties['defaultOrientation'])
 
     def setOrientation(self, orientation):
         # set landscape or portrait mode
-        print "Setting orientation: %s" % orientation
+        self._logger.info("Setting orientation: %s" % orientation)
         self.marionette.execute_script("screen.mozLockOrientation('%s');" % orientation)
 
     def unlock(self):
         # unlock device, so it doesn't go to sleep
+        self._logger.info("Unlocking screen...")
         ls = LockScreen(self.marionette)
         ls.unlock()
 
-class B2GADB(EidetickerB2GMixin, mozb2g.DeviceADB):
+class B2GADB(EidetickerB2GMixin, mozdevice.DeviceManagerADB):
     def __init__(self, **kwargs):
-        mozb2g.DeviceADB.__init__(self, **kwargs)
+        mozdevice.DeviceManagerADB.__init__(self, **kwargs)
         self._init() # custom eideticker init steps
-        self.setupProfile()
 
     @property
     def type(self):
@@ -408,16 +460,6 @@ class B2GADB(EidetickerB2GMixin, mozb2g.DeviceADB):
 
     def rotation(self):
         return 90 # Assume portrait orientation for now
-
-class B2GSUT(EidetickerB2GMixin, mozb2g.DeviceSUT):
-    def __init__(self, **kwargs):
-        mozb2g.DeviceSUT.__init__(self, **kwargs)
-        self._init() # custom eideticker init steps
-        self.setupProfile()
-
-    @property
-    def type(self):
-        return "b2g"
 
 def getDevicePrefs(options):
     '''Gets a dictionary of eideticker device parameters'''
@@ -450,8 +492,7 @@ def getDevice(dmtype="adb", devicetype="android", host=None, port=None,
         if devicetype=='b2g':
             # HACK: Assume adb-over-usb for now, with marionette forwarded
             # to localhost via "adb forward tcp:2828 tcp:2828"
-            return B2GADB(marionetteHost="127.0.0.1", logLevel=logLevel)
-            #return B2GADB(host=host, port=port)
+            return B2GADB(logLevel=logLevel)
         else:
             return DroidADB(packageName=None, host=host, port=port,
                             logLevel=logLevel)

@@ -62,6 +62,7 @@ def runtest(device_prefs, testname, options, apk=None, appname = None,
                                       no_capture=options.no_capture,
                                       fps=options.fps,
                                       capture_file=capture_file,
+                                      wifi_settings_file=options.wifi_settings_file,
                                       sync_time=options.sync_time)
 
         capture_result = {}

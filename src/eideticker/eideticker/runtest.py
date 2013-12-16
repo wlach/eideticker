@@ -3,9 +3,9 @@ from test import get_test, get_testinfo, TestException, SRC_DIR, TEST_DIR
 import datetime
 import json
 import os
+import time
 import urllib
 import videocapture
-import time
 
 CAPTURE_DIR = os.path.abspath(os.path.join(SRC_DIR, "../captures"))
 GECKO_PROFILER_ADDON_DIR = os.path.join(SRC_DIR, "../src/GeckoProfilerAddon")
@@ -13,10 +13,10 @@ EIDETICKER_TEMP_DIR = "/tmp/eideticker"
 
 def run_test(testkey, capture_device, appname, capture_name,
              device_prefs, extra_prefs={}, test_type=None, profile_file=None,
-             request_log_file=None, actions_log_file=None,
-             log_checkerboard_stats=False, extra_env_vars={},
-             capture_area=None, no_capture=False, capture_file=None,
-             sync_time=True, fps=None):
+             wifi_settings_file=None, request_log_file=None,
+             actions_log_file=None, log_checkerboard_stats=False,
+             extra_env_vars={}, capture_area=None, no_capture=False,
+             capture_file=None, sync_time=True, fps=None):
     testinfo = get_testinfo(testkey)
     print "Testinfo: %s" % testinfo
 
@@ -45,22 +45,16 @@ def run_test(testkey, capture_device, appname, capture_name,
     device = getDevice(**device_prefs)
 
     if device_prefs['devicetype'] == 'b2g':
-        device.setupDHCP()
-        device.setupMarionette()
-        session = device.marionette.session
-        if 'b2g' not in session:
-            raise Exception("bad session value %s returned by start_session" % session)
+        # restart b2g, so we're in a clean state
+        device.restartB2G()
+
+        if sync_time:
+            # if we're synchronizing time, we need to connect to the network
+            wifi_settings = json.loads(open(wifi_settings_file).read())
+            device.connectWIFI(wifi_settings)
 
         # unlock device, so it doesn't go to sleep
         device.unlock()
-
-        # Wait for device to properly recognize network
-        device.marionette.execute_async_script("""
-waitFor(
-  function() { marionetteScriptFinished(true); },
-  function() { return window.navigator.onLine; }
-);
-""")
 
         # reset orientation to default for this type of device
         device.resetOrientation()
@@ -121,11 +115,6 @@ waitFor(
 
     test.run()
     test.cleanup()
-
-    if device_prefs['devicetype'] == 'b2g':
-        device.marionette.delete_session()
-        device.cleanup()
-        device.restartB2G()
 
     if capture_file:
         try:
