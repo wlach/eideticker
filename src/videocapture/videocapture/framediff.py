@@ -74,7 +74,7 @@ def get_framediff_sums(capture, filter_low_differences=True):
         # Frame differences
         diffsums = None
         prevframe = None
-        diffsums = []
+        diffsums = [0]
         for i in range(1, capture.num_frames+1):
             frame = capture.get_frame(i, True).astype('float')
             if prevframe != None:
@@ -102,7 +102,7 @@ def image_entropy(img):
 
 def get_entropy_diffs(capture, num_samples=5):
     prev_samples = []
-    entropy_diffs = []
+    entropy_diffs = [0]
     for i in range(1, capture.num_frames+1):
         frame = capture.get_frame_image(i)
         frame_entropy = image_entropy(frame)
@@ -119,7 +119,9 @@ def get_entropy_diffs(capture, num_samples=5):
 
 def get_num_unique_frames(capture, threshold=0):
     framediff_sums = get_framediff_sums(capture)
-    return 1 + len([framediff for framediff in framediff_sums if framediff > threshold])
+    num_uniques = len([framediff for framediff in framediff_sums if framediff > threshold])
+    if threshold > 0:
+        num_uniques += 1 # first frame not included if threshold is greater than 0
 
 def get_fps(capture, threshold=0):
     return get_num_unique_frames(capture, threshold=threshold) / capture.length
