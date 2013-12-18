@@ -123,6 +123,8 @@ def get_num_unique_frames(capture, threshold=0):
     if threshold > 0:
         num_uniques += 1 # first frame not included if threshold is greater than 0
 
+    return num_uniques
+
 def get_fps(capture, threshold=0):
     return get_num_unique_frames(capture, threshold=threshold) / capture.length
 
