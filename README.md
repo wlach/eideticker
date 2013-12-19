@@ -81,7 +81,7 @@ Run `bootstrap.sh` in the root directory to set everything up.
 
 ### Phones
 
-You will need to install copies of [Orangutan](http://github.com/mozilla/orangutan)
+You will need to install copies of [Orangutan](http://github.com/wlach/orangutan)
 and [ntpdate-android](http://github.com/wlach/ntpclient-android) on each of the phones.
 
 ## Usage
