@@ -63,10 +63,10 @@ For more information on the Decklink cards, see the
   the camera.
 
 * The following dependencies for the FlyCapture software will need to be
-  installed: libgtk-mm-2.4-dev, libglademm-2.4-dev, libusb-1.0. You can get
+  installed: libgtkmm-2.4-dev, libglademm-2.4-dev, libusb-1.0. You can get
   these by running:
 
-    `sudo apt-get install -y libgtk-mm-2.4-dev libglademm-2.4-dev libusb-1.0`
+    `sudo apt-get install -y libgtkmm-2.4-dev libglademm-2.4-dev libusb-1.0`
 
 * FlyCapture camera software available from
   [PointGrey](http://www.ptgrey.com/support/downloads) (you will need to
