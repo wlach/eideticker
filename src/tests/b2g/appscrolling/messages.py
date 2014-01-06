@@ -3,8 +3,8 @@ import time
 from gaiatest.apps.messages.app import Messages
 from marionette.by import By
 from marionette.errors import NoSuchElementException
-from marionette.errors import StaleElementException
-from marionette.errors import TimeoutException
+from marionette.errors import ElementNotVisibleException
+from marionette.wait import Wait
 
 from eideticker.test import B2GAppActionTest
 
@@ -36,15 +36,4 @@ class Test(B2GAppActionTest):
         # the first launch after populating the data takes a long time.
         messages = Messages(self.device.marionette)
         messages.launch()
-        end_time = time.time() + 120
-        while time.time() < end_time:
-            try:
-                message = self.device.marionette.find_element(
-                    By.CSS_SELECTOR, '#threads-container li')
-                if message.is_displayed():
-                    break
-            except (NoSuchElementException, StaleElementException):
-                pass
-            time.sleep(0.5)
-        else:
-            raise TimeoutException('No messages displayed')
+        Wait(self.device.marionette, 120, ignored_exceptions=(NoSuchElementException, ElementNotVisibleException)).until(lambda m: m.find_element(By.CSS_SELECTOR, '#threads-container li').is_displayed())

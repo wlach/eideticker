@@ -6,8 +6,8 @@ import time
 
 from gaiatest.apps.contacts.app import Contacts
 from marionette.errors import NoSuchElementException
-from marionette.errors import StaleElementException
-from marionette.errors import TimeoutException
+from marionette.errors import ElementNotVisibleException
+from marionette.wait import Wait
 
 class B2GContactsTestMixin(object):
 
@@ -22,19 +22,7 @@ class B2GContactsTestMixin(object):
         # the first launch after populating the data takes a long time.
         contacts = Contacts(self.device.marionette)
         contacts.launch()
-        end_time = time.time() + 120
-        while time.time() < end_time:
-            try:
-                contact = self.device.marionette.find_element(
-                    *contacts._contact_locator)
-                if contact.is_displayed():
-                    self.log("App ready!")
-                    return
-            except (NoSuchElementException, StaleElementException):
-                pass
-            time.sleep(0.5)
-        else:
-            raise TimeoutException('No contacts displayed')
+        Wait(self.device.marionette, 120, ignored_exceptions=(NoSuchElementException, ElementNotVisibleException)).until(lambda m: m.find_element(*contacts._contact_locator).is_displayed())
 
     def prepare_app(self):
         self.launch_app()
