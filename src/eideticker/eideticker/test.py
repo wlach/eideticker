@@ -15,6 +15,8 @@ import manifestparser
 from gaiatest.gaia_test import GaiaApps
 from log import LoggingMixin
 
+from marionette.errors import NoSuchElementException
+
 SRC_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
 TEST_DIR = os.path.abspath(os.path.join(SRC_DIR, "tests"))
 
@@ -526,14 +528,20 @@ class B2GAppStartupTest(B2GAppTest):
         self.device.gaiaApps.switch_to_displayed_app() # switches to homescreen
         appicon = None
 
-        while homescreen.homescreen_has_more_pages:
-            # skip the everything.me page by going to the next page at the
-            # beginning of this loop
-            homescreen.go_to_next_page()
-            appicon = self.device.marionette.find_element('css selector',
-                '#icongrid > div:not([aria-hidden=true]) .icon[aria-label="%s"]' % self.appname)
-            if appicon.is_displayed():
-                break
+        try:
+            # look for the application icon in the dock first
+            appicon = self.device.marionette.find_element(
+                'css selector',
+                '#footer .icon[aria-label="%s"]' % self.appname)
+        except NoSuchElementException:
+            while homescreen.homescreen_has_more_pages:
+                # skip the everything.me page by going to the next page at the
+                # beginning of this loop
+                homescreen.go_to_next_page()
+                appicon = self.device.marionette.find_element('css selector',
+                    '#icongrid > div:not([aria-hidden=true]) .icon[aria-label="%s"]' % self.appname)
+                if appicon.is_displayed():
+                    break
 
         tap_x = appicon.location['x'] + (appicon.size['width'] / 2)
         tap_y = appicon.location['y'] + (appicon.size['height'] / 2)
