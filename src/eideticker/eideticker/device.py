@@ -391,6 +391,7 @@ class EidetickerB2GMixin(EidetickerMixin):
             raise mozdevice.DMError("bad session value %s returned by start_session" %
                             self.marionette.session)
         self.marionette.set_script_timeout(60000)
+        self.marionette.timeouts(self.marionette.TIMEOUT_SEARCH, 10000)
         self._logger.info("Marionette ready!")
 
         self.b2gpopulate = B2GPopulate(self.marionette)
