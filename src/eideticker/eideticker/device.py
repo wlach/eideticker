@@ -80,6 +80,13 @@ DEVICE_PROPERTIES = {
             "defaultOrientation": "portrait",
             "dimensions": (320, 480),
             "swipePadding": (40, 40, 40, 40)
+            },
+        "ALCATEL ONE TOUCH FIRE": {
+            "hdmiResolution": None,
+            "inputDevice": "/dev/input/event4",
+            "defaultOrientation": "portrait",
+            "dimensions": (320, 480),
+            "swipePadding": (40, 40, 40, 40)
             }
         }
 }
