@@ -31,6 +31,9 @@ virtualenv .
 # Build up videocapture utility (FIXME: should be part of the egg building process)
 make -C src/videocapture/videocapture/decklink
 
+# Set a long timeout for pip, especially for travis testing
+export PIP_DEFAULT_TIMEOUT=120
+
 # Install local deps
 ./bin/python src/mozbase/setup_development.py
 ./bin/pip install -e src/templeton
