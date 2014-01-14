@@ -142,7 +142,7 @@ def runtest(device_prefs, testname, options, apk=None, appname = None,
             print
 
             print "  Time to first input response: "
-            print "  %s" % map(lambda c: c['timetoresponse'], capture_results)
+            print "  %s" % map(lambda c: c.get('timetoresponse'), capture_results)
             print
 
         print "  Capture files:"
