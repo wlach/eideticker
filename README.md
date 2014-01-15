@@ -24,9 +24,9 @@ analyzes browser output via HDMI or an external camera.
   allow SUTAgent to run commands as root in silent mode (so that
   notifications don't pop up while running tests.
 
-The remaining requirements depend on whether you are capturing with the phone's HDMI
-out. It is also possible to use the Eideticker harness without video capture,
-which can be useful for certain cases: see below.
+The remaining requirements depend on whether you are capturing with the phone's
+HDMI out or with a PointGrey camera. It is also possible to use the Eideticker
+harness without video capture, which can be useful for certain cases: see below.
 
 ### HDMI
 
@@ -79,6 +79,19 @@ For more information on the Decklink cards, see the
 
 Run `bootstrap.sh` in the root directory to set everything up.
 
+There are two additional steps required if you wish to capture video with
+HDMI or the PointGrey Camera
+
+#### HDMI
+
+From the root directory, type:
+
+    cd src/videocapture/videocapture/decklink && make
+
+#### Camera
+
+    cd src/videocapture/videocapture/pointgrey && make
+
 ### Phones
 
 You will need to install copies of [Orangutan](http://github.com/mozilla-b2g/orangutan)
@@ -103,10 +116,20 @@ ip address of your phone, then set the following environment variables:
     export TEST_DEVICE=<device ip of phone>
 
 If you are using a FirefoxOS device with adb, then you might need sudo
-privileges for adb:
+privileges for adb if you haven't set up udev rules that allow a normal
+user to access the device:
 
     adb kill-server
     sudo adb start-server
+
+On FirefoxOS, you will also need to set up a WIFI settings file for the
+device, so it knows which network to connect to when running tests (this
+should be the same one that the host computer is connected to). You can
+generate one by running the `create-wifi-settings.py` script with the
+appropriate arguments. For example, to create WIFI settings for a network
+called "Mozilla" with WPA-PSK key management and the password "letmein", run:
+
+    create-wifi-settings.py Mozilla WPA-PSK letmein > wifi-settings-mozilla
 
 If you are using a PointGrey camera to capture footage of the device, you
 will need to first calibrate the camera and determine the area to capture.
@@ -145,7 +168,7 @@ should see a camera preview. Adjust the camera/device as needed until there is
 a very clear and sharp picture of the device in view. Once this is done, you
 will need to run the getdimensions.py to get the dimensions to capture:
 
-    ./bin/getdimensions.py
+    ./bin/getdimensions.py -w <wifi settings file>
 
 Set the CAPTURE_AREA environment variable to the output of that utility, for
 example:
@@ -168,7 +191,10 @@ the test. For fennec nightly, you'd use:
 
     ./bin/runtest.py --app-name org.mozilla.fennec <test>
 
-On Firefox OS, you can just specify the test and you should be good to go.
+On Firefox OS, you can just specify the test and a wifi settings file, like
+this:
+
+    ./bin/runtest.py -w <wifi settings file> <test>
 
 If you have a proper camera set up, you should get a recorded capture in the
 captures/ subdirectory. You can view some details of this capture with the
@@ -177,7 +203,7 @@ navigating to http://localhost:8080 with your browser.
 
 If you just want to run through a test *without* capturing any output (e.g. if
 you are just working on a test and/or don't have a capture rig), pass the
---no-capture option. For example:
+--no-capture option. For example on Android:
 
     ./bin/runtest.py --app-name org.mozilla.fennec --no-capture taskjs
 
@@ -233,7 +259,12 @@ Running get-metric-for-build on FirefoxOS is almost exactly the same, except
 you do not have to specify apk or application information. Just specify the
 name of the test you'd like to run. For example:
 
-    ./bin/get-metric-for-build.py b2g-contacts-scrolling
+    ./bin/get-metric-for-build.py -w <wifi settings file> b2g-contacts-scrolling
+
+A WIFI settings file is required on FirefoxOS because we automatically wipe
+the saved settings before every test and we always need a network connection
+in order to synchronize the time between the device and the host machine
+running it, even if there is no other network activity involved in the test.
 
 #### Getting more results
 
@@ -246,7 +277,7 @@ this with the `--num-runs` option. For example on Android:
 
 Or on FirefoxOS:
 
-    ./bin/get-metric-for-build.py --num-runs 5 clock
+    ./bin/get-metric-for-build.py -w <wifi settings file> --num-runs 5 clock
 
 #### Interpreting results
 
