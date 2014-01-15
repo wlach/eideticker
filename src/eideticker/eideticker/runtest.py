@@ -75,8 +75,6 @@ def run_test(testkey, capture_device, appname, capture_name,
     device = getDevice(**device_prefs)
 
     if device_prefs['devicetype'] == 'b2g':
-        # restart b2g, so we're in a clean state
-        device.restartB2G()
 
         if sync_time:
             # if we're synchronizing time, we need to connect to the network
