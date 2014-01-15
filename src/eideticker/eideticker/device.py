@@ -12,7 +12,7 @@ import posixpath
 import re
 import tempfile
 import time
-from gaiatest.gaia_test import LockScreen, GaiaData, GaiaApps
+from gaiatest.gaia_test import GaiaDevice, GaiaData, GaiaApps
 from b2gpopulate import B2GPopulate
 
 # I know specifying resolution manually like this is ugly, but as far as I
@@ -396,6 +396,7 @@ class EidetickerB2GMixin(EidetickerMixin):
 
         self.b2gpopulate = B2GPopulate(self.marionette)
         self.gaiaApps = GaiaApps(self.marionette)
+        self.gaiaDevice = GaiaDevice(self.marionette)
 
     def connectWIFI(self, wifiSettings):
         """
@@ -458,8 +459,8 @@ marionetteScriptFinished();
     def unlock(self):
         # unlock device, so it doesn't go to sleep
         self._logger.info("Unlocking screen...")
-        ls = LockScreen(self.marionette)
-        ls.unlock()
+        self.gaiaDevice.unlock()
+
 
 class B2GADB(EidetickerB2GMixin, mozdevice.DeviceManagerADB):
     def __init__(self, **kwargs):
