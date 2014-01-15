@@ -468,6 +468,10 @@ marionetteScriptFinished();
         self._logger.info("Unlocking screen...")
         self.gaiaDevice.unlock()
 
+    def killApps(self):
+        self._logger.info("Killing all running apps...")
+        self.gaiaApps.kill_all()
+
 
 class B2GADB(EidetickerB2GMixin, mozdevice.DeviceManagerADB):
     def __init__(self, **kwargs):

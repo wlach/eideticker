@@ -34,6 +34,8 @@ def prepare_test(testkey, device_prefs):
 
         logger.info("Restarting b2g")
         device.startB2G()
+        device.unlock()
+        device.killApps()
 
         if hasattr(test, 'prepare_app'):
             logger.info("Doing initial setup on app for test")
