@@ -26,7 +26,6 @@ def get_revision_data(sources_xml):
     for element in sources.getElementsByTagName('project'):
         path = element.getAttribute('path')
         revision = element.getAttribute('revision')
-        print path
         if path in ['gaia', 'build']:
             revision_data[path + 'Revision'] = revision
     return revision_data
