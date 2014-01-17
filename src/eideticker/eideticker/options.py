@@ -7,37 +7,42 @@ import optparse
 import os
 import videocapture
 
+
 class OptionParser(optparse.OptionParser):
     '''Custom version of the optionparser class with a few eideticker-specific
        parameters to set device information'''
 
     def _add_options(self):
         self.add_option("--host", action="store",
-                        type = "string", dest = "host",
-                        help = "Device hostname (only if using TCP/IP)", default=None)
+                        type="string", dest="host",
+                        help="Device hostname (only if using TCP/IP)",
+                        default=None)
         self.add_option("-p", "--port", action="store",
-                        type = "int", dest = "port",
-                        help = "Custom device port (if using SUTAgent or "
+                        type="int", dest="port",
+                        help="Custom device port (if using SUTAgent or "
                         "adb-over-tcp)", default=None)
         self.add_option("-m", "--dm-type", action="store",
-                        type = "string", dest = "dmtype",
-                        default = os.environ.get('DM_TRANS', 'adb'),
-                        help = "DeviceManager type (adb or sut, defaults to adb)")
+                        type="string", dest="dmtype",
+                        default=os.environ.get('DM_TRANS', 'adb'),
+                        help="DeviceManager type (adb or sut, defaults to "
+                        "adb)")
         self.add_option("-d", "--device-type", action="store",
-                        type = "string", dest = "devicetype",
-                        default = os.environ.get('DEVICE_TYPE', 'android'),
-                        help = "Device type (android or b2g, default to "
+                        type="string", dest="devicetype",
+                        default=os.environ.get('DEVICE_TYPE', 'android'),
+                        help="Device type (android or b2g, default to "
                         "android). If B2G, you do not need to pass in an "
                         "appname")
         self.add_option("-w", "--wifi-settings", action="store",
-                        type = "string", dest = "wifi_settings_file",
-                        help = "WIFI settings file (required for b2g)")
+                        type="string", dest="wifi_settings_file",
+                        help="WIFI settings file (required for b2g)")
         self.add_option("--debug", action="store_true",
-                        dest="debug", help="show verbose debugging information")
+                        dest="debug", help="show verbose debugging "
+                        "information")
 
     def __init__(self, **kwargs):
         optparse.OptionParser.__init__(self, **kwargs)
         self._add_options()
+
 
 class CaptureOptionParser(OptionParser, videocapture.OptionParser):
     '''Custom version of the optionparser with eideticker-specific parameters
@@ -50,9 +55,11 @@ class CaptureOptionParser(OptionParser, videocapture.OptionParser):
     def parse_args(self):
         return videocapture.OptionParser.parse_args(self)
 
+
 class TestOptionParser(CaptureOptionParser):
     '''Custom version of the optionparser with eideticker-specific parameters
-    to set device information, video capture settings, and test-specific settings'''
+    to set device information, video capture settings, and test-specific
+    settings'''
 
     def __init__(self, **kwargs):
         CaptureOptionParser.__init__(self, **kwargs)
@@ -63,10 +70,11 @@ class TestOptionParser(CaptureOptionParser):
                         default=True)
         self.add_option("--no-prepare-test", action="store_false",
                         dest="prepare_test",
-                        help="don't prepare test (e.g. repopulate databases for B2G)",
+                        help="don't prepare test (e.g. repopulate databases "
+                        "for B2G)",
                         default=True)
-        self.add_option("--extra-env-vars", action="store", dest="extra_env_vars",
-                        default="",
+        self.add_option("--extra-env-vars", action="store",
+                        dest="extra_env_vars", default="",
                         help='Extra environment variables to set in '
                         '"VAR1=VAL1 VAR2=VAL2" format')
         self.add_option("--extra-prefs", action="store", dest="extra_prefs",

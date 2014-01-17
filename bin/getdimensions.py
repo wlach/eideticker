@@ -12,6 +12,7 @@ import os
 import videocapture.square as square
 from PIL import ImageDraw
 
+
 class CaptureServer(object):
 
     finished = False
@@ -22,7 +23,8 @@ class CaptureServer(object):
 
     def __init__(self, capture_file, capture_device, mode, no_capture=False):
         if not no_capture:
-            self.capture_controller = videocapture.CaptureController(capture_device)
+            self.capture_controller = videocapture.CaptureController(
+                capture_device)
             self.mode = mode
             self.capture_file = capture_file
 
@@ -31,14 +33,16 @@ class CaptureServer(object):
         if self.capture_controller:
             self.capture_controller.start_capture(self.capture_file, self.mode)
             self.start_frame = self.capture_controller.capture_framenum()
-        print "Start capture. Frame: %s. Time: %s" % (self.start_frame, time.time())
+        print "Start capture. Frame: %s. Time: %s" % (
+            self.start_frame, time.time())
         return (200, {})
 
     @mozhttpd.handlers.json_response
     def end_capture(self, req):
         if self.capture_controller:
             self.end_frame = self.capture_controller.capture_framenum()
-            print "End capture. Frame: %s. Time: %s" % (self.end_frame, time.time())
+            print "End capture. Frame: %s. Time: %s" % (
+                self.end_frame, time.time())
             self.capture_controller.terminate_capture()
 
         self.finished = True
@@ -46,10 +50,11 @@ class CaptureServer(object):
 
     def convert_capture(self):
         if self.capture_controller:
-            self.capture_controller.convert_capture(self.start_frame,
-                                                    self.end_frame, create_webm=False)
+            self.capture_controller.convert_capture(
+                self.start_frame, self.end_frame, create_webm=False)
 
 CAPTURE_DIR = os.path.join(os.path.dirname(__file__), "../captures")
+
 
 def run_capture(options, capture_file):
     device_prefs = eideticker.getDevicePrefs(options)
@@ -59,16 +64,16 @@ def run_capture(options, capture_file):
                                    no_capture=options.no_capture)
     host = moznetwork.get_ip()
     docroot = eideticker.runtest.TEST_DIR
-    httpd = mozhttpd.MozHttpd(port=0, host=host, docroot=docroot,
-                              urlhandlers = [ { 'method': 'GET',
-                                                'path': '/api/captures/start/?',
-                                                'function': capture_server.start_capture },
-                                              { 'method': 'GET',
-                                                'path': '/api/captures/end/?',
-                                                'function': capture_server.end_capture }
-                                              ])
+    httpd = mozhttpd.MozHttpd(port=0, host=host, docroot=docroot, urlhandlers=[
+        {'method': 'GET',
+         'path': '/api/captures/start/?',
+         'function': capture_server.start_capture},
+        {'method': 'GET',
+         'path': '/api/captures/end/?',
+         'function': capture_server.end_capture}])
     httpd.start(block=False)
-    print "Serving '%s' at %s:%s" % (httpd.docroot, httpd.host, httpd.httpd.server_port)
+    print "Serving '%s' at %s:%s" % (
+        httpd.docroot, httpd.host, httpd.httpd.server_port)
 
     device = eideticker.getDevice(**device_prefs)
     mode = options.mode
@@ -88,7 +93,8 @@ def run_capture(options, capture_file):
         device.connectWIFI(json.loads(open(options.wifi_settings_file).read()))
         session = device.marionette.session
         if 'b2g' not in session:
-            raise Exception("bad session value %s returned by start_session" % session)
+            raise Exception("bad session value %s returned by start_session" %
+                            session)
 
         device.unlock()
         # wait for device to become ready (yes, this is terrible, can we
@@ -104,16 +110,19 @@ def run_capture(options, capture_file):
     device.killProcess(options.appname)
     httpd.stop()
 
+
 def main(args=sys.argv[1:]):
     usage = "usage: %prog [options] <app name>"
-    parser = eideticker.CaptureOptionParser(usage=usage, capture_area_option=False)
+    parser = eideticker.CaptureOptionParser(
+        usage=usage, capture_area_option=False)
     parser.add_option("--no-capture", action="store_true",
-                      dest = "no_capture",
-                      help = "run through the test, but don't actually "
+                      dest="no_capture",
+                      help="run through the test, but don't actually "
                       "capture anything")
     parser.add_option("--capture-file", action="store",
                       type="string", dest="capture_file",
-                      help="Existing capture to analyze instead of running test")
+                      help="Existing capture to analyze instead of running "
+                      "test")
     parser.add_option("--app-name", action="store",
                       type="string", dest="appname",
                       default="org.mozilla.fennec",
@@ -131,7 +140,8 @@ def main(args=sys.argv[1:]):
     capture_file = options.capture_file
     if not capture_file:
         if not options.no_capture:
-            capture_file = os.path.join(CAPTURE_DIR, "capture-test-%s.zip" % time.time())
+            capture_file = os.path.join(CAPTURE_DIR, "capture-test-%s.zip" %
+                                        time.time())
             print "Capturing to file %s" % capture_file
         run_capture(options, capture_file)
 
@@ -145,9 +155,9 @@ def main(args=sys.argv[1:]):
     result_queue = multiprocessing.Queue()
 
     def _get_biggest_framediff_square(result_queue, capture, framenum):
-        imgarray = videocapture.get_framediff_imgarray(capture, framenum-2,
+        imgarray = videocapture.get_framediff_imgarray(capture, framenum - 2,
                                                        framenum)
-        biggest = square.get_biggest_square([255,0,0],
+        biggest = square.get_biggest_square([255, 0, 0],
                                             imgarray,
                                             x_tolerance_min=100,
                                             x_tolerance_max=100,
@@ -157,7 +167,8 @@ def main(args=sys.argv[1:]):
 
     multiprocesses = []
     for (i, framenum) in enumerate(range(4, capture.num_frames)):
-        p = multiprocessing.Process(target=_get_biggest_framediff_square, args=(result_queue, capture, framenum))
+        p = multiprocessing.Process(target=_get_biggest_framediff_square,
+                                    args=(result_queue, capture, framenum))
         p.start()
         multiprocesses.append(p)
         if len(multiprocesses) == 8:
@@ -171,7 +182,8 @@ def main(args=sys.argv[1:]):
     largest_square = None
     while not result_queue.empty():
         s = result_queue.get()
-        if not largest_square or square.get_area(s) > square.get_area(largest_square):
+        if not largest_square or square.get_area(s) > square.get_area(
+                largest_square):
             largest_square = s
 
     if largest_square is not None:
@@ -180,9 +192,9 @@ def main(args=sys.argv[1:]):
             with open(options.output_file, 'w+') as f:
                 f.write('CAPTURE_AREA=%s\n' % largest_square)
         if options.output_screenshot:
-            im = capture.get_frame_image(int(capture.length/2))
+            im = capture.get_frame_image(int(capture.length / 2))
             draw = ImageDraw.Draw(im)
-            draw.rectangle(largest_square, outline=(255,0,0))
+            draw.rectangle(largest_square, outline=(255, 0, 0))
             im.save(options.output_screenshot)
     else:
         print "Couldn't find capture area"

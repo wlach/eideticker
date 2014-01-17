@@ -6,7 +6,7 @@ import mozdevice
 import sys
 import time
 
-WATCHER_TIMEOUT=120
+WATCHER_TIMEOUT = 120
 
 dm = mozdevice.DroidADB()
 dm.reboot(wait=True)

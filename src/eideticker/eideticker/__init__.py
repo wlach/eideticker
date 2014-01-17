@@ -11,4 +11,3 @@ from test import get_test_manifest, get_testinfo, get_test
 from runtest import run_test, prepare_test, TestException
 from metrics import get_standard_metrics, get_stable_frame_time
 from log import logger
-

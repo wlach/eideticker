@@ -5,6 +5,7 @@ _handler = mozlog.StreamHandler()
 _handler.setFormatter(mozlog.MozFormatter(include_timestamp=True))
 logger = mozlog.getLogger('Eideticker', _handler)
 
+
 class LoggingMixin(object):
 
     @classmethod

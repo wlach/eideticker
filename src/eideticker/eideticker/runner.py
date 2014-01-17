@@ -12,12 +12,14 @@ import time
 import zipfile
 import log
 
+
 class AndroidBrowserRunner(log.LoggingMixin):
 
     remote_profile_dir = None
     intent = "android.intent.action.VIEW"
 
-    def __init__(self, dm, appname, url, tmpdir, preinitialize_user_profile=False,
+    def __init__(self, dm, appname, url, tmpdir,
+                 preinitialize_user_profile=False,
                  open_url_after_launch=False, enable_profiling=False,
                  gecko_profiler_addon_dir=None, extra_prefs={},
                  extra_env_vars={}):
@@ -38,8 +40,8 @@ class AndroidBrowserRunner(log.LoggingMixin):
             'com.google.android.browser': 'com.android.browser.BrowserActivity',
             'com.android.chrome': '.Main',
             'com.opera.browser': 'com.opera.Opera',
-            'mobi.mgeek.TunnyBrowser': '.BrowserActivity' # Dolphin
-            }
+            'mobi.mgeek.TunnyBrowser': '.BrowserActivity'  # Dolphin
+        }
 
         # use activity mapping if not mozilla
         if self.appname.startswith('org.mozilla'):
@@ -50,11 +52,13 @@ class AndroidBrowserRunner(log.LoggingMixin):
     # return a temporary directory containing profile, apk, and shared libs
     def get_profile_and_symbols(self):
         if not self.enable_profiling:
-           raise Exception("Can't get profile if it isn't started with the profiling option")
+            raise Exception("Can't get profile if it isn't started with the "
+                            "profiling option")
 
         files_to_package = []
 
-        # create a temporary directory to place the profile and shared libraries
+        # create a temporary directory to place the profile and shared
+        # libraries
         profiledir = tempfile.mkdtemp(dir=self.tmpdir)
 
         # remove previous profiles if there is one
@@ -75,24 +79,24 @@ class AndroidBrowserRunner(log.LoggingMixin):
 
         # get all the symbols library for symbolication
         self.log("Fetching system libraries")
-        libpaths = [ "/system/lib",
-                     "/system/lib/egl",
-                     "/system/lib/hw",
-                     "/system/vendor/lib",
-                     "/system/vendor/lib/egl",
-                     "/system/vendor/lib/hw",
-                     "/system/b2g" ]
+        libpaths = ["/system/lib",
+                    "/system/lib/egl",
+                    "/system/lib/hw",
+                    "/system/vendor/lib",
+                    "/system/vendor/lib/egl",
+                    "/system/vendor/lib/hw",
+                    "/system/b2g"]
 
         for libpath in libpaths:
-             self.log("Fetching from: %s" % libpath)
-             dirlist = self.dm.listFiles(libpath)
-             for filename in dirlist:
-                 filename = filename.strip()
-                 if filename.endswith(".so"):
-                     lib_path = os.path.join(profiledir, filename)
-                     remotefilename = libpath + '/' + filename
-                     self.dm.getFile(remotefilename, lib_path)
-                     files_to_package.append(lib_path);
+            self.log("Fetching from: %s" % libpath)
+            dirlist = self.dm.listFiles(libpath)
+            for filename in dirlist:
+                filename = filename.strip()
+                if filename.endswith(".so"):
+                    lib_path = os.path.join(profiledir, filename)
+                    remotefilename = libpath + '/' + filename
+                    self.dm.getFile(remotefilename, lib_path)
+                    files_to_package.append(lib_path)
 
         return profiledir
 
@@ -101,32 +105,33 @@ class AndroidBrowserRunner(log.LoggingMixin):
         # we want to initialize the user profile by starting the app seperate
         # from the test itself
         if self.appname == "com.android.chrome":
-            # for chrome, we just delete existing browser state (opened tabs, etc.)
-            # so we can start reasonably fresh
-            self.dm.shellCheckOutput(["sh", "-c",
-                                      "rm -f /data/user/0/com.android.chrome/files/*"],
-                                     root=True)
+            # for chrome, we just delete existing browser state
+            # (opened tabs, etc.) so we can start reasonably fresh
+            self.dm.shellCheckOutput([
+                "sh", "-c", "rm -f /data/user/0/com.android.chrome/files/*"],
+                root=True)
         elif self.appname == "com.google.android.browser":
             # for stock browser, ditto
-            self.dm.shellCheckOutput(["rm", "-f",
-                                      "/data/user/0/com.google.android.browser/cache/browser_state.parcel"],
-                                     root=True)
+            self.dm.shellCheckOutput([
+                "rm", "-f",
+                "/data/user/0/com.google.android.browser/cache/browser_state.parcel"],
+                root=True)
         elif not self.appname.startswith('org.mozilla'):
             # some other browser which we don't know how to handle, just
             # return
             return
 
-        preferences = { 'gfx.show_checkerboard_pattern': False,
-                        'browser.firstrun.show.uidiscovery': False,
-                        'layers.low-precision-buffer': False, # bug 815175
-                        'toolkit.telemetry.prompted': 2,
-                        'toolkit.telemetry.rejected': True }
+        preferences = {'gfx.show_checkerboard_pattern': False,
+                       'browser.firstrun.show.uidiscovery': False,
+                       'layers.low-precision-buffer': False,  # bug 815175
+                       'toolkit.telemetry.prompted': 2,
+                       'toolkit.telemetry.rejected': True}
         # Add frame counter to correlate video capture with profile
         if self.enable_profiling:
             preferences['layers.acceleration.frame-counter'] = True
 
         preferences.update(self.extra_prefs)
-        profile = mozprofile.Profile(preferences = preferences)
+        profile = mozprofile.Profile(preferences=preferences)
         self.remote_profile_dir = "/".join([self.dm.getDeviceRoot(),
                                             os.path.basename(profile.profile)])
         self.dm.pushDir(profile.profile, self.remote_profile_dir)
@@ -150,7 +155,7 @@ class AndroidBrowserRunner(log.LoggingMixin):
                 self.initialize_user_profile()
 
             if self.enable_profiling:
-                mozEnv = { "MOZ_PROFILER_STARTUP": "true" }
+                mozEnv = {"MOZ_PROFILER_STARTUP": "true"}
             else:
                 mozEnv = {}
             mozEnv.update(self.extra_env_vars)
@@ -158,7 +163,8 @@ class AndroidBrowserRunner(log.LoggingMixin):
             # launch fennec for reals
             self.launch_fennec(mozEnv, url)
         else:
-            self.is_profiling = False # never profiling with non-fennec browsers
+            # never profiling with non-fennec browsers
+            self.is_profiling = False
             self.dm.launchApplication(self.appname, self.activity, self.intent,
                                       url=url)
 
@@ -169,14 +175,14 @@ class AndroidBrowserRunner(log.LoggingMixin):
     def launch_fennec(self, mozEnv, url):
         # sometimes fennec fails to start, so we'll try three times...
         for i in range(3):
-            self.log("Launching %s (try %s of 3)" % (self.appname, i+1))
+            self.log("Launching %s (try %s of 3)" % (self.appname, i + 1))
             try:
                 self.dm.launchFennec(self.appname, url=url, mozEnv=mozEnv,
                                      extraArgs=["-profile",
                                                 self.remote_profile_dir])
             except mozdevice.DMError:
                 continue
-            return # Ok!
+            return  # Ok!
         raise Exception("Failed to start Fennec after three tries")
 
     def save_profile(self):
@@ -185,13 +191,15 @@ class AndroidBrowserRunner(log.LoggingMixin):
         self.log("Saving sps performance profile")
         appPID = self.dm.getPIDs(self.appname)[0]
         self.dm.sendSaveProfileSignal(self.appname)
-        self.remote_sps_profile_location = "/mnt/sdcard/profile_0_%s.txt" % appPID
+        self.remote_sps_profile_location = \
+            "/mnt/sdcard/profile_0_%s.txt" % appPID
         # Saving goes through the main event loop so give it time to flush
         time.sleep(10)
         self.log("SPS profile should be saved")
 
     def process_profile(self, profile_file):
-        xrebindir = os.path.join(os.environ['XRE'], 'bin') if 'XRE' in os.environ else ''
+        xrebindir = os.path.join(
+            os.environ['XRE'], 'bin') if 'XRE' in os.environ else ''
         szippath = os.environ['SZIP'] if 'SZIP' in os.environ else 'szip'
         addondir = self.gecko_profiler_addon_dir
 
@@ -200,21 +208,25 @@ class AndroidBrowserRunner(log.LoggingMixin):
         if os.path.exists(symbolapk):
             # extract and un-szip shared libs
             zipfile.ZipFile(symbolapk).extractall(tempdir)
-            # find <dir> -wholename '<dir>/*/*.so' -exec szip -d {} \; -exec mv {} <dir> \;
-            subprocess.check_call(['find', tempdir,
+            # find <dir> -wholename '<dir>/*/*.so' -exec szip -d {} \;
+            # -exec mv {} <dir> \;
+            subprocess.check_call([
+                'find', tempdir,
                 '-wholename', os.path.join(tempdir, '*', '*.so'),
                 '-exec', szippath, '-d', '{}', ';',
                 '-exec', 'mv', '{}', tempdir, ';'])
 
         # run the symbolicating code
         symbolicator = subprocess.Popen([
-            os.path.join(xrebindir, 'run-mozilla.sh'), os.path.join(xrebindir, 'xpcshell'),
+            os.path.join(xrebindir, 'run-mozilla.sh'),
+            os.path.join(xrebindir, 'xpcshell'),
             '-f', os.path.join('data', 'ProgressReporter.js'),
             '-f', os.path.join('data', 'SymbolicateXPCShell.js'),
             '-f', os.path.join('data', 'CmdRunWorker.js'),
             '-f', os.path.join('data', 'SymbolicateWorker.js'),
             os.path.join('data', 'SymbolicateMain.js'),
-            os.path.join(tempdir, 'fennec_profile.txt'), tempdir, self.appname],
+            os.path.join(tempdir, 'fennec_profile.txt'),
+            tempdir, self.appname],
             cwd=addondir,
             stdout=subprocess.PIPE)
 
@@ -232,11 +244,13 @@ class AndroidBrowserRunner(log.LoggingMixin):
         if symbolicator.wait() == 0:
             if symbolicated_profile:
                 with zipfile.ZipFile(profile_file, 'w') as out:
-                    out.writestr('symbolicated_profile.txt', symbolicated_profile)
+                    out.writestr('symbolicated_profile.txt',
+                                 symbolicated_profile)
             else:
                 raise Exception('Failed to get symbolication output')
         else:
-            raise Exception('Failed to symbolicate (returned %d)' % symbolicator.returncode)
+            raise Exception('Failed to symbolicate (returned %d)' %
+                            symbolicator.returncode)
 
         # safe to get rid of temp dir
         shutil.rmtree(tempdir)

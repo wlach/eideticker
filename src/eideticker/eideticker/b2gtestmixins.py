@@ -22,7 +22,10 @@ class B2GContactsTestMixin(object):
         # the first launch after populating the data takes a long time.
         contacts = Contacts(self.device.marionette)
         contacts.launch()
-        Wait(self.device.marionette, 120, ignored_exceptions=(NoSuchElementException, ElementNotVisibleException)).until(lambda m: m.find_element(*contacts._contact_locator).is_displayed())
+        Wait(self.device.marionette, 120, ignored_exceptions=(
+            NoSuchElementException, ElementNotVisibleException)).until(
+            lambda m: m.find_element(
+                *contacts._contact_locator).is_displayed())
 
     def prepare_app(self):
         self.launch_app()

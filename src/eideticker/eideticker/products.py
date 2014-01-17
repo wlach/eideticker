@@ -7,6 +7,7 @@ import urllib2
 
 DOWNLOAD_DIR = os.path.join(os.path.dirname(__file__), "../../../downloads")
 
+
 class BuildRetriever(object):
     """
     This class helps with retrieving builds of various types
@@ -20,9 +21,11 @@ class BuildRetriever(object):
 
     @staticmethod
     def _url_links(url):
-        res = [] # do not return a generator but an array, so we can store it for later use
+        # do not return a generator but an array, so we can store it for
+        # later use
+        res = []
 
-        h = httplib2.Http();
+        h = httplib2.Http()
         resp, content = h.request(url, "GET")
         if resp.status != 200:
             return res
@@ -53,7 +56,8 @@ class BuildRetriever(object):
         day = self._format_date_part(date.day)
         url += year + "/" + month + "/"
 
-        linkregex = '^' + year + '-' + month + '-' + day + '-' + '[\d-]+' + product['reponame'] + '/$'
+        linkregex = '^' + year + '-' + month + '-' + day + '-' + '[\d-]+' + \
+            product['reponame'] + '/$'
         cachekey = year + '-' + month
         if cachekey in self._monthlinks:
             monthlinks = self._monthlinks[cachekey]
@@ -66,7 +70,7 @@ class BuildRetriever(object):
             dirhref = dirlink.get("href")
             if re.match(linkregex, dirhref):
                 # now parse the page for the correct build url
-                for url in [ url+dirhref, url + dirhref + "en-US/" ]:
+                for url in [url + dirhref, url + dirhref + "en-US/"]:
                     for link in self._url_links(url):
                         href = link.get("href")
                         if re.match(product['buildregex'], href):
@@ -75,7 +79,7 @@ class BuildRetriever(object):
         return None
 
     def _get_latest_build_url(self, product):
-        baseurl =  product['latest']
+        baseurl = product['latest']
         matches = []
         for link in self._url_links(baseurl):
             href = link.get("href")
@@ -153,9 +157,10 @@ products = [
     }
 ]
 
+
 def get_product(productname):
-    matching_products = [product for product in products if \
-                             product['name'] == productname]
+    matching_products = [product for product in products if
+                         product['name'] == productname]
     if not matching_products:
         raise Exception("No products matching '%s'" % productname)
     if len(matching_products) > 1:

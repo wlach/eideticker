@@ -6,6 +6,7 @@ import eideticker
 
 DOWNLOAD_DIR = os.path.join(os.path.dirname(__file__), "../downloads")
 
+
 def main(args=sys.argv[1:]):
     usage = "usage: %prog <product> <date>"
     parser = eideticker.OptionParser(usage=usage)
@@ -22,7 +23,8 @@ def main(args=sys.argv[1:]):
     device = eideticker.getDevice(**devicePrefs)
 
     if device.type != 'android':
-        print "Device type '%s' does not currently support updates" % device.type
+        print "Device type '%s' does not currently support updates" % \
+            device.type
         sys.exit(0)
 
     if not product.get('reponame'):

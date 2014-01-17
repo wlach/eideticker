@@ -6,6 +6,7 @@ import sys
 import eideticker
 import datetime
 
+
 def main(args=sys.argv[1:]):
     usage = "usage: %prog <data json file> [date1] ..."
     parser = optparse.OptionParser(usage)
@@ -17,7 +18,8 @@ def main(args=sys.argv[1:]):
                       help="end date for range of entries to remove")
     parser.add_option('--dry-run', dest='dry_run',
                       action='store_true', default=False,
-                      help="don't make changes, just display what would be removed")
+                      help="don't make changes, just display what would be "
+                      "removed")
     options, args = parser.parse_args()
     if len(args) < 1:
         parser.error("incorrect number of arguments")
@@ -34,10 +36,10 @@ def main(args=sys.argv[1:]):
     if options.start_date and options.end_date:
         start_date = eideticker.BuildRetriever.get_date(options.start_date)
         end_date = eideticker.BuildRetriever.get_date(options.end_date)
-        days=(end_date-start_date).days
+        days = (end_date - start_date).days
         dates = []
-        for numdays in range(days+1):
-            dates.append(str(start_date+datetime.timedelta(days=numdays)))
+        for numdays in range(days + 1):
+            dates.append(str(start_date + datetime.timedelta(days=numdays)))
     else:
         dates = args[1:]
 

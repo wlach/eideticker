@@ -3,6 +3,7 @@
 import sys
 import eideticker
 
+
 def main(args=sys.argv[1:]):
     usage = "usage: %prog"
     parser = eideticker.OptionParser(usage=usage)

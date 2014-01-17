@@ -20,6 +20,7 @@ class NestedDict(dict):
 DOWNLOAD_DIR = os.path.join(os.path.dirname(__file__), "../downloads")
 CAPTURE_DIR = os.path.join(os.path.dirname(__file__), "../captures")
 
+
 def get_revision_data(sources_xml):
     revision_data = {}
     sources = xml.dom.minidom.parseString(open(sources_xml).read())
@@ -45,24 +46,26 @@ def runtest(dm, device_prefs, capture_device, capture_area, product, appname,
     profile_file = None
     if enable_profiling:
         productname += "-profiling"
-        profile_path = os.path.join('profiles', 'sps-profile-%s.zip' % time.time())
+        profile_path = os.path.join(
+            'profiles', 'sps-profile-%s.zip' % time.time())
         profile_file = os.path.join(outputdir, profile_path)
 
     test_completed = False
     for i in range(3):
-        print "Running test (try %s of 3)" % (i+1)
+        print "Running test (try %s of 3)" % (i + 1)
 
         # Kill any existing instances of the processes before starting
         dm.killProcess(appname)
 
         try:
-            testlog = eideticker.run_test(testinfo['key'], capture_device,
-                                          appname, capture_name, device_prefs,
-                                          profile_file=profile_file,
-                                          capture_area=capture_area,
-                                          capture_file=capture_file,
-                                          wifi_settings_file=wifi_settings_file,
-                                          sync_time=sync_time)
+            testlog = eideticker.run_test(
+                testinfo['key'], capture_device,
+                appname, capture_name, device_prefs,
+                profile_file=profile_file,
+                capture_area=capture_area,
+                capture_file=capture_file,
+                wifi_settings_file=wifi_settings_file,
+                sync_time=sync_time)
             test_completed = True
             break
         except eideticker.TestException, e:
@@ -92,8 +95,8 @@ def runtest(dm, device_prefs, capture_device, capture_area, product, appname,
     if not data['testdata'][productname].get(appdate):
         data['testdata'][productname][appdate] = []
 
-    datapoint = { 'uuid': uuid.uuid1().hex,
-                  'video': video_relpath }
+    datapoint = {'uuid': uuid.uuid1().hex,
+                 'video': video_relpath}
     for key in ['appdate', 'buildid', 'revision', 'geckoRevision',
                 'gaiaRevision', 'buildRevision', 'sourceRepo']:
         if appinfo.get(key):
@@ -101,32 +104,34 @@ def runtest(dm, device_prefs, capture_device, capture_area, product, appname,
 
     # only interested in version if we don't have revision
     if not appinfo.get('revision') and appinfo.get('version'):
-        datapoint.update({ 'version': appinfo['version'] })
+        datapoint.update({'version': appinfo['version']})
 
     if baseline:
-        datapoint.update({ 'baseline': True })
+        datapoint.update({'baseline': True})
 
     if testinfo['type'] == 'startup' or testinfo['type'] == 'webstartup' or \
             testinfo['defaultMeasure'] == 'timetostableframe':
-        datapoint['timetostableframe'] = eideticker.get_stable_frame_time(capture)
+        datapoint['timetostableframe'] = eideticker.get_stable_frame_time(
+            capture)
     else:
         # standard test metrics
-        datapoint.update(eideticker.get_standard_metrics(capture,
-                                                         testlog.actions))
+        datapoint.update(eideticker.get_standard_metrics(
+            capture, testlog.actions))
 
-    framediff_relpath = os.path.join('framediffs', 'framediff-%s.json' % time.time())
+    framediff_relpath = os.path.join(
+        'framediffs', 'framediff-%s.json' % time.time())
     framediff_path = os.path.join(outputdir, framediff_relpath)
     with open(framediff_path, 'w') as f:
         framediff = videocapture.get_framediff_sums(capture)
-        f.write(json.dumps({ 'diffsums': framediff }))
+        f.write(json.dumps({'diffsums': framediff}))
     datapoint['frameDiff'] = framediff_relpath
 
     if enable_profiling:
         datapoint['profile'] = profile_path
 
     if log_http_requests:
-        request_log_relpath = os.path.join('httplogs',
-                                        'http-log-%s.json' % time.time())
+        request_log_relpath = os.path.join(
+            'httplogs', 'http-log-%s.json' % time.time())
         testlog.save_logs(http_request_log_path=
                           os.path.join(outputdir, request_log_relpath))
         datapoint['httpLog'] = request_log_relpath
@@ -148,13 +153,14 @@ def runtest(dm, device_prefs, capture_device, capture_area, product, appname,
     with open(datafile, 'w') as f:
         f.write(json.dumps(data))
 
+
 def main(args=sys.argv[1:]):
     usage = "usage: %prog [options] <product> <test> <output dir>"
 
     parser = eideticker.TestOptionParser(usage=usage)
     parser.add_option("--enable-profiling",
-                      action="store_true", dest = "enable_profiling",
-                      help = "Create SPS profile to go along with capture")
+                      action="store_true", dest="enable_profiling",
+                      help="Create SPS profile to go along with capture")
     parser.add_option("--device-id", action="store", dest="device_id",
                       help="id of device (used in output json)",
                       default=os.environ.get('DEVICE_ID'))
@@ -163,19 +169,19 @@ def main(args=sys.argv[1:]):
                       "specified, display model name)",
                       default=os.environ.get('DEVICE_NAME'))
     parser.add_option("--apk", action="store", dest="apk",
-                      help = "Product apk to get metadata from " \
-                          "(Android-specific)")
+                      help="Product apk to get metadata from "
+                      "(Android-specific)")
     parser.add_option("--baseline", action="store_true", dest="baseline",
-                      help = "Create baseline results for dashboard")
+                      help="Create baseline results for dashboard")
     parser.add_option("--num-runs", action="store",
-                      type = "int", dest = "num_runs",
-                      help = "number of runs (default: 1)")
+                      type="int", dest="num_runs",
+                      help="number of runs (default: 1)")
     parser.add_option("--app-version", action="store", dest="app_version",
-                      help="Specify app version (if not automatically " \
-                          "available; Android-specific)")
+                      help="Specify app version (if not automatically "
+                      "available; Android-specific)")
     parser.add_option("--sources-xml", action="store", dest="sources_xml",
-                      help="Path to sources XML file for getting revision " \
-                          "information (B2G-specific)")
+                      help="Path to sources XML file for getting revision "
+                      "information (B2G-specific)")
 
     options, args = parser.parse_args()
 
@@ -192,7 +198,8 @@ def main(args=sys.argv[1:]):
 
     device_id = options.device_id
     if not device_id:
-        print "ERROR: Must specify device id (either with --device-id or with DEVICE_ID environment variable)"
+        print "ERROR: Must specify device id (either with --device-id or with "
+        "DEVICE_ID environment variable)"
         sys.exit(1)
 
     # we'll log http requests for webstartup tests only
@@ -226,36 +233,41 @@ def main(args=sys.argv[1:]):
         tests = json.loads(open(testfile).read())['tests']
     else:
         tests = {}
-    tests[testkey] = { 'shortDesc': testinfo['shortDesc'],
-                       'defaultMeasure': testinfo['defaultMeasure'] }
+    tests[testkey] = {'shortDesc': testinfo['shortDesc'],
+                      'defaultMeasure': testinfo['defaultMeasure']}
 
     device_name = options.device_name
     if not device_name:
         device_name = device.model
 
     if options.devicetype == "android":
-        devices[device_id] = { 'name': device_name,
-                               'version': device.getprop('ro.build.version.release') }
+        devices[device_id] = {
+            'name': device_name,
+            'version': device.getprop('ro.build.version.release')}
         if options.apk:
             if options.app_version:
-                raise Exception("Should specify either --app-version or --apk, not both!")
+                raise Exception("Should specify either --app-version or "
+                                "--apk, not both!")
             appinfo = eideticker.get_fennec_appinfo(options.apk)
             appname = appinfo['appname']
-            print "Using application name '%s' from apk '%s'" % (appname, options.apk)
+            print "Using application name '%s' from apk '%s'" % (
+                appname, options.apk)
             capture_name = "%s %s" % (product['name'], appinfo['appdate'])
         else:
             if not options.app_version:
                 raise Exception("Should specify --app-version if not --apk!")
 
             # no apk, assume it's something static on the device
-            appinfo = { 'appdate': time.strftime("%Y-%m-%d"), 'version': options.app_version }
+            appinfo = {
+                'appdate': time.strftime("%Y-%m-%d"),
+                'version': options.app_version}
             appname = product['appname']
 
     elif options.devicetype == "b2g":
         if not options.sources_xml:
             raise Exception("Must specify --sources-xml on b2g!")
 
-        devices[device_id] = { 'name': device_name }
+        devices[device_id] = {'name': device_name}
         appinicontents = device.pullFile('/system/b2g/application.ini')
         sfh = StringIO.StringIO(appinicontents)
         appinfo = eideticker.get_appinfo(sfh)
@@ -266,19 +278,20 @@ def main(args=sys.argv[1:]):
 
     # update the device / test list for the dashboard
     with open(devicefile, 'w') as f:
-        f.write(json.dumps({ 'devices': devices }))
+        f.write(json.dumps({'devices': devices}))
     testfiledir = os.path.dirname(testfile)
     if not os.path.exists(testfiledir):
         os.mkdir(testfiledir)
     with open(testfile, 'w') as f:
-        f.write(json.dumps({ 'tests': tests }))
+        f.write(json.dumps({'tests': tests}))
 
     if options.prepare_test:
         eideticker.prepare_test(testkey, device_prefs)
 
     # Run the test the specified number of times
     for i in range(num_runs):
-        runtest(device, device_prefs, options.capture_device, options.capture_area,
+        runtest(device, device_prefs, options.capture_device,
+                options.capture_area,
                 product, appname, appinfo, testinfo,
                 capture_name + " #%s" % i, outputdir, datafile, data,
                 enable_profiling=options.enable_profiling,

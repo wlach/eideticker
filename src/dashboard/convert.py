@@ -9,22 +9,24 @@
 import json
 import uuid
 
-def addUUID(obj, parent=None):
-  startSize = len(obj)
-  for key in obj:
-    if key == "video" and ('uuid' in obj) == False:
-      obj['uuid'] = uuid.uuid1().hex;
-    if type(key) is dict:
-      addUUID(key)
-    elif type(obj[key]) is dict:
-      addUUID(obj[key], obj)
-    elif type(obj[key]) is list:
-      addUUID(obj[key], obj)
-    if startSize != len(obj):
-      addUUID(obj, parent)
-      return
 
-f = open('data.json', 'r');
+def addUUID(obj, parent=None):
+    startSize = len(obj)
+    for key in obj:
+        if key == "video" and ('uuid' in obj) is False:
+            obj['uuid'] = uuid.uuid1().hex
+        if type(key) is dict:
+            addUUID(key)
+        elif type(obj[key]) is dict:
+            addUUID(obj[key], obj)
+        elif type(obj[key]) is list:
+            addUUID(obj[key], obj)
+        if startSize != len(obj):
+            addUUID(obj, parent)
+            return
+
+
+f = open('data.json', 'r')
 data = json.loads(f.read())
-addUUID(data);
+addUUID(data)
 print json.dumps(data)

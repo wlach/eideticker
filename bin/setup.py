@@ -6,7 +6,6 @@
 
 import optparse
 import os
-import sys
 import json
 
 CONFIG_FILE = os.path.join(os.path.dirname(__file__), "../conf/talos.config")

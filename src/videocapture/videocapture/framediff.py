@@ -13,6 +13,7 @@ import cPickle as pickle
 # of eliminating frame differences due to "noise" in the capture
 PIXEL_DIFF_THRESHOLD = 5.0
 
+
 def get_framediff_imgarray(capture, framenum1, framenum2,
                            filter_low_differences=True, cropped=False):
     filter_threshold = 0
@@ -38,9 +39,9 @@ def get_framediff_imgarray(capture, framenum1, framenum2,
                     skip = True
                     break
 
-            if not skip and (px[0] >= filter_threshold or \
-                                 px[1] >= filter_threshold or \
-                                 px[2] >= filter_threshold):
+            if not skip and (px[0] >= filter_threshold or
+                             px[1] >= filter_threshold or
+                             px[2] >= filter_threshold):
                 px[0] = 255.0
                 px[1] = 0.0
                 px[2] = 0.0
@@ -49,9 +50,12 @@ def get_framediff_imgarray(capture, framenum1, framenum2,
 
     return framediff
 
+
 def get_framediff_image(capture, framenum1, framenum2, cropped=False):
-    framediff = get_framediff_imgarray(capture, framenum1, framenum2, cropped=cropped)
+    framediff = get_framediff_imgarray(capture, framenum1, framenum2,
+                                       cropped=cropped)
     return Image.fromarray(framediff.astype(numpy.uint8))
+
 
 def get_framediff_sums(capture, filter_low_differences=True):
     filter_threshold = 0
@@ -75,9 +79,9 @@ def get_framediff_sums(capture, filter_low_differences=True):
         diffsums = None
         prevframe = None
         diffsums = [0]
-        for i in range(1, capture.num_frames+1):
+        for i in range(1, capture.num_frames + 1):
             frame = capture.get_frame(i, True).astype('float')
-            if prevframe != None:
+            if prevframe is not None:
                 framediff = abs(frame - prevframe)
                 for ignored_area in ignored_areas:
                     for x in range(ignored_area[0], ignored_area[2]):
@@ -91,6 +95,7 @@ def get_framediff_sums(capture, filter_low_differences=True):
 
     return diffsums
 
+
 def image_entropy(img):
     """calculate the entropy of an image"""
     # based on: http://brainacle.com/calculating-image-entropy-with-python-how-and-why.html
@@ -100,16 +105,17 @@ def image_entropy(img):
     samples_probability = [float(h) / histogram_length for h in histogram]
     return -sum([p * math.log(p, 2) for p in samples_probability if p != 0])
 
+
 def get_entropy_diffs(capture, num_samples=5):
     prev_samples = []
     entropy_diffs = [0]
-    for i in range(1, capture.num_frames+1):
+    for i in range(1, capture.num_frames + 1):
         frame = capture.get_frame_image(i)
         frame_entropy = image_entropy(frame)
         if prev_samples:
             entropy_diff = 0
             for prev_sample in prev_samples:
-                entropy_diff += abs(frame_entropy-prev_sample)
+                entropy_diff += abs(frame_entropy - prev_sample)
             entropy_diff /= (1 + len(prev_samples))
             entropy_diffs.append(entropy_diff)
         prev_samples.append(frame_entropy)
@@ -117,30 +123,37 @@ def get_entropy_diffs(capture, num_samples=5):
             prev_samples = prev_samples[1:]
     return entropy_diffs
 
+
 def get_num_unique_frames(capture, threshold=0):
     framediff_sums = get_framediff_sums(capture)
-    num_uniques = len([framediff for framediff in framediff_sums if framediff > threshold])
+    num_uniques = len(
+        [framediff for framediff in framediff_sums if framediff > threshold])
     if threshold > 0:
-        num_uniques += 1 # first frame not included if threshold is greater than 0
+        # first frame not included if threshold is greater than 0
+        num_uniques += 1
 
     return num_uniques
+
 
 def get_fps(capture, threshold=0):
     return get_num_unique_frames(capture, threshold=threshold) / capture.length
 
+
 def get_stable_frame(capture, method='framediff', threshold=4096):
     if method == 'framediff':
         framediff_sums = get_framediff_sums(capture)
-        for i in range(len(framediff_sums)-1, 0, -1):
+        for i in range(len(framediff_sums) - 1, 0, -1):
             if framediff_sums[i] > threshold:
-                return i+1
-        return len(framediff_sums)-1
+                return i + 1
+        return len(framediff_sums) - 1
     elif method == 'entropy':
         entropy_diffs = get_entropy_diffs(capture)
-        for i in range(len(entropy_diffs)-1, 0, -1):
+        for i in range(len(entropy_diffs) - 1, 0, -1):
             if abs(entropy_diffs[i]) > threshold:
-                return i+1
-        return len(entropy_diffs)-1
+                return i + 1
+        return len(entropy_diffs) - 1
 
-def get_stable_frame_time(capture, method='framediff', threshold = 4096):
-    return get_stable_frame(capture, method=method, threshold=threshold) / float(capture.fps)
+
+def get_stable_frame_time(capture, method='framediff', threshold=4096):
+    return get_stable_frame(capture, method=method,
+                            threshold=threshold) / float(capture.fps)

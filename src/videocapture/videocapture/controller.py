@@ -22,24 +22,26 @@ from zipfile import ZipFile
 DECKLINK_DIR = os.path.join(os.path.dirname(__file__), 'decklink')
 POINTGREY_DIR = os.path.join(os.path.dirname(__file__), 'pointgrey')
 
-valid_capture_devices = [ "decklink", "pointgrey" ]
-valid_decklink_modes = [ "720p", "1080p" ]
+valid_capture_devices = ["decklink", "pointgrey"]
+valid_decklink_modes = ["720p", "1080p"]
+
 
 def _natural_key(str):
     """See http://www.codinghorror.com/blog/archives/001018.html"""
     return [int(s) if s.isdigit() else s for s in re.split(r'(\d+)', str)]
 
 supported_formats = {
-    "1080p": { "decklink_mode": 13 },
-    "1080i": { "decklink_mode": 9 },
-    "720p": { "decklink_mode": 16 },
-    "720p@59.94": { "decklink_mode": 12 }
- }
+    "1080p": {"decklink_mode": 13},
+    "1080i": {"decklink_mode": 9},
+    "720p": {"decklink_mode": 16},
+    "720p@59.94": {"decklink_mode": 12}
+}
 
 camera_configs = {
     "Flea3 FL3-U3-13Y3M": "FL3-U3-13Y3M.json",
     "Flea3 FL3-U3-13E4C": "FL3-U3-13E4C.json"
 }
+
 
 class CaptureProcess(multiprocessing.Process):
 
@@ -75,10 +77,12 @@ class CaptureProcess(multiprocessing.Process):
                     self.output_raw_filename]
         elif self.capture_device == "pointgrey":
             # get the device type
-            camera_id = subprocess.check_output([os.path.join(POINTGREY_DIR, "get-camera-id")]).strip()
+            camera_id = subprocess.check_output([os.path.join(
+                POINTGREY_DIR, "get-camera-id")]).strip()
             camera_config = camera_configs.get(camera_id)
             if not camera_config:
-                raise Exception("No camera configuration for model '%s'" % camera_id)
+                raise Exception("No camera configuration for model '%s'" %
+                                camera_id)
             args = [os.path.join(POINTGREY_DIR, 'pointgrey-capture'),
                     '-c',
                     os.path.join(POINTGREY_DIR, camera_config),
@@ -88,10 +92,11 @@ class CaptureProcess(multiprocessing.Process):
                     '-f',
                     self.outputdir]
             if self.fps:
-                args.extend([ '-r', str(self.fps) ])
-            timeout = 300 # pointgrey devices need an extra long timeout
+                args.extend(['-r', str(self.fps)])
+            timeout = 300  # pointgrey devices need an extra long timeout
         else:
-            raise Exception("Unknown capture device '%s'" % self.capture_device)
+            raise Exception("Unknown capture device '%s'" %
+                            self.capture_device)
 
         self.capture_proc = subprocess.Popen(args, stdout=subprocess.PIPE)
 
@@ -104,7 +109,7 @@ class CaptureProcess(multiprocessing.Process):
             if not line:
                 break
 
-            self.frame_counter.value=int(line.rstrip())
+            self.frame_counter.value = int(line.rstrip())
 
         print "Terminating capture proc..."
         self.capture_proc.terminate()
@@ -112,7 +117,7 @@ class CaptureProcess(multiprocessing.Process):
         while (time.time() - waitstart) < timeout:
             rc = self.capture_proc.poll()
             time.sleep(0.5)
-            if rc != None:
+            if rc is not None:
                 print "Capture proc terminated"
                 self.capture_proc.wait()  # necessary?
                 return
@@ -128,7 +133,7 @@ class CaptureProcess(multiprocessing.Process):
 
 class CaptureController(object):
 
-    def __init__(self, capture_device, capture_area = None,
+    def __init__(self, capture_device, capture_area=None,
                  find_start_signal=True, find_end_signal=True,
                  custom_tempdir=None, fps=None):
         self.capture_process = None
@@ -147,10 +152,11 @@ class CaptureController(object):
         self.fps = fps
 
     def log(self, msg):
-        print "%s Capture Controller | %s" % (datetime.datetime.now().strftime("%b %d %H:%M:%S %Z"), msg)
+        print "%s Capture Controller | %s" % (
+            datetime.datetime.now().strftime("%b %d %H:%M:%S %Z"), msg)
 
     def start_capture(self, output_filename, mode=None,
-                      capture_metadata = {}, debug=False):
+                      capture_metadata={}, debug=False):
         # should not call this more than once
         assert not self.capture_process
 
@@ -159,7 +165,8 @@ class CaptureController(object):
         if self.capture_device == 'decklink':
             if mode not in supported_formats.keys():
                 raise Exception("Unsupported video format %s" % mode)
-            self.output_raw_file = tempfile.NamedTemporaryFile(dir=self.custom_tempdir)
+            self.output_raw_file = tempfile.NamedTemporaryFile(
+                dir=self.custom_tempdir)
             output_raw_filename = self.output_raw_file.name
 
         self.outputdir = tempfile.mkdtemp(dir=self.custom_tempdir)
@@ -169,13 +176,13 @@ class CaptureController(object):
         self.capture_metadata = capture_metadata
         self.frame_counter = multiprocessing.RawValue('i', 0)
         self.finished_semaphore = multiprocessing.RawValue('b', False)
-        self.capture_process = CaptureProcess(self.capture_device,
-                                              mode,
-                                              self.frame_counter,
-                                              self.finished_semaphore,
-                                              output_raw_filename=output_raw_filename,
-                                              outputdir=self.outputdir,
-                                              fps=self.fps)
+        self.capture_process = CaptureProcess(
+            self.capture_device, mode,
+            self.frame_counter,
+            self.finished_semaphore,
+            output_raw_filename=output_raw_filename,
+            outputdir=self.outputdir,
+            fps=self.fps)
         self.log("Starting capture...")
         self.capture_process.start()
         # wait for capture to actually start...
@@ -184,7 +191,7 @@ class CaptureController(object):
 
     @property
     def capturing(self):
-        return self.capture_process != None
+        return self.capture_process is not None
 
     def capture_framenum(self):
         assert self.capture_process
@@ -209,17 +216,19 @@ class CaptureController(object):
                 time.sleep(0.5)
 
         if self.capture_device == "decklink":
-            subprocess.Popen((os.path.join(DECKLINK_DIR, 'decklink-convert.sh'),
-                              self.output_raw_file.name, self.outputdir, self.mode),
-                             close_fds=True).wait()
+            subprocess.Popen((
+                os.path.join(DECKLINK_DIR, 'decklink-convert.sh'),
+                self.output_raw_file.name, self.outputdir, self.mode),
+                close_fds=True).wait()
 
-        self.log("Gathering capture dimensions and cropping to start/end of capture...")
+        self.log("Gathering capture dimensions and cropping to start/end of "
+                 "capture...")
         imagefiles = [os.path.join(self.outputdir, path) for path in
                       sorted(os.listdir(self.outputdir), key=_natural_key)]
         num_frames = len(imagefiles)
 
         # full image dimensions
-        frame_dimensions = (0,0)
+        frame_dimensions = (0, 0)
         if num_frames > 0:
             im = Image.open(imagefiles[0])
             frame_dimensions = im.size
@@ -233,31 +242,33 @@ class CaptureController(object):
                 self.log("Searching for start of capture signal ...")
                 squares = []
                 for (i, imagefile) in enumerate(imagefiles):
-                    imgarray = numpy.array(Image.open(imagefile), dtype=numpy.int16)
-                    squares.append(get_biggest_square((0,255,0), imgarray))
+                    imgarray = numpy.array(Image.open(imagefile),
+                                           dtype=numpy.int16)
+                    squares.append(get_biggest_square((0, 255, 0), imgarray))
                     if i > 1 and not squares[-1] and squares[-2]:
                         if not start_frame:
                             start_frame = i
                         self.capture_area = squares[-2]
-                        self.log("Found start capture signal at frame %s. Area: %s" %
-                                 (i, self.capture_area))
+                        self.log("Found start capture signal at frame %s. "
+                                 "Area: %s" % (i, self.capture_area))
                         break
 
             # end frame
             if self.find_end_signal:
                 self.log("Searching for end of capture signal ...")
                 squares = []
-                for i in range(num_frames-1, 0, -1):
-                    imgarray = numpy.array(Image.open(imagefiles[i]), dtype=numpy.int16)
-                    squares.append(get_biggest_square((255,0,0), imgarray))
+                for i in range(num_frames - 1, 0, -1):
+                    imgarray = numpy.array(Image.open(imagefiles[i]),
+                                           dtype=numpy.int16)
+                    squares.append(get_biggest_square((255, 0, 0), imgarray))
 
                     if len(squares) > 1 and not squares[-1] and squares[-2]:
                         if not end_frame:
-                            end_frame = (i-1)
+                            end_frame = (i - 1)
                         if not self.capture_area:
                             self.capture_area = squares[-2]
-                        self.log("Found end capture signal at frame %s. Area: %s" %
-                                 (i-1, self.capture_area))
+                        self.log("Found end capture signal at frame %s. Area: "
+                                 "%s" % (i - 1, self.capture_area))
                         break
 
         # If we don't have a start frame, set it to 1
@@ -281,9 +292,10 @@ class CaptureController(object):
             im = im.convert("RGB")
             im.save(os.path.join(dirname, '%s.png' % framenum))
 
-        # map the frame before the start frame to the zeroth frame (if possible)
+        # map the frame before the start frame to the zeroth
+        # frame (if possible)
         if start_frame > 1:
-            _rewrite_frame(0, rewritten_imagedir, imagefiles[start_frame-1])
+            _rewrite_frame(0, rewritten_imagedir, imagefiles[start_frame - 1])
         else:
             # HACK: otherwise, create a copy of the start frame
             # (this duplicates a frame)
@@ -291,20 +303,20 @@ class CaptureController(object):
         # last frame is the specified end frame or the first red frame if
         # no last frame specified, or the very last frame in the
         # sequence if there is no red frame and no specified last frame
-        last_frame = min(num_frames-1, end_frame+2)
+        last_frame = min(num_frames - 1, end_frame + 2)
 
         # copy the remaining frames into numeric order starting from 1
         # (use multiprocessing to speed this up: there's probably a more
         # elegant way of doing this, but I'm not sure what it is)
         multiprocesses = []
-        for (i,j) in enumerate(range(start_frame, last_frame)):
-            p = multiprocessing.Process(target=_rewrite_frame, args=((i+1), rewritten_imagedir, imagefiles[j]))
+        for (i, j) in enumerate(range(start_frame, last_frame)):
+            p = multiprocessing.Process(target=_rewrite_frame, args=((i + 1),
+                                        rewritten_imagedir, imagefiles[j]))
             p.start()
             multiprocesses.append(p)
            # _rewrite_frame((i+1), rewritten_imagedir, imagefiles[j])
         for p in multiprocesses:
             p.join()
-
 
         capturefps = self.fps
         if not capturefps:
@@ -322,13 +334,13 @@ class CaptureController(object):
         self.log("Writing final capture '%s'..." % self.output_filename)
         zipfile = ZipFile(self.output_filename, 'a')
 
-        zipfile.writestr('metadata.json',
-                         json.dumps(dict({ 'captureDevice': self.capture_device,
-                                           'date': self.capture_time.isoformat(),
-                                           'frameDimensions': frame_dimensions,
-                                           'fps': capturefps,
-                                           'version': 1 },
-                                         **self.capture_metadata)))
+        zipfile.writestr(
+            'metadata.json',
+            json.dumps(dict({'captureDevice': self.capture_device,
+                             'date': self.capture_time.isoformat(),
+                             'frameDimensions': frame_dimensions,
+                             'fps': capturefps,
+                             'version': 1}, **self.capture_metadata)))
 
         if create_webm:
             zipfile.writestr('movie.webm', moviefile.read())

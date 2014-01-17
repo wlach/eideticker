@@ -25,71 +25,62 @@ DEVICE_PROPERTIES = {
             "hdmiResolution": "720p",
             "inputDevice": "/dev/input/event1",
             "dimensions": (1180, 720),
-            "swipePadding": (240, 40, 100, 40)
-            },
+            "swipePadding": (240, 40, 100, 40)},
         "Panda": {
             "hdmiResolution": "720p",
             "inputDevice": "/dev/input/event0",
             "dimensions": (1280, 672),
-            "swipePadding": (240, 40, 100, 40)
-            },
+            "swipePadding": (240, 40, 100, 40)},
         "LG-P999": {
             "hdmiResolution": "1080p",
             "inputDevice": "/dev/input/event1",
             "dimensions": (480, 800),
-            "swipePadding": (240, 40, 100, 40)
-            },
+            "swipePadding": (240, 40, 100, 40)},
         "MID": {
             "hdmiResolution": None,
             "inputDevice": "/dev/input/event2",
             "dimensions": (480, 800),
-            "swipePadding": (240, 40, 100, 40)
-            },
+            "swipePadding": (240, 40, 100, 40)},
         "Turkcell Maxi Plus 5": {
             "hdmiResolution": None,
             "inputDevice": "/dev/input/event0",
             "dimensions": (320, 480),
-            "swipePadding": (40, 40, 40, 40)
-            }
-        },
+            "swipePadding": (40, 40, 40, 40)}
+    },
     "b2g": {
         "Panda": {
             "hdmiResolution": "720p",
             "inputDevice": "/dev/input/event2",
             "defaultOrientation": "landscape",
             "dimensions": (1280, 720),
-            "swipePadding": (40, 40, 40, 40)
-            },
+            "swipePadding": (40, 40, 40, 40)},
         "unagi1": {
             "hdmiResolution": None,
             "inputDevice": "/dev/input/event0",
             "defaultOrientation": "portrait",
             "dimensions": (320, 480),
-            "swipePadding": (40, 40, 40, 40)
-            },
+            "swipePadding": (40, 40, 40, 40)},
         "inari1": {
             "hdmiResolution": None,
             "inputDevice": "/dev/input/event0",
             "defaultOrientation": "portrait",
             "dimensions": (320, 480),
-            "swipePadding": (40, 40, 40, 40)
-            },
+            "swipePadding": (40, 40, 40, 40)},
         "msm7627a": {
             "hdmiResolution": None,
             "inputDevice": "/dev/input/event4",
             "defaultOrientation": "portrait",
             "dimensions": (320, 480),
-            "swipePadding": (40, 40, 40, 40)
-            },
+            "swipePadding": (40, 40, 40, 40)},
         "ALCATEL ONE TOUCH FIRE": {
             "hdmiResolution": None,
             "inputDevice": "/dev/input/event4",
             "defaultOrientation": "portrait",
             "dimensions": (320, 480),
-            "swipePadding": (40, 40, 40, 40)
-            }
-        }
+            "swipePadding": (40, 40, 40, 40)}
+    }
 }
+
 
 class EidetickerMixin(object):
     """Mixin to extend DeviceManager with functionality to allow it to be
@@ -113,9 +104,8 @@ class EidetickerMixin(object):
         if not DEVICE_PROPERTIES.get(self.type) or \
                 not DEVICE_PROPERTIES[self.type].get(self.model):
             raise mozdevice.DMError("Unsupported device '%s' for type '%s'" % (
-                    self.model, self.type))
+                self.model, self.type))
         self.deviceProperties = DEVICE_PROPERTIES[self.type][self.model]
-
 
         for (name, path) in [("orangutan", self.DEFAULT_ORNG_LOCATION),
                              ("ntpdate", self.DEFAULT_NTPDATE_LOCATION)]:
@@ -141,10 +131,11 @@ class EidetickerMixin(object):
             self.pushFile(f.name, remotefilename)
             if executeCallback:
                 executeCallback()
-            command_output = self.shellCheckOutput([self.DEFAULT_ORNG_LOCATION, '-t',
-                                                    self.inputDevice,
-                                                    remotefilename],
-                                                   root=self._logcatNeedsRoot)
+            command_output = self.shellCheckOutput([
+                self.DEFAULT_ORNG_LOCATION, '-t',
+                self.inputDevice,
+                remotefilename],
+                root=self._logcatNeedsRoot)
             self.removeFile(remotefilename)
 
         return command_output
@@ -165,17 +156,19 @@ class EidetickerMixin(object):
     def sendSaveProfileSignal(self, appName):
         pids = self.getPIDs(appName)
         if pids:
-            self.shellCheckOutput(['kill', '-s', '12', str(pids[0])], root=True)
+            self.shellCheckOutput(
+                ['kill', '-s', '12', str(pids[0])], root=True)
 
     def fileExists(self, filepath):
-        ret = self.shellCheckOutput(['sh', '-c', 'ls -a %s || true' % filepath])
+        ret = self.shellCheckOutput(
+            ['sh', '-c', 'ls -a %s || true' % filepath])
         return ret.strip() == filepath
 
     def getAPK(self, appname, localfile):
         remote_tempfile = posixpath.join(self.getDeviceRoot(),
                                          'apk-tmp-%s' % time.time())
-        for remote_apk_path in [ '/data/app/%s-1.apk' % appname,
-                                 '/data/app/%s-2.apk' % appname ]:
+        for remote_apk_path in ['/data/app/%s-1.apk' % appname,
+                                '/data/app/%s-2.apk' % appname]:
             if self.fileExists(remote_apk_path):
                 self.shellCheckOutput(['dd', 'if=%s' % remote_apk_path,
                                        'of=%s' % remote_tempfile], root=True)
@@ -204,22 +197,24 @@ class EidetickerMixin(object):
         return coords
 
     def _getDragEvent(self, touchstart_x1, touchstart_y1, touchend_x1,
-                       touchend_y1, duration=1000, num_steps=5):
+                      touchend_y1, duration=1000, num_steps=5):
         touchstart = self._transformXY((touchstart_x1, touchstart_y1))
         touchend = self._transformXY((touchend_x1, touchend_y1))
 
-        return "drag %s %s %s %s %s %s" % (int(touchstart[0]), int(touchstart[1]),
-                                           int(touchend[0]), int(touchend[1]),
-                                           num_steps, duration)
+        return "drag %s %s %s %s %s %s" % (
+            int(touchstart[0]), int(touchstart[1]),
+            int(touchend[0]), int(touchend[1]),
+            num_steps, duration)
 
     def _getSleepEvent(self, duration=1.0):
         return "sleep %s" % int(float(duration) * 1000.0)
 
     def _getTapEvent(self, x, y, times=1):
-        coords = self._transformXY((x,y))
+        coords = self._transformXY((x, y))
         return "tap %s %s %s 100" % (int(coords[0]), int(coords[1]), times)
 
-    def _getScrollEvents(self, direction, numtimes=1, numsteps=10, duration=100):
+    def _getScrollEvents(self, direction, numtimes=1, numsteps=10,
+                         duration=100):
         events = []
         x = int(self.dimensions[0] / 2)
         ybottom = self.dimensions[1] - self.deviceProperties['swipePadding'][2]
@@ -228,20 +223,22 @@ class EidetickerMixin(object):
         if direction == "up":
             (p1, p2) = (p2, p1)
         for i in range(int(numtimes)):
-            events.append(self._getDragEvent(p1[0], p1[1], p2[0], p2[1], duration,
-                                              int(numsteps)))
+            events.append(self._getDragEvent(
+                p1[0], p1[1], p2[0], p2[1], duration, int(numsteps)))
         return events
 
-    def _getSwipeEvents(self, direction, numtimes=1, numsteps=10, duration=100):
+    def _getSwipeEvents(self, direction, numtimes=1, numsteps=10,
+                        duration=100):
         events = []
         y = (self.dimensions[1] / 2)
-        (x1, x2) = (self.deviceProperties['swipePadding'][3],
-                    self.dimensions[0] - self.deviceProperties['swipePadding'][2])
+        (x1, x2) = (
+            self.deviceProperties['swipePadding'][3],
+            self.dimensions[0] - self.deviceProperties['swipePadding'][2])
         if direction == "left":
             (x1, x2) = (x2, x1)
         for i in range(int(numtimes)):
             events.append(self._getDragEvent(x1, y, x2, y, duration,
-                                              int(numsteps)))
+                                             int(numsteps)))
         return events
 
     def _getPinchEvent(self, touch1_x1, touch1_y1, touch1_x2, touch1_y2,
@@ -253,6 +250,7 @@ class EidetickerMixin(object):
                                                         touch2_x2, touch2_y2,
                                                         numsteps,
                                                         duration)
+
     def _getCmdEvents(self, cmd, args):
         if cmd == "scroll_down":
             cmdevents = self._getScrollEvents("down", *args)
@@ -294,9 +292,9 @@ class EidetickerMixin(object):
                 action = json.loads(line)
                 if action['level'] == 0:
                     if action['event'] == 'START':
-                        current_action = { 'start': action['time'],
-                                           'type': action['type'],
-                                           'params': action.get('params') }
+                        current_action = {'start': action['time'],
+                                          'type': action['type'],
+                                          'params': action.get('params')}
                     else:
                         assert current_action
                         current_action['end'] = action['time']
@@ -314,11 +312,12 @@ class EidetickerMixin(object):
                                           executeCallback=executeCallback)
         return self._parseTimings(timings_str)
 
+
 class DroidADB(EidetickerMixin, mozdevice.DroidADB):
 
     def __init__(self, **kwargs):
         mozdevice.DroidADB.__init__(self, **kwargs)
-        self._init() # custom eideticker init steps
+        self._init()  # custom eideticker init steps
 
     @property
     def type(self):
@@ -340,15 +339,17 @@ class DroidADB(EidetickerMixin, mozdevice.DroidADB):
 
     @property
     def rotation(self):
-        return 0 # No way to find real rotation, assume 0
+        return 0  # No way to find real rotation, assume 0
+
 
 class DroidSUT(EidetickerMixin, mozdevice.DroidSUT):
 
     cached_dimensions = None
     cached_rotation = None
+
     def __init__(self, **kwargs):
         mozdevice.DroidSUT.__init__(self, **kwargs)
-        self._init() # custom eideticker init steps
+        self._init()  # custom eideticker init steps
 
     @property
     def type(self):
@@ -375,14 +376,17 @@ class DroidSUT(EidetickerMixin, mozdevice.DroidSUT):
         self.cached_rotation = int(m.group(1))
         return self.cached_rotation
 
-    def updateApp(self, appBundlePath, processName=None, destPath=None, ipAddr=None, port=30000):
-        '''Replacement for SUT version of updateApp which operates more like the ADB version'''
+    def updateApp(self, appBundlePath, processName=None, destPath=None,
+                  ipAddr=None, port=30000):
+        '''Replacement for SUT version of updateApp'''
+        '''which operates more like the ADB version'''
         '''(FIXME: TOTAL HACK ETC ETC)'''
         basename = os.path.basename(appBundlePath)
         pathOnDevice = os.path.join(self.getDeviceRoot(), basename)
         self.pushFile(appBundlePath, pathOnDevice)
         self.installApp(pathOnDevice)
         self.removeFile(pathOnDevice)
+
 
 class EidetickerB2GMixin(EidetickerMixin):
     """B2G-specific extensions to the eideticker mixin"""
@@ -396,8 +400,9 @@ class EidetickerB2GMixin(EidetickerMixin):
         self._logger.info("Marionette ready, starting session")
         self.marionette.start_session()
         if 'b2g' not in self.marionette.session:
-            raise mozdevice.DMError("bad session value %s returned by start_session" %
-                            self.marionette.session)
+            raise mozdevice.DMError(
+                "bad session value %s returned by start_session" %
+                self.marionette.session)
         self.marionette.set_script_timeout(60000)
         self.marionette.timeouts(self.marionette.TIMEOUT_SEARCH, 10000)
         self._logger.info("Marionette ready!")
@@ -465,7 +470,8 @@ marionetteScriptFinished();
     def setOrientation(self, orientation):
         # set landscape or portrait mode
         self._logger.info("Setting orientation: %s" % orientation)
-        self.marionette.execute_script("screen.mozLockOrientation('%s');" % orientation)
+        self.marionette.execute_script("screen.mozLockOrientation('%s');" %
+                                       orientation)
 
     def unlock(self):
         # unlock device, so it doesn't go to sleep
@@ -478,9 +484,10 @@ marionetteScriptFinished();
 
 
 class B2GADB(EidetickerB2GMixin, mozdevice.DeviceManagerADB):
+
     def __init__(self, **kwargs):
         mozdevice.DeviceManagerADB.__init__(self, **kwargs)
-        self._init() # custom eideticker init steps
+        self._init()  # custom eideticker init steps
 
     @property
     def type(self):
@@ -491,7 +498,8 @@ class B2GADB(EidetickerB2GMixin, mozdevice.DeviceManagerADB):
         return self.deviceProperties['dimensions']
 
     def rotation(self):
-        return 90 # Assume portrait orientation for now
+        return 90  # Assume portrait orientation for now
+
 
 def getDevicePrefs(options):
     '''Gets a dictionary of eideticker device parameters'''
@@ -512,6 +520,7 @@ def getDevicePrefs(options):
 
     return optionDict
 
+
 def getDevice(dmtype="adb", devicetype="android", host=None, port=None,
               logLevel=mozlog.INFO):
     '''Gets an eideticker device according to parameters'''
@@ -521,7 +530,7 @@ def getDevice(dmtype="adb", devicetype="android", host=None, port=None,
     if dmtype == "adb":
         if host and not port:
             port = 5555
-        if devicetype=='b2g':
+        if devicetype == 'b2g':
             # HACK: Assume adb-over-usb for now, with marionette forwarded
             # to localhost via "adb forward tcp:2828 tcp:2828"
             return B2GADB(logLevel=logLevel)
@@ -533,7 +542,7 @@ def getDevice(dmtype="adb", devicetype="android", host=None, port=None,
             raise Exception("Must specify host with SUT!")
         if not port:
             port = 20701
-        if devicetype=='b2g':
+        if devicetype == 'b2g':
             return B2GSUT(host=host, port=port, logLevel=logLevel)
         else:
             return DroidSUT(host=host, port=port, logLevel=logLevel)

@@ -27,7 +27,7 @@ class Test(B2GAppStartupTest):
                 items = self.device.marionette.find_elements(
                     *gallery._gallery_items_locator)
                 progress = self.device.marionette.find_element(
-	                *gallery._progress_bar_locator)
+                    *gallery._progress_bar_locator)
                 if len(items) == picture_count and not progress.is_displayed():
                     break
             except (NoSuchElementException, StaleElementException):

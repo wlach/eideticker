@@ -17,7 +17,7 @@ if len(args) != 3:
 
 controller = videocapture.CaptureController()
 controller.start_capture(capture_file, mode, capture_metadata={
-        'name': capture_name })
+    'name': capture_name})
 
 print "Should be capturing. Press enter to stop!"
 raw_input()

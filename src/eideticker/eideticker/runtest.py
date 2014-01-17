@@ -11,6 +11,7 @@ CAPTURE_DIR = os.path.abspath(os.path.join(SRC_DIR, "../captures"))
 GECKO_PROFILER_ADDON_DIR = os.path.join(SRC_DIR, "../src/GeckoProfilerAddon")
 EIDETICKER_TEMP_DIR = "/tmp/eideticker"
 
+
 def prepare_test(testkey, device_prefs):
     # prepare test logic -- currently only done on b2g
     if device_prefs['devicetype'] == 'b2g':
@@ -23,7 +24,7 @@ def prepare_test(testkey, device_prefs):
         # FIXME: find some less convoluted way of getting the same behaviour)
         device.setupMarionette()
 
-        test = get_test(testinfo, devicetype = device_prefs['devicetype'],
+        test = get_test(testinfo, devicetype=device_prefs['devicetype'],
                         device=device, appname=testinfo.get('appname'))
 
         # reset B2G device's state for test
@@ -47,6 +48,7 @@ def prepare_test(testkey, device_prefs):
         # close down marionette so we can create a new session later
         device.marionette.delete_session()
 
+
 def run_test(testkey, capture_device, appname, capture_name,
              device_prefs, extra_prefs={}, test_type=None, profile_file=None,
              wifi_settings_file=None, request_log_file=None,
@@ -57,8 +59,8 @@ def run_test(testkey, capture_device, appname, capture_name,
 
     if device_prefs['devicetype'] == 'android' and not appname and \
             not testinfo.get('appname'):
-        raise TestException("Must specify an appname (with --app-name) on Android "
-                            "when not spec'd by test")
+        raise TestException("Must specify an appname (with --app-name) on "
+                            "Android when not spec'd by test")
 
     if not os.path.exists(EIDETICKER_TEMP_DIR):
         os.mkdir(EIDETICKER_TEMP_DIR)
@@ -84,8 +86,7 @@ def run_test(testkey, capture_device, appname, capture_name,
         'app': appname,
         'device': device.model,
         'devicetype': device_prefs['devicetype'],
-        'startupTest': testinfo['type'] == 'startup'
-        }
+        'startupTest': testinfo['type'] == 'startup'}
 
     # note: url params for startup tests currently not supported
     if testinfo.get('urlOverride'):
@@ -95,9 +96,9 @@ def run_test(testkey, capture_device, appname, capture_name,
     if testinfo.get('urlParams'):
         testpath_rel += "?%s" % urllib.quote_plus(testinfo.get('urlParams'))
 
-    capture_controller = videocapture.CaptureController(capture_device, capture_area,
-                                                        custom_tempdir=EIDETICKER_TEMP_DIR,
-                                                        fps=fps)
+    capture_controller = videocapture.CaptureController(
+        capture_device, capture_area, custom_tempdir=EIDETICKER_TEMP_DIR,
+        fps=fps)
 
     testtype = test_type or testinfo['type']
 
@@ -109,24 +110,25 @@ def run_test(testkey, capture_device, appname, capture_name,
             with open(actions_path) as f:
                 actions = json.loads(f.read())
         except EnvironmentError:
-            raise TestException("Couldn't open actions file '%s'" % actions_path)
+            raise TestException("Couldn't open actions file '%s'" %
+                                actions_path)
 
-    test = get_test(testinfo, devicetype = device_prefs['devicetype'],
-                    testtype = testtype,
-                    testpath_rel = testpath_rel, device = device,
-                    actions = actions, extra_prefs = extra_prefs,
-                    extra_env_vars = extra_env_vars,
-                    capture_file = capture_file,
-                    capture_controller = capture_controller,
-                    capture_metadata = capture_metadata,
-                    appname = appname,
-                    request_log_file = request_log_file,
-                    actions_log_file = actions_log_file,
-                    log_checkerboard_stats = log_checkerboard_stats,
-                    profile_file = profile_file,
+    test = get_test(testinfo, devicetype=device_prefs['devicetype'],
+                    testtype=testtype,
+                    testpath_rel=testpath_rel, device=device,
+                    actions=actions, extra_prefs=extra_prefs,
+                    extra_env_vars=extra_env_vars,
+                    capture_file=capture_file,
+                    capture_controller=capture_controller,
+                    capture_metadata=capture_metadata,
+                    appname=appname,
+                    request_log_file=request_log_file,
+                    actions_log_file=actions_log_file,
+                    log_checkerboard_stats=log_checkerboard_stats,
+                    profile_file=profile_file,
                     gecko_profiler_addon_dir=GECKO_PROFILER_ADDON_DIR,
-                    docroot = TEST_DIR,
-                    tempdir = EIDETICKER_TEMP_DIR)
+                    docroot=TEST_DIR,
+                    tempdir=EIDETICKER_TEMP_DIR)
 
     if device_prefs['devicetype'] == 'b2g':
 
@@ -152,7 +154,8 @@ def run_test(testkey, capture_device, appname, capture_name,
 
     if capture_file:
         try:
-            capture_controller.convert_capture(test.start_frame, test.end_frame)
+            capture_controller.convert_capture(
+                test.start_frame, test.end_frame)
         except KeyboardInterrupt:
             raise TestException("Aborting because of keyboard interrupt")
 

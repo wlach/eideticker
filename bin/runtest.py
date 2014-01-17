@@ -52,18 +52,19 @@ def main(args=sys.argv[1:]):
     if options.prepare_test:
         eideticker.prepare_test(testkey, device_prefs)
 
-    testlog = eideticker.run_test(testkey, options.capture_device,
-                                  options.appname,
-                                  options.capture_name, device_prefs,
-                                  extra_prefs=options.extra_prefs,
-                                  extra_env_vars=options.extra_env_vars,
-                                  test_type=options.test_type,
-                                  profile_file=options.profile_file,
-                                  no_capture=options.no_capture,
-                                  capture_area=options.capture_area,
-                                  capture_file=options.capture_file,
-                                  wifi_settings_file=options.wifi_settings_file,
-                                  sync_time=options.sync_time)
+    testlog = eideticker.run_test(
+        testkey, options.capture_device,
+        options.appname,
+        options.capture_name, device_prefs,
+        extra_prefs=options.extra_prefs,
+        extra_env_vars=options.extra_env_vars,
+        test_type=options.test_type,
+        profile_file=options.profile_file,
+        no_capture=options.no_capture,
+        capture_area=options.capture_area,
+        capture_file=options.capture_file,
+        wifi_settings_file=options.wifi_settings_file,
+        sync_time=options.sync_time)
 
     # save logs if applicable
     testlog.save_logs(http_request_log_path=options.request_log_file,

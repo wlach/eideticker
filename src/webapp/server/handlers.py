@@ -5,7 +5,9 @@ import videocapture
 
 from PIL import Image
 
-CAPTURE_DIR=os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../captures"))
+CAPTURE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__),
+                                           "../../../captures"))
+
 
 class CapturesHandler:
 
@@ -13,17 +15,18 @@ class CapturesHandler:
     def GET(self):
         captures = []
         for fname in os.listdir(CAPTURE_DIR):
-            if fname == ".gitignore" or os.path.splitext(fname)[1] <> '.zip':
+            if fname == ".gitignore" or os.path.splitext(fname)[1] != '.zip':
                 continue
 
             try:
-                capture = videocapture.Capture(os.path.join(CAPTURE_DIR, fname))
+                capture = videocapture.Capture(
+                    os.path.join(CAPTURE_DIR, fname))
                 if capture.num_frames > 0:
                     print "filename: %s" % fname
-                    captures.append(dict({ "id": fname,
-                                           "length": capture.num_frames/60.0,
-                                           "numFrames": capture.num_frames,
-                                           "filename": fname },
+                    captures.append(dict({"id": fname,
+                                          "length": capture.num_frames / 60.0,
+                                          "numFrames": capture.num_frames,
+                                          "filename": fname},
                                          **capture.metadata))
             except videocapture.BadCapture, error:
                 print "File %s unreadable: %s" % (fname, str(error))
@@ -31,6 +34,7 @@ class CapturesHandler:
                 pass
 
         return sorted(captures, key=lambda c: c['date'])
+
 
 class CaptureHandler:
 
@@ -40,11 +44,12 @@ class CaptureHandler:
             fname = os.path.join(CAPTURE_DIR, name)
             capture = videocapture.Capture(fname)
 
-            return dict({ "id": name, "length": capture.num_frames/60.0,
-                          "numFrames": capture.num_frames, "filename": fname },
+            return dict({"id": name, "length": capture.num_frames / 60.0,
+                         "numFrames": capture.num_frames, "filename": fname},
                         **capture.metadata)
         except:
             raise web.notfound()
+
 
 class CaptureVideoHandler:
 
@@ -69,20 +74,21 @@ class CaptureVideoHandler:
             start = int(partial_start)
 
             if not partial_end:
-                end = total-1
+                end = total - 1
             else:
                 end = int(partial_end)
 
-            chunksize = (end-start)+1
+            chunksize = (end - start) + 1
 
             web.ctx.status = "206 Partial Content"
             web.header("Content-Range", "bytes %d-%d/%d" % (start, end, total))
             web.header("Accept-Ranges", "bytes")
             web.header("Content-Length", chunksize)
 
-            return data[start:end+1]
+            return data[start:end + 1]
         except:
             raise web.notfound()
+
 
 class CaptureImageHandler:
 
@@ -97,12 +103,14 @@ class CaptureImageHandler:
 
         return im
 
+
 class FrameDifferenceHandler:
 
     @templeton.handlers.json_response
     def GET(self, name):
         capture = videocapture.Capture(os.path.join(CAPTURE_DIR, name))
         return videocapture.get_framediff_sums(capture)
+
 
 class FrameDifferenceImageHandler:
 
@@ -118,6 +126,7 @@ class FrameDifferenceImageHandler:
 
         return im
 
+
 class CheckerboardHandler:
 
     @templeton.handlers.json_response
@@ -125,9 +134,10 @@ class CheckerboardHandler:
         capture = videocapture.Capture(os.path.join(CAPTURE_DIR, name))
         percents = videocapture.get_checkerboarding_percents(capture)
         area_duration = videocapture.get_checkerboarding_area_duration(capture)
-        return { "areaDuration": area_duration,
-                 "numCheckerboards": len(filter(lambda f: f > 0.0, percents)),
-                 "numFrames": capture.num_frames }
+        return {"areaDuration": area_duration,
+                "numCheckerboards": len(filter(lambda f: f > 0.0, percents)),
+                "numFrames": capture.num_frames}
+
 
 class CheckerboardImageHandler:
 

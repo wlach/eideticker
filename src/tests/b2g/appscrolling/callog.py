@@ -19,10 +19,11 @@ class Test(B2GAppActionTest):
         phone.launch()
         phone.tap_call_log_toolbar_button()
 
-        time.sleep(30)  # FIXME: actually wait for call log loading modal to be gone
+        time.sleep(30)  # FIXME: wait for call log loading modal to be gone
         self.log('Done waiting for call log loading modal to be gone')
 
-        call_log_container = self.device.marionette.find_element('id', 'call-log-container')
+        call_log_container = self.device.marionette.find_element(
+            'id', 'call-log-container')
         call_log_location = call_log_container.location
         call_log_swipe_padding = 8
 
@@ -34,4 +35,5 @@ class Test(B2GAppActionTest):
         self.cmds = []
 
         for i in range(int(self.scrolldown_amount)):
-            self.cmds.append(['drag', scroll_x1, scroll_y1, scroll_x1, scroll_y2, 100, 10])
+            self.cmds.append([
+                'drag', scroll_x1, scroll_y1, scroll_x1, scroll_y2, 100, 10])

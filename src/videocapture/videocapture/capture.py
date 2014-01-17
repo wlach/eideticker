@@ -9,14 +9,18 @@ from zipfile import ZipFile, BadZipfile
 import json
 import numpy
 
+
 class CaptureException(Exception):
     def __init__(self, msg):
         self.msg = msg
+
     def __str__(self):
         return repr(self.msg)
 
+
 class BadCapture(CaptureException):
     pass
+
 
 class Capture(object):
     def __init__(self, filename):
@@ -36,10 +40,11 @@ class Capture(object):
         self.cache_filename = filename + '.cache'
         if not self.metadata or not self.metadata['version']:
             raise BadCapture("Capture file '%s' does not appear to be an "
-                                   "Eideticker capture file" % filename)
+                             "Eideticker capture file" % filename)
 
-        self.num_frames = max(0, len(filter(lambda s: s[0:7] == "images/" and len(s) > 8,
-                                            self.archive.namelist())) - 2)
+        self.num_frames = max(0, len(filter(
+            lambda s: s[0:7] == "images/" and len(s) > 8,
+            self.archive.namelist())) - 2)
         if self.num_frames > 0:
             im = self.get_frame_image(0)
             self.dimensions = im.size
@@ -63,8 +68,9 @@ class Capture(object):
 
     def get_frame_image(self, framenum, grayscale=False):
         if int(framenum) > self.num_frames:
-            raise CaptureException("Frame number '%s' is greater than the number of frames " \
-                                   "(%s)" % (framenum, self.num_frames))
+            raise CaptureException("Frame number '%s' is greater than the "
+                                   "number of frames (%s)" % (framenum,
+                                                              self.num_frames))
 
         filename = 'images/%s.png' % framenum
         if filename not in self.archive.namelist():
@@ -83,4 +89,5 @@ class Capture(object):
         return im
 
     def get_frame(self, framenum, grayscale=False, type=numpy.float):
-        return numpy.array(self.get_frame_image(framenum, grayscale), dtype=type)
+        return numpy.array(self.get_frame_image(framenum, grayscale),
+                           dtype=type)

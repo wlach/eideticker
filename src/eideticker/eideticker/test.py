@@ -21,12 +21,14 @@ from marionette.by import By
 SRC_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
 TEST_DIR = os.path.abspath(os.path.join(SRC_DIR, "tests"))
 
+
 class TestException(Exception):
 
     def __init__(self, msg, can_retry=False):
         Exception.__init__(self, msg)
         # can_retry means a failure that is possibly intermittent
         self.can_retry = can_retry
+
 
 class TestLog(object):
     # initialize possible parameters to None
@@ -36,11 +38,12 @@ class TestLog(object):
 
     def save_logs(self, actions_log_path=None, http_request_log_path=None):
         if http_request_log_path:
-            open(http_request_log_path, 'w').write(json.dumps(
-                    self.http_request_log))
+            open(http_request_log_path, 'w').write(
+                json.dumps(self.http_request_log))
         if actions_log_path:
-            open(actions_log_path, 'w').write(json.dumps({ 'actions':
-                                                           self.actions }))
+            open(actions_log_path, 'w').write(
+                json.dumps({'actions': self.actions}))
+
 
 class CaptureServer(LoggingMixin):
 
@@ -79,9 +82,11 @@ class CaptureServer(LoggingMixin):
 
         return (200, {})
 
+
 def get_test_manifest():
     return manifestparser.TestManifest(manifests=[os.path.join(
-                TEST_DIR, 'manifest.ini')])
+        TEST_DIR, 'manifest.ini')])
+
 
 def get_testinfo(testkey):
     manifest = get_test_manifest()
@@ -89,9 +94,11 @@ def get_testinfo(testkey):
     # sanity check... does the test match a known test key?
     testkeys = [test["key"] for test in manifest.active_tests()]
     if testkey not in testkeys:
-        raise TestException("No tests matching '%s' (options: %s)" % (testkey, ", ".join(testkeys)))
+        raise TestException("No tests matching '%s' (options: %s)" % (
+            testkey, ", ".join(testkeys)))
 
     return [test for test in manifest.active_tests() if test['key'] == testkey][0]
+
 
 def get_test(testinfo, devicetype="android", testtype=None, **kwargs):
     testpath = testinfo['path']
@@ -116,6 +123,7 @@ def get_test(testinfo, devicetype="android", testtype=None, **kwargs):
         elif testtype == "web":
             return AndroidWebTest(testinfo, **kwargs)
 
+
 class Test(LoggingMixin):
 
     finished_capture = False
@@ -124,7 +132,7 @@ class Test(LoggingMixin):
     testlog = TestLog()
 
     def __init__(self, testinfo, testpath_rel=None, device=None,
-                 capture_file = None,
+                 capture_file=None,
                  capture_controller=None,
                  capture_metadata={}, tempdir=None,
                  track_start_frame=False,
@@ -169,11 +177,12 @@ class Test(LoggingMixin):
             raise Exception("Did not finish test / capture! Error!")
 
     def start_capture(self):
-        # callback indicating we should start capturing (if we're not doing so already)
+        # callback indicating we should start capturing (if we're not doing so
+        # already)
         if self.capture_file and not self.capture_controller.capturing:
             self.log("Starting capture on device '%s' with mode: '%s'" % (
-                    self.capture_metadata['device'],
-                    self.device.hdmiResolution))
+                     self.capture_metadata['device'],
+                     self.device.hdmiResolution))
             self.capture_start_time = time.time()
             self.capture_controller.start_capture(self.capture_file,
                                                   self.device.hdmiResolution,
@@ -204,10 +213,11 @@ class Test(LoggingMixin):
                 self.capture_controller.find_end_signal = False
 
         self.log("Test finished callback (framenum: %s)" % (
-                self.end_frame))
+                 self.end_frame))
 
     def execute_actions(self, actions, test_finished_after_actions=True):
         self.log("Executing actions")
+
         def executeCallback():
             self.test_started()
         actions = self.device.executeCommands(actions,
@@ -226,32 +236,31 @@ class Test(LoggingMixin):
 class WebTest(Test):
 
     def __init__(self, testinfo, actions={}, docroot=None, **kwargs):
-        super(WebTest, self).__init__(testinfo, track_start_frame = True,
-                                      track_end_frame = True, **kwargs)
+        super(WebTest, self).__init__(testinfo, track_start_frame=True,
+                                      track_end_frame=True, **kwargs)
 
         self.actions = actions
 
         self.capture_server = CaptureServer(self)
         self.host = moznetwork.get_ip()
-        self.http = mozhttpd.MozHttpd(docroot=docroot,
-                                      host=self.host, port=0,
-                                      log_requests=True,
-                                      urlhandlers = [
-                { 'method': 'GET',
-                  'path': '/api/captures/start/?',
-                  'function': self.capture_server.start_capture },
-                { 'method': 'GET',
-                  'path': '/api/captures/end/?',
-                  'function': self.capture_server.end_capture },
-                { 'method': 'POST',
-                  'path': '/api/captures/input/?',
-                  'function': self.capture_server.input } ])
+        self.http = mozhttpd.MozHttpd(
+            docroot=docroot, host=self.host, port=0, log_requests=True,
+            urlhandlers=[
+                {'method': 'GET',
+                 'path': '/api/captures/start/?',
+                 'function': self.capture_server.start_capture},
+                {'method': 'GET',
+                 'path': '/api/captures/end/?',
+                 'function': self.capture_server.end_capture},
+                {'method': 'POST',
+                 'path': '/api/captures/input/?',
+                 'function': self.capture_server.input}])
         self.http.start(block=False)
 
         connected = False
         tries = 0
         while not connected and tries < 20:
-            tries+=1
+            tries += 1
             import socket
             s = socket.socket()
             try:
@@ -259,19 +268,17 @@ class WebTest(Test):
                 connected = True
             except Exception:
                 self.log("Can't connect to %s:%s, retrying..." % (
-                        self.host, self.http.httpd.server_port))
+                         self.host, self.http.httpd.server_port))
 
         self.log("Test URL is: %s" % self.url)
 
         if not connected:
             raise "Could not open webserver. Error!"
 
-
     @property
     def url(self):
-        return "http://%s:%s/start.html?testpath=%s" % (self.host,
-                                                        self.http.httpd.server_port,
-                                                        self.testpath_rel)
+        return "http://%s:%s/start.html?testpath=%s" % (
+            self.host, self.http.httpd.server_port, self.testpath_rel)
 
     def test_started(self):
         super(WebTest, self).test_started()
@@ -286,27 +293,28 @@ class WebTest(Test):
             self.testlog.http_request_log.append(request)
 
     def input_actions(self, commandset):
-        if self.actions: # startup test indicated by no actions
+        if self.actions:  # startup test indicated by no actions
             self.log("Executing commands '%s' for device '%s' (framenum: %s)" % (
-                    commandset, self.device.model, self.start_frame))
+                     commandset, self.device.model, self.start_frame))
             if not self.actions.get(commandset) or not \
-                        self.actions[commandset].get(self.device.model):
-                    raise Exception("Could not get actions for commandset "
-                                    "'%s', model '%s'" % (commandset,
-                                                          self.device.model))
+                    self.actions[commandset].get(self.device.model):
+                raise Exception("Could not get actions for commandset "
+                                "'%s', model '%s'" % (commandset,
+                                                      self.device.model))
             device_actions = self.actions[commandset][self.device.model]
             self.execute_actions(device_actions)
         else:
             # startup test: if we get here, it means we're done
             self.test_finished()
 
+
 class AndroidWebTest(WebTest):
 
-    def __init__(self, testinfo, appname = None, extra_prefs = {},
-                 extra_env_vars = {},
-                 profile_file = None,
-                 gecko_profiler_addon_dir = None,
-                 log_checkerboard_stats = False,
+    def __init__(self, testinfo, appname=None, extra_prefs={},
+                 extra_env_vars={},
+                 profile_file=None,
+                 gecko_profiler_addon_dir=None,
+                 log_checkerboard_stats=False,
                  **kwargs):
         super(AndroidWebTest, self).__init__(testinfo, **kwargs)
 
@@ -315,40 +323,44 @@ class AndroidWebTest(WebTest):
         self.log_checkerboard_stats = log_checkerboard_stats
         self.profile_file = profile_file
         self.gecko_profiler_addon_dir = gecko_profiler_addon_dir
-        self.preinitialize_user_profile = int(testinfo.get('preInitializeProfile', 0))
+        self.preinitialize_user_profile = int(
+            testinfo.get('preInitializeProfile', 0))
         self.open_url_after_launch = bool(testinfo.get('openURLAfterLaunch'))
 
         # If we're logging checkerboard stats, set that up here (seems like it
-        # takes a second or so to accept the new setting, so let's do that here --
-        # ideally we would detect when that's working, but I'm not sure how to do
-        # so trivially)
+        # takes a second or so to accept the new setting, so let's do that
+        # here -- ideally we would detect when that's working, but I'm not sure
+        # how to do so trivially)
         if self.log_checkerboard_stats:
-            self.old_log_val = self.device.getprop("log.tag.GeckoLayerRendererProf")
+            self.old_log_val = self.device.getprop(
+                "log.tag.GeckoLayerRendererProf")
             self.device.setprop("log.tag.GeckoLayerRendererProf", "DEBUG")
 
         # something of a hack. if profiling is enabled, carve off an area to
         # ignore in the capture
         if self.profile_file:
-            self.capture_metadata['ignoreAreas'] = [ [ 0, 0, 3*64, 3 ] ]
+            self.capture_metadata['ignoreAreas'] = [[0, 0, 3 * 64, 3]]
 
         # precondition: app should not be running. abort if it is
         if self.device.processExist(self.appname):
             raise Exception("An instance of %s is running. Please stop it "
                             "before running Eideticker." % self.appname)
 
-        self.runner = eideticker.AndroidBrowserRunner(self.device, self.appname,
-                                                      self.url, self.tempdir,
-                                                      preinitialize_user_profile=self.preinitialize_user_profile,
-                                                      open_url_after_launch = self.open_url_after_launch,
-                                                      enable_profiling=bool(self.profile_file),
-                                                      gecko_profiler_addon_dir=gecko_profiler_addon_dir,
-                                                      extra_prefs=self.extra_prefs,
-                                                      extra_env_vars=extra_env_vars)
+        self.runner = eideticker.AndroidBrowserRunner(
+            self.device, self.appname,
+            self.url, self.tempdir,
+            preinitialize_user_profile=self.preinitialize_user_profile,
+            open_url_after_launch=self.open_url_after_launch,
+            enable_profiling=bool(self.profile_file),
+            gecko_profiler_addon_dir=gecko_profiler_addon_dir,
+            extra_prefs=self.extra_prefs,
+            extra_env_vars=extra_env_vars)
 
     def cleanup(self):
         # Clean up checkerboard logging preferences
         if self.log_checkerboard_stats:
-            self.device.setprop("log.tag.GeckoLayerRendererProf", self.old_log_val)
+            self.device.setprop(
+                "log.tag.GeckoLayerRendererProf", self.old_log_val)
 
         # kill fennec, clean up temporary user profile
         self.runner.cleanup()
@@ -367,15 +379,18 @@ class AndroidWebTest(WebTest):
             # test
             time.sleep(1)
             self.testlog.checkerboard_percent_totals = 0.0
-            CHECKERBOARD_REGEX = re.compile('.*GeckoLayerRendererProf.*1000ms:.*\ '
-                                '([0-9]+\.[0-9]+)\/([0-9]+).*')
+            CHECKERBOARD_REGEX = re.compile(
+                '.*GeckoLayerRendererProf.*1000ms:.*\ '
+                '([0-9]+\.[0-9]+)\/([0-9]+).*')
             for line in self.device.getLogcat(
-                        filterSpecs=["GeckoLayerRendererProf:D", "*:S"],
-                        format="brief"):
+                    filterSpecs=["GeckoLayerRendererProf:D", "*:S"],
+                    format="brief"):
                 match = CHECKERBOARD_REGEX.search(line.rstrip())
                 if match:
-                    (amount, total) = (float(match.group(1)), float(match.group(2)))
-                    self.testlog.checkerboard_percent_totals += (total - amount)
+                    (amount, total) = (float(match.group(1)),
+                                       float(match.group(2)))
+                    self.testlog.checkerboard_percent_totals += (
+                        total - amount)
 
         if self.profile_file:
             self.runner.save_profile()
@@ -390,10 +405,12 @@ class AndroidWebTest(WebTest):
 
         self.runner.cleanup()
 
+
 class AndroidWebStartupTest(AndroidWebTest):
 
     def __init__(self, testinfo, appname=None, **kwargs):
-        super(AndroidWebStartupTest, self).__init__(testinfo, appname=appname, **kwargs)
+        super(AndroidWebStartupTest, self).__init__(testinfo, appname=appname,
+                                                    **kwargs)
         # don't want to track start frames for startup tests
         self.track_start_frame = False
 
@@ -437,9 +454,9 @@ class AndroidWebStartupTest(AndroidWebTest):
         if self.testpath_rel == "about:home":
             return self.testpath_rel
         else:
-            return "http://%s:%s/%s?startup_test=1" % (self.host,
-                                                       self.http.httpd.server_port,
-                                                       self.testpath_rel)
+            return "http://%s:%s/%s?startup_test=1" % (
+                self.host, self.http.httpd.server_port, self.testpath_rel)
+
 
 class AndroidAppStartupTest(Test):
 
@@ -455,12 +472,13 @@ class AndroidAppStartupTest(Test):
                             "before running Eideticker." % self.appname)
 
     def run(self):
-        # FIXME: currently start capture before launching app because we wait until app is
-        # launched -- would be better to make waiting optional and then start capture
-        # after triggering app launch to reduce latency?
+        # FIXME: currently start capture before launching app because we wait
+        # until app is launched -- would be better to make waiting optional and
+        # then start capture after triggering app launch to reduce latency?
         self.start_capture()
         self.device.launchApplication(self.appname, self.activity, self.intent)
         self.wait()
+
 
 class B2GTest(Test):
 
@@ -471,6 +489,7 @@ class B2GTest(Test):
                                       track_end_frame=track_end_frame,
                                       **kwargs)
 
+
 class B2GWebTest(B2GTest, WebTest):
 
     def __init__(self, testinfo, **kwargs):
@@ -479,7 +498,8 @@ class B2GWebTest(B2GTest, WebTest):
     def run(self):
         # start the tests by navigating to the url
         self.log("Navigating to %s" % self.url)
-        self.device.marionette.execute_script("window.location.href='%s';" % self.url)
+        self.device.marionette.execute_script(
+            "window.location.href='%s';" % self.url)
         self.wait()
 
 
@@ -488,6 +508,7 @@ class B2GAppTest(B2GTest):
     def __init__(self, testinfo, appname, **kwargs):
         super(B2GAppTest, self).__init__(testinfo, **kwargs)
         self.appname = appname
+
 
 class B2GAppActionTest(B2GAppTest):
 
@@ -526,7 +547,7 @@ class B2GAppStartupTest(B2GAppTest):
 
         from gaiatest.apps.homescreen.app import Homescreen
         homescreen = Homescreen(self.device.marionette)
-        self.device.gaiaApps.switch_to_displayed_app()  # switches to homescreen
+        self.device.gaiaApps.switch_to_displayed_app()  # switch to homescreen
         appicon = None
 
         try:
@@ -538,20 +559,23 @@ class B2GAppStartupTest(B2GAppTest):
         except NoSuchElementException:
             # skip the everything.me page
             self.device.marionette.execute_async_script(
-                'window.wrappedJSObject.GridManager.goToPage(1, marionetteScriptFinished);')
+                'window.wrappedJSObject.GridManager.goToPage(1, '
+                'marionetteScriptFinished);')
             for i in range(1, homescreen.homescreen_get_total_pages_number):
                 current_page = self.device.marionette.find_element(
                     By.CSS_SELECTOR, '#icongrid .page:not([aria-hidden=true])')
                 try:
                     self.log('Looking for app icon on page %s' % (i + 1))
                     appicon = current_page.find_element(
-                        By.CSS_SELECTOR, '.icon[aria-label="%s"]' % self.appname)
+                        By.CSS_SELECTOR, '.icon[aria-label="%s"]' %
+                        self.appname)
                     break
                 except NoSuchElementException:
                     if homescreen.homescreen_has_more_pages:
                         homescreen.go_to_next_page()
                     else:
-                        raise Exception("Cannot find icon for app with name '%s'" % self.appname)
+                        raise Exception("Cannot find icon for app with name "
+                                        "'%s'" % self.appname)
 
         tap_x = appicon.location['x'] + (appicon.size['width'] / 2)
         tap_y = appicon.location['y'] + (appicon.size['height'] / 2)

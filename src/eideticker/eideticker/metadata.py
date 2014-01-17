@@ -5,6 +5,7 @@
 import ConfigParser
 import zipfile
 
+
 def get_appinfo(fh):
     config = ConfigParser.ConfigParser()
     config.readfp(fh)
@@ -17,14 +18,15 @@ def get_appinfo(fh):
     version = config.get('App', 'Version')
     (year, month, day) = (buildid[0:4], buildid[4:6], buildid[6:8])
     try:
-       sourcerepo = config.get('App', 'SourceRepository')
+        sourcerepo = config.get('App', 'SourceRepository')
     except ConfigParser.NoOptionError:
-       sourcerepo = None
-    return { 'appdate':  "%s-%s-%s" % (year, month, day),
-             'buildid': buildid,
-             'revision': revision,
-             'sourceRepo': sourcerepo,
-             'version': version }
+        sourcerepo = None
+    return {'appdate': "%s-%s-%s" % (year, month, day),
+            'buildid': buildid,
+            'revision': revision,
+            'sourceRepo': sourcerepo,
+            'version': version}
+
 
 def get_fennec_appinfo(fname):
     archive = zipfile.ZipFile(fname, 'r')
