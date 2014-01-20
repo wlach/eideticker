@@ -48,7 +48,6 @@ def run_test(testkey, capture_device, appname, capture_name,
              extra_env_vars={}, capture_area=None, no_capture=False,
              capture_file=None, sync_time=True, fps=None):
     testinfo = get_testinfo(testkey)
-    print "Testinfo: %s" % testinfo
 
     if device_prefs['devicetype'] == 'android' and not appname and \
             not testinfo.get('appname'):
