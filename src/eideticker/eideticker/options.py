@@ -92,4 +92,9 @@ class TestOptionParser(CaptureOptionParser):
             self.error("Error processing extra preferences: not valid JSON!")
             raise
 
+        if options.devicetype == 'b2g' and options.sync_time and \
+                not options.wifi_settings_file:
+            raise self.error('You must specify a WiFi settings file when '
+                             'using B2G and sync time.')
+
         return (options, args)
