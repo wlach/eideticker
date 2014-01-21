@@ -393,6 +393,7 @@ class EidetickerB2GMixin(EidetickerMixin):
         self.marionette = marionette.Marionette()
         self._logger.info("Waiting for Marionette...")
         self.marionette.wait_for_port()
+        self._logger.info("Marionette ready, starting session")
         self.marionette.start_session()
         if 'b2g' not in self.marionette.session:
             raise mozdevice.DMError("bad session value %s returned by start_session" %
@@ -421,9 +422,12 @@ class EidetickerB2GMixin(EidetickerMixin):
             self.removeDir('/'.join(['/sdcard', item]))
 
     def stopB2G(self):
-        #restart b2g so we start with a clean slate
+        self._logger.info("Stopping B2G")
+
         if self.marionette and self.marionette.session:
             self.marionette.delete_session()
+            self.marionette = None
+
         self.shellCheckOutput(['stop', 'b2g'])
         # Wait for a bit to make sure B2G has completely shut down.
         tries = 100
@@ -477,7 +481,6 @@ class B2GADB(EidetickerB2GMixin, mozdevice.DeviceManagerADB):
     def __init__(self, **kwargs):
         mozdevice.DeviceManagerADB.__init__(self, **kwargs)
         self._init() # custom eideticker init steps
-        self.setupMarionette()
 
     @property
     def type(self):

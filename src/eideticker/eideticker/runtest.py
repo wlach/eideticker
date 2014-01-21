@@ -15,24 +15,27 @@ def prepare_test(testkey, device_prefs):
     # prepare test logic -- currently only done on b2g
     if device_prefs['devicetype'] == 'b2g':
         testinfo = get_testinfo(testkey)
+
         device = getDevice(**device_prefs)
+        # HACK: we need to setup marionette here so we can instantiate a
+        # b2gpopulate instance inside the device object (even though we
+        # wind up deleting the same marionette instance in just a moment...
+        # FIXME: find some less convoluted way of getting the same behaviour)
+        device.setupMarionette()
 
         test = get_test(testinfo, devicetype = device_prefs['devicetype'],
                         device=device, appname=testinfo.get('appname'))
 
         # reset B2G device's state for test
-        logger.info("Resetting B2G and cleaning up...")
+        logger.info("Stopping B2G and cleaning up...")
         device.stopB2G()
         device.cleanup()
-
-        # even if we're populating the database, we need to restart b2g so
-        # b2gpopulate has access to a marionette connection
 
         if hasattr(test, 'populate_databases'):
             logger.info("Populating database...")
             test.populate_databases()
 
-        logger.info("Restarting b2g")
+        logger.info("Starting B2G")
         device.startB2G()
         device.unlock()
         device.killApps()
@@ -40,6 +43,9 @@ def prepare_test(testkey, device_prefs):
         if hasattr(test, 'prepare_app'):
             logger.info("Doing initial setup on app for test")
             test.prepare_app()
+
+        # close down marionette so we can create a new session later
+        device.marionette.delete_session()
 
 def run_test(testkey, capture_device, appname, capture_name,
              device_prefs, extra_prefs={}, test_type=None, profile_file=None,
@@ -70,25 +76,7 @@ def run_test(testkey, capture_device, appname, capture_name,
     elif no_capture:
         capture_file = None
 
-    # Create a device object to interface with the phone
     device = getDevice(**device_prefs)
-
-    if device_prefs['devicetype'] == 'b2g':
-
-        if sync_time:
-            # if we're synchronizing time, we need to connect to the network
-            wifi_settings = json.loads(open(wifi_settings_file).read())
-            device.connectWIFI(wifi_settings)
-
-        # unlock device, so it doesn't go to sleep
-        device.unlock()
-
-        # reset orientation to default for this type of device
-        device.resetOrientation()
-
-    # synchronize time unless instructed not to
-    if sync_time:
-        device.synchronizeTime()
 
     capture_metadata = {
         'name': capture_name,
@@ -139,6 +127,25 @@ def run_test(testkey, capture_device, appname, capture_name,
                     gecko_profiler_addon_dir=GECKO_PROFILER_ADDON_DIR,
                     docroot = TEST_DIR,
                     tempdir = EIDETICKER_TEMP_DIR)
+
+    if device_prefs['devicetype'] == 'b2g':
+
+        device.setupMarionette()
+
+        if sync_time:
+            # if we're synchronizing time, we need to connect to the network
+            wifi_settings = json.loads(open(wifi_settings_file).read())
+            device.connectWIFI(wifi_settings)
+
+        # unlock device, so it doesn't go to sleep
+        device.unlock()
+
+        # reset orientation to default for this type of device
+        device.resetOrientation()
+
+    # synchronize time unless instructed not to
+    if sync_time:
+        device.synchronizeTime()
 
     test.run()
     test.cleanup()
