@@ -131,11 +131,16 @@ def run_test(testkey, capture_device, appname, capture_name,
                     tempdir=EIDETICKER_TEMP_DIR)
 
     if device_prefs['devicetype'] == 'b2g':
-
         device.setupMarionette()
 
-        if sync_time:
-            # if we're synchronizing time, we need to connect to the network
+        if sync_time or test.requires_wifi:
+            # we catch when the user requests synchronized time but doesn't
+            # provide a wifi settings file when parsing options, but no
+            # such luck if the test itself requires wifi; so throw an exception
+            # in that case
+            if not wifi_settings_file:
+                raise Exception("WIFI required for this test but no settings "
+                                "file (-w) provided!")
             wifi_settings = json.loads(open(wifi_settings_file).read())
             device.connectWIFI(wifi_settings)
 

@@ -127,6 +127,7 @@ def get_test(testinfo, devicetype="android", testtype=None, **kwargs):
 class Test(LoggingMixin):
 
     finished_capture = False
+    requires_wifi = False
     start_frame = None
     end_frame = None
     testlog = TestLog()
@@ -234,6 +235,8 @@ class Test(LoggingMixin):
 
 
 class WebTest(Test):
+
+    requires_wifi = True
 
     def __init__(self, testinfo, actions={}, docroot=None, **kwargs):
         super(WebTest, self).__init__(testinfo, track_start_frame=True,
@@ -479,21 +482,7 @@ class AndroidAppStartupTest(Test):
         self.device.launchApplication(self.appname, self.activity, self.intent)
         self.wait()
 
-
-class B2GTest(Test):
-
-    def __init__(self, testinfo, track_start_frame=True, track_end_frame=True,
-                 **kwargs):
-        super(B2GTest, self).__init__(testinfo,
-                                      track_start_frame=track_start_frame,
-                                      track_end_frame=track_end_frame,
-                                      **kwargs)
-
-
-class B2GWebTest(B2GTest, WebTest):
-
-    def __init__(self, testinfo, **kwargs):
-        super(B2GWebTest, self).__init__(testinfo, **kwargs)
+class B2GWebTest(WebTest):
 
     def run(self):
         # start the tests by navigating to the url
@@ -502,11 +491,11 @@ class B2GWebTest(B2GTest, WebTest):
             "window.location.href='%s';" % self.url)
         self.wait()
 
-
-class B2GAppTest(B2GTest):
+class B2GAppTest(Test):
 
     def __init__(self, testinfo, appname, **kwargs):
-        super(B2GAppTest, self).__init__(testinfo, **kwargs)
+        super(B2GAppTest, self).__init__(testinfo, track_start_frame=True,
+                                         track_end_frame=True, **kwargs)
         self.appname = appname
 
 
