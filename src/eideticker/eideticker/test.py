@@ -299,13 +299,19 @@ class WebTest(Test):
         if self.actions:  # startup test indicated by no actions
             self.log("Executing commands '%s' for device '%s' (framenum: %s)" % (
                      commandset, self.device.model, self.start_frame))
-            if not self.actions.get(commandset) or not \
-                    self.actions[commandset].get(self.device.model):
+            if not self.actions.get(commandset):
                 raise Exception("Could not get actions for commandset "
-                                "'%s', model '%s'" % (commandset,
-                                                      self.device.model))
-            device_actions = self.actions[commandset][self.device.model]
-            self.execute_actions(device_actions)
+                                "'%s'" % (commandset))
+            # try to get a device-specific set of actions, falling back to
+            # "default" if none exist
+            default_actions = self.actions[commandset].get('default')
+            actions = self.actions[commandset].get(self.device.model,
+                                                   default_actions)
+            if not actions:
+                raise Exception("Could not get actions for device %s (and no "
+                                "default fallback)" % self.device.model)
+
+            self.execute_actions(actions)
         else:
             # startup test: if we get here, it means we're done
             self.test_finished()
