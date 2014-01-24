@@ -6,6 +6,11 @@
 
 BASEDIR=$PWD
 
+if [ ! $VENV ]; then
+    VENV="."
+    virtualenv $VENV
+fi
+
 for PROG in virtualenv g++ ffmpeg; do
     which $PROG > /dev/null
     if [ $? != 0 ]; then
@@ -25,9 +30,6 @@ set -e
 git submodule init
 git submodule update
 
-# Create virtualenv
-virtualenv .
-
 # Build up videocapture utility (FIXME: should be part of the egg building process)
 make -C src/videocapture/videocapture/decklink
 
@@ -35,7 +37,7 @@ make -C src/videocapture/videocapture/decklink
 export PIP_DEFAULT_TIMEOUT=120
 
 # Install local deps
-./bin/python src/mozbase/setup_development.py
-./bin/pip install -e src/templeton
-./bin/pip install -e src/eideticker
-./bin/pip install -e src/videocapture
+$VENV/bin/python src/mozbase/setup_development.py
+$VENV/bin/pip install -e src/templeton
+$VENV/bin/pip install -e src/eideticker
+$VENV/bin/pip install -e src/videocapture
