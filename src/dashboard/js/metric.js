@@ -61,7 +61,7 @@ function updateGraph(rawdata, measure) {
     rawdata[appname].forEach(function(sample) {
       series.data.push([ barPosition, sample[measure] ]);
 
-      metadataHash[seriesIndex].push({'videoURL': sample.video, 'appDate': sample.appdate, 'revision': sample.revision, 'buildId': sample.buildid, 'frameDiff': sample.frameDiff, 'fps': sample.captureFPS });
+      metadataHash[seriesIndex].push({'videoURL': sample.video, 'appDate': sample.appdate, 'revision': sample.revision, 'buildId': sample.buildid, 'frameDiff': sample.frameDiff, 'fps': sample.captureFPS, 'generatedVideoFPS': sample.generatedVideoFPS });
       barPosition++;
     });
     graphdata.push(series);
@@ -103,7 +103,8 @@ function updateGraph(rawdata, measure) {
                                                      'buildId': metadata.buildId,
                                                      'measureValue': Math.round(100.0*item.datapoint[1])/100.0,
                                                      'frameDiff': metadata.frameDiff,
-                                                     'fps': metadata.fps
+                                                     'fps': metadata.fps,
+                                                     'generatedVideoFPS': metadata.generatedVideoFPS
                                                    }));
       $('#video').css('width', $('#video').parent().width());
       $('#video').css('max-height', $('#graph-container').height());

@@ -21,6 +21,7 @@ from zipfile import ZipFile
 
 DECKLINK_DIR = os.path.join(os.path.dirname(__file__), 'decklink')
 POINTGREY_DIR = os.path.join(os.path.dirname(__file__), 'pointgrey')
+MAX_VIDEO_FPS = 60
 
 valid_capture_devices = ["decklink", "pointgrey"]
 valid_decklink_modes = ["720p", "1080p"]
@@ -321,27 +322,30 @@ class CaptureController(object):
         capturefps = self.fps
         if not capturefps:
             capturefps = 60
+        generated_video_fps = capturefps
+        if generated_video_fps > MAX_VIDEO_FPS:
+            generated_video_fps = MAX_VIDEO_FPS
 
         if create_webm:
             self.log("Creating movie ...")
 
             moviefile = tempfile.NamedTemporaryFile(dir=self.custom_tempdir,
                                                     suffix=".webm")
-            subprocess.Popen(('ffmpeg', '-y', '-r', str(capturefps), '-i',
+            subprocess.Popen(('ffmpeg', '-y', '-r', str(generated_video_fps), '-i',
                               os.path.join(rewritten_imagedir, '%d.png'),
                               moviefile.name), close_fds=True).wait()
 
         self.log("Writing final capture '%s'..." % self.output_filename)
         zipfile = ZipFile(self.output_filename, 'a')
 
-        zipfile.writestr(
-            'metadata.json',
-            json.dumps(dict({'captureDevice': self.capture_device,
-                             'date': self.capture_time.isoformat(),
-                             'frameDimensions': frame_dimensions,
-                             'fps': capturefps,
-                             'version': 1}, **self.capture_metadata)))
-
+        zipfile.writestr('metadata.json',
+                         json.dumps(dict({ 'captureDevice': self.capture_device,
+                                           'date': self.capture_time.isoformat(),
+                                           'frameDimensions': frame_dimensions,
+                                           'fps': capturefps,
+                                           'generatedVideoFPS': generated_video_fps,
+                                           'version': 1 },
+                                         **self.capture_metadata)))
         if create_webm:
             zipfile.writestr('movie.webm', moviefile.read())
 

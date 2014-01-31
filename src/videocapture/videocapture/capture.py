@@ -57,6 +57,10 @@ class Capture(object):
         return self.metadata.get('fps', 60.0)
 
     @property
+    def generated_video_fps(self):
+        return self.metadata.get('generatedVideoFPS', self.fps)
+
+    @property
     def length(self):
         return self.num_frames / self.fps
 

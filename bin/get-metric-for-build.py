@@ -76,6 +76,7 @@ def runtest(device_prefs, testname, options, apk=None, appname=None,
 
             capture = videocapture.Capture(capture_file)
             capture_result['captureFPS'] = capture.fps
+            capture_result['generatedVideoFPS'] = capture.generated_video_fps
 
             if stableframecapture:
                 capture_result['timetostableframe'] = \

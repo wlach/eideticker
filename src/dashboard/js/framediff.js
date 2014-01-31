@@ -16,7 +16,9 @@ $(function() {
     var actionCount = {};
 
     var fps = getParameterByName('fps');
-    if (!fps) fps = 60;
+    var generatedVideoFPS = getParameterByName('generatedVideoFPS');
+    if (!fps) fps = 60.0;
+    if (!generatedVideoFPS) generatedVideoFPS = 60.0;
 
     diffsums.forEach(function(diffsum) {
       // if we have a current action, check to make sure
@@ -101,10 +103,12 @@ $(function() {
       plot.unhighlight();
       plot.highlight(series, datum);
       currentTime = datum[0];
+      var videoTime = currentTime * (fps/generatedVideoFPS);
       frameNum = parseInt(currentTime * fps);
 
       var video = $("#frameview").get(0);
-      video.currentTime = currentTime;
+      console.log(videoTime);
+      video.currentTime = videoTime;
       $("#datapoint").html(ich.graphDatapoint({ 'time': currentTime.toFixed(8),
                                                 'frameNum': frameNum,
                                                 'framediff': datum[1],
@@ -112,7 +116,7 @@ $(function() {
       var modal = $('#videoDetailModal');
       if (modal.length) {
         var largeVideo = $("#large-video").get(0);
-        largeVideo.currentTime = currentTime;
+        largeVideo.currentTime = videoTime;
         $(".modal-title").html("<h4>Frame " + frameNum + "</h4>");
       }
       updateButtons();
