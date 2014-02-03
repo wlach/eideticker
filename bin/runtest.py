@@ -62,6 +62,7 @@ def main(args=sys.argv[1:]):
         profile_file=options.profile_file,
         no_capture=options.no_capture,
         capture_area=options.capture_area,
+        fps=options.fps,
         capture_file=options.capture_file,
         wifi_settings_file=options.wifi_settings_file,
         sync_time=options.sync_time)
