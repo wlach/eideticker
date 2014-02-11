@@ -211,7 +211,8 @@ you are just working on a test and/or don't have a capture rig), pass the
 
 Console mode allows you to get one-off results of running Eideticker for a
 single test. You run a program called get-metric-for-build.py and it will
-print some numbers to standard output.
+print some numbers to standard output (or optionally output a web
+visualization of the results: see below).
 
 #### get-metric-for-build on Android
 
@@ -278,6 +279,17 @@ this with the `--num-runs` option. For example on Android:
 Or on FirefoxOS:
 
     ./bin/get-metric-for-build.py -w <wifi settings file> --num-runs 5 clock
+
+#### Visualizing results
+
+You can optionally output the results of get-metric-for-build to a web site
+through the `--output-dir` option. For example:
+
+    ./bin/get-metric-for-build.py -w <wifi settings file> --num-runs 5 \
+        --output-dir $HOME/contacts-test b2g-contacts-scrolling
+
+You can then open up the resulting directory in a web browser and view the
+results. Or upload them to a static web server and share them with others!
 
 #### Interpreting results
 
