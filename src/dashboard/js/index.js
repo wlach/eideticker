@@ -64,7 +64,7 @@ function updateGraph(title, rawdata, measure) {
   // show individual data points
   var graphdata = [];
   var color = 0;
-  var metadataHash = {};
+  var uuidHash = {};
 
   var seriesIndex = 0;
 
@@ -76,7 +76,7 @@ function updateGraph(title, rawdata, measure) {
   });
 
   Object.keys(rawdata).sort().forEach(function(type) {
-    metadataHash[seriesIndex] = [];
+    uuidHash[seriesIndex] = [];
 
     // point graph
     var series1 = {
@@ -86,7 +86,6 @@ function updateGraph(title, rawdata, measure) {
       data: []
     };
 
-    var prevRevision = null;
     Object.keys(rawdata[type]).sort().forEach(function(datestr) {
       rawdata[type][datestr].forEach(function(sample) {
         if (measure in sample) {
@@ -95,24 +94,9 @@ function updateGraph(title, rawdata, measure) {
           if (!sourceRepo) {
             sourceRepo = "http://hg.mozilla.org/mozilla-central";
           }
-          metadataHash[seriesIndex].push({
-            'videoURL': getResourceURL(sample.video),
-            'dateStr': datestr,
-            'appDate': sample.appdate,
-            'sourceRepo': sourceRepo,
-            'revision': sample.revision,
-            'buildRevision': sample.buildRevision,
-            'gaiaRevision': sample.gaiaRevision,
-            'prevRevision': prevRevision,
-            'buildId': sample.buildid,
-            'profileURL': getResourceURL(sample.profile),
-            'frameDiff': getResourceURL(sample.frameDiff),
-            'actionLog': getResourceURL(sample.actionLog),
-            'httpLog': getResourceURL(sample.httpLog)
-          });
+          uuidHash[seriesIndex].push(sample.uuid);
         }
       });
-      prevRevision = rawdata[type][datestr][0].revision;
     });
     graphdata.push(series1);
 
@@ -154,10 +138,56 @@ function updateGraph(title, rawdata, measure) {
     seriesIndex += 2;
   });
 
-  function updateDataPointDisplay() {
-    $('#datapoint-info').css('left', $('#graph-main').width() + 20);
-    $('#video').css('width', $('#video').parent().width());
-    $('#video').css('max-height', $('#graph-container').height());
+  function updateDataPointDisplay(uuid, date, measureName, series) {
+    $.getJSON(getResourceURL('metadata/' + uuid + '.json'), function(metadata) {
+      function sliceIfExist(str) {
+        if (str) {
+          return str.slice(0, 12);
+        }
+        return null;
+      }
+
+      function updateDataPoint(prevRevision) {
+        $('#datapoint-info').html(ich.graphDatapoint({ 'uuid': uuid,
+                                                       'videoURL': metadata.video,
+                                                       'profileURL': metadata.profile,
+                                                       'frameDiff': metadata.frameDiff ? true : false,
+                                                       'httpLog': metadata.httpLog ? true : false,
+                                                       'measureName': measureName,
+                                                       'date': getDateStr(date),
+                                                       'appDate': metadata.appdate,
+                                                       'buildRevision': sliceIfExist(metadata.buildRevision),
+                                                       'gaiaRevision': sliceIfExist(metadata.gaiaRevision),
+                                                       'prevRevision': prevRevision,
+                                                       'revision': metadata.revision,
+                                                       'sourceRepo': metadata.sourceRepo,
+                                                       'buildId': metadata.buildId,
+                                                       'measureValue': Math.round(100.0*metadata['metrics'][measureName])/100.0
+                                                     }));
+
+        $('#datapoint-info').css('left', $('#graph-main').width() + 20);
+        $('#video').css('width', $('#video').parent().width());
+        $('#video').css('max-height', $('#graph-container').height());
+      }
+
+      // try to find the previous revision
+      var prevDateStr = null;
+      Object.keys(rawdata[series.label]).sort().forEach(function(dateStr) {
+        if (parseDate(dateStr) < date) {
+          // potential candidate
+          prevDateStr = dateStr;
+        }
+      });
+
+      if (prevDateStr) {
+        var prevDayData = rawdata[series.label][prevDateStr];
+        $.getJSON(getResourceURL('metadata/' + prevDayData[0].uuid + '.json'), function(prevMetadata) {
+          updateDataPoint(prevMetadata.revision)
+        });
+      } else {
+        updateDataPoint(null);
+      }
+    });
   }
 
   function updateGraphDisplay() {
@@ -208,11 +238,9 @@ function updateGraph(title, rawdata, measure) {
           var x = item.datapoint[0].toFixed(2),
           y = item.datapoint[1].toFixed(2);
 
-          if (metadataHash[item.seriesIndex] && metadataHash[item.seriesIndex][item.dataIndex]) {
-            var metadata = metadataHash[item.seriesIndex][item.dataIndex];
-            toolTip = (item.series.label || item.series.hoverLabel) + " of " + (metadata.appDate || "'Unknown Date'") + " = " + y;
+          if (uuidHash[item.seriesIndex] && uuidHash[item.seriesIndex][item.dataIndex]) {
+            toolTip = (item.series.label || item.series.hoverLabel) + " of " + getDateStr(item.datapoint[0]) + " = " + y;
           } else {
-            console.log(JSON.stringify(item.series));
             toolTip = (item.series.label || item.series.hoverLabel) + " = " + y;
           }
 
@@ -228,36 +256,11 @@ function updateGraph(title, rawdata, measure) {
     });
 
     $("#graph-container").bind("plotclick", function (event, pos, item) {
-      function sliceIfExist(str) {
-        if (str) {
-          return str.slice(0, 12);
-        }
-        return null;
-      }
-
       plot.unhighlight();
       if (item) {
-        var metadata = metadataHash[item.seriesIndex][item.dataIndex];
-        $('#datapoint-info').html(ich.graphDatapoint({ 'graphTitle': title,
-                                                       'videoURL': metadata.videoURL,
-                                                       'profileURL': metadata.profileURL,
-                                                       'frameDiff': metadata.frameDiff,
-                                                       'actionLog': metadata.actionLog,
-                                                       'httpLog': metadata.httpLog,
-                                                       'measureName': measure,
-                                                       'date': metadata.dateStr,
-                                                       'appDate': metadata.appDate,
-                                                       'buildRevision': sliceIfExist(metadata.buildRevision),
-                                                       'gaiaRevision': sliceIfExist(metadata.gaiaRevision),
-                                                       'revision': metadata.revision,
-                                                       'sourceRepo': metadata.sourceRepo,
-                                                       'prevRevision': metadata.prevRevision,
-                                                       'buildId': metadata.buildId,
-                                                       'measureValue': Math.round(100.0*item.datapoint[1])/100.0
-                                                     }));
-        updateDataPointDisplay();
+        var uuid = uuidHash[item.seriesIndex][item.dataIndex];
+        updateDataPointDisplay(uuid, item.datapoint[0], measure, item.series);
         plot.highlight(item.series, item.datapoint);
-
       } else {
         $('#datapoint-info').html(null);
       }

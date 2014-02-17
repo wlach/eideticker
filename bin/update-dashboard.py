@@ -95,58 +95,48 @@ def runtest(dm, device_prefs, capture_device, capture_area, product, appname,
     if not data['testdata'][productname].get(appdate):
         data['testdata'][productname][appdate] = []
 
-    datapoint = {'uuid': uuid.uuid1().hex,
-                 'video': video_relpath}
+    datapoint = { 'uuid': uuid.uuid1().hex }
+    metadata =  { 'video': video_relpath, 'appdate': appdate,
+                  'label': capture_name }
     for key in ['appdate', 'buildid', 'revision', 'geckoRevision',
                 'gaiaRevision', 'buildRevision', 'sourceRepo']:
         if appinfo.get(key):
-            datapoint.update({key: appinfo[key]})
+            metadata.update({key: appinfo[key]})
 
     # only interested in version if we don't have revision
     if not appinfo.get('revision') and appinfo.get('version'):
-        datapoint.update({'version': appinfo['version']})
+        metadata.update({ 'version': appinfo['version'] })
 
     if baseline:
         datapoint.update({'baseline': True})
 
+    metrics = {}
     if testinfo['type'] == 'startup' or testinfo['type'] == 'webstartup' or \
             testinfo['defaultMeasure'] == 'timetostableframe':
-        datapoint['timetostableframe'] = eideticker.get_stable_frame_time(
+        metrics['timetostableframe'] = eideticker.get_stable_frame_time(
             capture)
     else:
         # standard test metrics
-        datapoint.update(eideticker.get_standard_metrics(
-            capture, testlog.actions))
+        metrics = eideticker.get_standard_metrics(capture, testlog.actions)
+    datapoint.update(metrics)
+    metadata['metrics'] = metrics
 
-    framediff_relpath = os.path.join(
-        'framediffs', 'framediff-%s.json' % time.time())
-    framediff_path = os.path.join(outputdir, framediff_relpath)
-    with open(framediff_path, 'w') as f:
-        framediff = videocapture.get_framediff_sums(capture)
-        f.write(json.dumps({'diffsums': framediff}))
-    datapoint['frameDiff'] = framediff_relpath
+    metadata['framediffSums'] = videocapture.get_framediff_sums(capture)
 
     if enable_profiling:
-        datapoint['profile'] = profile_path
+        metadata['profile'] = profile_path
 
-    if log_http_requests:
-        request_log_relpath = os.path.join(
-            'httplogs', 'http-log-%s.json' % time.time())
-        testlog.save_logs(http_request_log_path=
-                          os.path.join(outputdir, request_log_relpath))
-        datapoint['httpLog'] = request_log_relpath
-
-    if log_actions:
-        actions_log_relpath = os.path.join('actionlogs',
-                                           'action-log-%s.json' % time.time())
-        testlog.save_logs(actions_log_path=os.path.join(outputdir,
-                                                        actions_log_relpath))
-        datapoint['actionLog'] = actions_log_relpath
+    # add logs (if any) to test metadata
+    metadata.update(testlog.getdict())
 
     # Add datapoint
     data['testdata'][productname][appdate].append(datapoint)
 
-    # Write the data to disk immediately (so we don't lose it if we fail later)
+    # Dump metadata
+    open(os.path.join(outputdir, 'metadata', '%s.json' % datapoint['uuid']),
+         'w').write(json.dumps(metadata))
+
+    # Write test data to disk immediately (so we don't lose it if we fail later)
     datafile_dir = os.path.dirname(datafile)
     if not os.path.exists(datafile_dir):
         os.mkdir(datafile_dir)
@@ -214,7 +204,8 @@ def main(args=sys.argv[1:]):
 
     product = eideticker.get_product(productname)
     current_date = time.strftime("%Y-%m-%d")
-    capture_name = "%s (taken on %s)" % (product['name'], current_date)
+    capture_name = "%s - %s (taken on %s)" % (testkey, product['name'],
+                                              current_date)
     datafile = os.path.join(outputdir, device_id, '%s.json' % testkey)
 
     data = NestedDict()

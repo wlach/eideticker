@@ -7,10 +7,10 @@ import os
 import shutil
 import sys
 import time
+import uuid
 import videocapture
 
 CAPTURE_DIR = os.path.join(os.path.dirname(__file__), "../captures")
-PROFILE_DIR = os.path.join(os.path.dirname(__file__), "../profiles")
 DASHBOARD_DIR = os.path.join(os.path.dirname(__file__), "../src/dashboard")
 
 
@@ -43,9 +43,10 @@ def runtest(device_prefs, testname, options, apk=None, appname=None,
         capture_file = os.path.join(CAPTURE_DIR,
                                     "metric-test-%s-%s.zip" % (appname,
                                                                curtime))
-        if options.enable_profiling:
-            profile_file = os.path.join(
-                PROFILE_DIR, "profile-%s-%s.zip" % (appname, curtime))
+        if options.enable_profiling and options.outputdir:
+            profile_relpath = os.path.join(
+                'profiles', 'sps-profile-%s.zip' % time.time())
+            profile_file = os.path.join(options.outputdir, profile_relpath)
         else:
             profile_file = None
 
@@ -70,46 +71,54 @@ def runtest(device_prefs, testname, options, apk=None, appname=None,
             wifi_settings_file=options.wifi_settings_file,
             sync_time=options.sync_time)
 
-        capture_result = {}
-        if not options.no_capture:
-            capture_result['file'] = capture_file
+        capture_uuid = uuid.uuid1().hex
+        datapoint = { 'uuid': capture_uuid }
+        metadata = {}
+        metrics = {}
 
+        if not options.no_capture:
             capture = videocapture.Capture(capture_file)
-            capture_result['captureFPS'] = capture.fps
-            capture_result['generatedVideoFPS'] = capture.generated_video_fps
+
+            metadata['captureFile'] = capture_file
+            metadata['captureFPS'] = capture.fps
+            metadata['generatedVideoFPS'] = capture.generated_video_fps
 
             if stableframecapture:
-                capture_result['timetostableframe'] = \
+                metrics['timetostableframe'] = \
                     eideticker.get_stable_frame_time(capture)
             else:
-                capture_result.update(
+                metrics.update(
                     eideticker.get_standard_metrics(capture, testlog.actions))
+            metadata['metrics'] = metrics
+
+            metadata['framediffSums'] = videocapture.get_framediff_sums(capture)
+
             if options.outputdir:
                 # video
                 video_relpath = os.path.join(
                     'videos', 'video-%s.webm' % time.time())
                 video_path = os.path.join(options.outputdir, video_relpath)
                 open(video_path, 'w').write(capture.get_video().read())
-                capture_result['video'] = video_relpath
-
-                # framediff
-                framediff_relpath = os.path.join(
-                    'framediffs', 'framediff-%s.json' % time.time())
-                framediff_path = os.path.join(
-                    options.outputdir, framediff_relpath)
-                with open(framediff_path, 'w') as f:
-                    framediff = videocapture.get_framediff_sums(capture)
-                    f.write(json.dumps({'diffsums': framediff}))
-                capture_result['frameDiff'] = framediff_relpath
-
-        if options.enable_profiling:
-            capture_result['profile'] = profile_file
+                metadata['video'] = video_relpath
 
         if options.get_internal_checkerboard_stats:
-            capture_result['internalcheckerboard'] = \
+            metrics['internalcheckerboard'] = \
                 testlog.checkerboard_percent_totals
 
-        capture_results.append(capture_result)
+        # Want metrics data in data, so we can graph everything at once
+        datapoint.update(metrics)
+
+        if options.enable_profiling:
+            metadata['profile'] = profile_file
+
+        # dump metadata
+        if options.outputdir:
+            # metadata
+            metadata_path = os.path.join(options.outputdir, 'metadata',
+                                         '%s.json' % capture_uuid)
+            open(metadata_path, 'w').write(json.dumps(metadata))
+
+        capture_results.append(datapoint)
 
     if options.devicetype == "b2g":
         # FIXME: get information from sources.xml and application.ini on
@@ -158,12 +167,6 @@ def runtest(device_prefs, testname, options, apk=None, appname=None,
         print "  Capture files: %s" % map(lambda c: c['file'], capture_results)
         print
 
-    if options.enable_profiling:
-        print "  Profile files:"
-        print "  Profile files: %s" % map(
-            lambda c: c['profile'], capture_results)
-        print
-
     if options.get_internal_checkerboard_stats:
         print "  Internal Checkerboard Stats (sum of percents, not "
         "percentage):"
@@ -206,7 +209,7 @@ def main(args=sys.argv[1:]):
     parser.add_option("--get-internal-checkerboard-stats",
                       action="store_true",
                       dest="get_internal_checkerboard_stats",
-                      help="get and calculate internal checkerboard stats")
+                      help="get and calculate internal checkerboard stats (Android only)")
     parser.add_option("--url-params", action="store",
                       dest="url_params", default="",
                       help="additional url parameters for test")
@@ -227,6 +230,9 @@ def main(args=sys.argv[1:]):
 
     if len(args) == 0:
         parser.error("Must specify at least one argument: the test")
+
+    if options.enable_profiling and not options.outputdir:
+        parser.error("Must specify output directory if profiling enabled")
 
     dates = []
     appnames = []
@@ -262,7 +268,7 @@ def main(args=sys.argv[1:]):
                         os.path.join(options.outputdir, 'fonts'),
                         os.path.join(options.outputdir, 'js'),
                         os.path.join(options.outputdir, 'videos'),
-                        os.path.join(options.outputdir, 'framediffs')]:
+                        os.path.join(options.outputdir, 'metadata')]:
             if not os.path.exists(dirname):
                 os.makedirs(dirname)
         for filename in [

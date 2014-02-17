@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Frame Difference View</title>
+
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+
+    <style type="text/css">
+      body {
+        padding-top: 20px;
+        background-color: #EEE;
+      }
+      .container {
+        width: 950px;
+      }
+      .row {
+        margin-bottom: 20px;
+      }
+      .content {
+        background-color: #FFF;
+        border-radius: 0 0 6px 6px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+        margin: 0 -20px;
+        padding: 20px;
+      }
+      #header {
+        background-color: #F5F5F5;
+        margin: -20px -20px 20px;
+        padding: 10px 20px 10px;
+        border-bottom: none;
+      }
+      #page-title {
+        margin-top: 8px;
+      }
+      #graph-container {
+        padding-top: 18px;
+        min-height: 400px;
+      }
+      #graph-container .button {
+        position: absolute;
+        cursor: pointer;
+      }
+      #graph-container div.button {
+        font-size: smaller;
+        color: #999;
+        background-color: #eee;
+        padding: 2px;
+      }
+      .modal-title {
+        float: left;
+        padding-right: 4px;
+        padding-right: 10px;
+      }
+      .modal-title h4 {
+        margin-top: 6px;
+      }
+      .inline-video {
+        width: 100%;
+      }
+      #videobox {
+        cursor: pointer;
+      }
+    </style>
+
+  </head>
+
+  <body>
+    <div class="container">
+      <div class="content">
+        <div id="header">
+        </div>
+        <div id="maincontent">
+        </div>
+        <p class="help-block">Hover over a point on the graph to skip to associated point in capture.</p>
+      </div>
+    </div>
+    <script src="js/jquery-1.7.1.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+    <script src="js/ICanHaz.min.js"></script>
+    <script src="js/jquery.flot.js"></script>
+    <script src="js/jquery.flot.time.js"></script>
+    <script src="js/jquery.flot.stack.js"></script>
+    <script src="js/jquery.flot.axislabels.js"></script>
+    <script src="js/jquery.flot.navigate.js"></script>
+    <script src="js/common.js"></script>
+    <script src="js/framediff.js"></script>
+
+    <script id="videoDetail" type="text/html">
+      <div class="modal fade" id="videoDetailModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+              <div class="modal-title"><h4>{{title}}</h4></div>
+              <div class="btn-group">
+                <button type="button" class="btn btn-default btn-back"><span class="glyphicon glyphicon-step-backward"></span> Back</button>
+                <button type="button" class="btn btn-default btn-forward"><span class="glyphicon glyphicon-step-forward"></span> Forward</button>
+              </div>
+            </div>
+            <div class="modal-body">
+              <video src="{{videoPath}}" id="large-video" style="width:100%;"></video>
+            </div>
+          </div>
+        </div>
+      </div>
+    </script>
+
+    <script id="pageHeader" type="text/html">
+        <h1 id="page-title">{{title}}</h1>
+    </script>
+
+    <script id="pageContent" type="text/html">
+      <div class="row">
+        <div id="graph-container"></div>
+      </div>
+      <div class="row">
+        <div class="col-md-3">
+          <a class="thumbnail" id="videobox">
+            <video src="{{videoPath}}" class="inline-video" id="frameview"></video>
+          </a>
+        </div>
+        <div class="col-md-6" id="datapoint">
+        </div>
+      </div>
+    </script>
+
+    <script id="graphDatapoint" type="text/html">
+      <dl>
+        <dt>Time</dt>
+        <dd>{{time}}s</dd>
+        <dt>Frame</dt>
+        <dd>{{frameNum}}</dd>
+        <dt>Pixel Difference to Previous Frame</dt>
+        <dd>{{framediff}}</dd>
+        {{#eventName}}
+        <dt>Event / Gesture</dt>
+        <dd>{{eventName}}</dd>
+        {{/eventName}}
+      </dl>
+      <div class="btn-group">
+        <button type="button" class="btn btn-default btn-back"><span class="glyphicon glyphicon-step-backward"></span> Back</button>
+        <button type="button" class="btn btn-default btn-forward"><span class="glyphicon glyphicon-step-forward"></span> Forward</button>
+      </div>
+    </script>
+  </body>
+</html>

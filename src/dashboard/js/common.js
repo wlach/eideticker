@@ -18,6 +18,13 @@ function parseDate(datestr) {
   return Date.UTC(year, month, day);
 }
 
+function getDateStr(timestamp) {
+  var date = new Date(timestamp);
+  var month = (date.getUTCMonth() + 1);
+  var day = date.getUTCDate();
+  return date.getUTCFullYear() + "-" + ((month < 10) ? "0" : "") + month + '-' + ((day < 10) ? "0" : "") + day;
+}
+
 var measures = {
   'checkerboard': { 'shortDesc': 'Checkerboard',
                     'longDesc': 'The measure is the sum of the percentages of frames that are checkerboarded over the entire capture. Lower values are better.' },

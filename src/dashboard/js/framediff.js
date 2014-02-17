@@ -2,10 +2,11 @@
 
 $(function() {
 
-  var title = getParameterByName('title');
-  document.title = title;
+  function render(metadata) {
 
-  function render(diffsums, actions) {
+    var frameDiffSums = metadata.frameDiffSums;
+    var actions = metadata.actionLog;
+
     var seriesList = [];
     var currentSeries = null;
     var lastSeries = null;
@@ -15,12 +16,12 @@ $(function() {
     var i = 0.0;
     var actionCount = {};
 
-    var fps = getParameterByName('fps');
-    var generatedVideoFPS = getParameterByName('generatedVideoFPS');
+    var fps = metadata.fps;
+    var generatedVideoFPS = metadata.generatedVideoFPS;
     if (!fps) fps = 60.0;
     if (!generatedVideoFPS) generatedVideoFPS = 60.0;
 
-    diffsums.forEach(function(diffsum) {
+    frameDiffSums.forEach(function(diffsum) {
       // if we have a current action, check to make sure
       // we're still within it
       if (currentAction && i > currentAction.end) {
@@ -194,7 +195,7 @@ $(function() {
     $('#videobox').click(function() {
       $('#videoDetailModal').remove();
       $('body').after(ich.videoDetail({'title': 'Frame ' + frameNum,
-                                       'videoPath': getParameterByName('video') }));
+                                       'videoPath': metadata.video }));
       $('#videoDetailModal').modal();
       var video = $("#large-video").get(0);
       video.addEventListener('loadedmetadata', function() { video.currentTime = currentTime; }, false);
@@ -202,17 +203,16 @@ $(function() {
     });
   }
 
-
-  $('#header').html(ich.pageHeader({ 'title': title }));
-  $('#maincontent').html(ich.pageContent({ 'videoPath': getParameterByName('video') }));
-
-  $.getJSON(getParameterByName('framediff'), function(framediff) {
-    if (getParameterByName('actionlog')) {
-      $.getJSON(getParameterByName('actionlog'), function(actionLog) {
-        render(framediff.diffsums, actionLog.actions);
-      });
-    } else {
-      render(framediff.diffsums, null);
+  $.getJSON('metadata/' + getParameterByName('id') + '.json', function(metadata) {
+    var title = metadata.label;
+    if (!title) {
+      title = "Frame difference view";
     }
+    document.title = title;
+    $('#header').html(ich.pageHeader({ 'title': title }));
+
+    $('#maincontent').html(ich.pageContent({ 'videoPath': metadata.video }));
+
+    render(metadata);
   });
 });

@@ -156,7 +156,6 @@
         <dt>Pushlog</dt>
         <dd><a href="{{sourceRepo}}/pushloghtml?fromchange={{prevRevision}}&tochange={{revision}}" target="_blank">{{prevRevision}} -> {{revision}}</a></dd>
         {{/prevRevision}}
-        {{#buildId}}
         {{#gaiaRevision}}
         <dt>Gaia Revision</dt>
         <dd><a href="https://github.com/mozilla-b2g/gaia/commit/{{gaiaRevision}}" target="_blank">{{gaiaRevision}}</a></dd>
@@ -165,6 +164,7 @@
         <dt>Build Revision</dt>
         <dd><a href="https://github.com/mozilla-b2g/platform_build/commit/{{buildRevision}}" target="_blank">{{buildRevision}}</a></dd>
         {{/buildRevision}}
+        {{#buildId}}
         <dt>Build Id</dt>
         <dd>{{buildId}}</dd>
         {{/buildId}}
@@ -175,10 +175,10 @@
       <p><a href="http://people.mozilla.com/~bgirard/cleopatra/?zippedProfile={{profileURL}}&videoCapture={{videoURL}}" target="_blank">View SPS profile</a></p>
       {{/profileURL}}
       {{#frameDiff}}
-      <p><a href="framediff-view.html?title=Frame Difference {{graphTitle}} ({{date}})&video={{videoURL}}&framediff={{frameDiff}}&actionlog={{actionLog}}" target="_blank">Frame difference view</a></p>
+      <p><a href="framediff.html?id={{uuid}}" target="_blank">Frame difference view</a></p>
       {{/frameDiff}}
       {{#httpLog}}
-      <p><a href="{{httpLog}}" target="_blank">HTTP Request Log</a></p>
+      <p><a href="httplog.html?id={{uuid}}" target="_blank">HTTP Request Log</a></p>
       {{/httpLog}}
     </div>
   </script>

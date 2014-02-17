@@ -36,14 +36,16 @@ class TestLog(object):
     http_request_log = None
     checkerboard_percent_totals = None
 
-    def save_logs(self, actions_log_path=None, http_request_log_path=None):
-        if http_request_log_path:
-            open(http_request_log_path, 'w').write(
-                json.dumps(self.http_request_log))
-        if actions_log_path:
-            open(actions_log_path, 'w').write(
-                json.dumps({'actions': self.actions}))
+    def getdict(self):
+        logdict = {}
+        if self.http_request_log:
+            logdict['httpLog'] = self.http_request_log
+        if self.actions:
+            logdict['actionLog'] = self.actions
+        if self.checkerboard_percent_totals:
+            logdict['checkerboardPercentTotals'] = self.checkerboard_percent_totals
 
+        return logdict
 
 class CaptureServer(LoggingMixin):
 
