@@ -151,7 +151,7 @@ function updateGraph(title, rawdata, measure) {
         $('#datapoint-info').html(ich.graphDatapoint({ 'uuid': uuid,
                                                        'videoURL': metadata.video,
                                                        'profileURL': metadata.profile,
-                                                       'frameDiff': metadata.frameDiff ? true : false,
+                                                       'frameDiff': metadata.frameDiffSums ? true : false,
                                                        'httpLog': metadata.httpLog ? true : false,
                                                        'measureName': measureName,
                                                        'date': getDateStr(date),

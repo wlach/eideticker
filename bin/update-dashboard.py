@@ -121,7 +121,7 @@ def runtest(dm, device_prefs, capture_device, capture_area, product, appname,
     datapoint.update(metrics)
     metadata['metrics'] = metrics
 
-    metadata['framediffSums'] = videocapture.get_framediff_sums(capture)
+    metadata['frameDiffSums'] = videocapture.get_framediff_sums(capture)
 
     if enable_profiling:
         metadata['profile'] = profile_path
