@@ -7,9 +7,6 @@
 [submodule "src/pageloader"]
 	path = src/pageloader
 	url = git://github.com/wlach/pageloader.git
-[submodule "src/templeton"]
-	path = src/templeton
-	url = git://github.com/wlach/templeton.git
 [submodule "src/tests/ep1"]
 	path = src/tests/ep1
 	url = git://wrla.ch/ep1.git

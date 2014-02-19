@@ -6,7 +6,7 @@ import videocapture
 from PIL import Image
 
 CAPTURE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__),
-                                           "../../../captures"))
+                                           "../../../../../captures"))
 
 
 class CapturesHandler:

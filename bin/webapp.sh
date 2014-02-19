@@ -2,8 +2,9 @@
 
 set -e
 
-SERVER_DIR=$(dirname $0)/../src/webapp/server/
-cd $SERVER_DIR && ../../../bin/python server.py $1 &
+PYTHON=$PWD/$(dirname $0)/python
+SERVER_DIR=$(dirname $0)/../src/eideticker/eideticker/webapp/server/
+cd $SERVER_DIR && $PYTHON server.py $1 &
 PID=$!
 echo "Server running with PID $PID"
 
