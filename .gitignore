@@ -37,3 +37,4 @@ src/videocapture/videocapture/pointgrey/dump-current-settings
 src/videocapture/videocapture/pointgrey/setup-camera
 src/dashboard/profiles/*.zip
 src/dashboard/videos/*.webm
+src/dashboard/metadata/*.json
