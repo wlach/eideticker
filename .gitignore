@@ -35,4 +35,5 @@ src/videocapture/videocapture/pointgrey/pointgrey-capture
 src/videocapture/videocapture/pointgrey/get-camera-id
 src/videocapture/videocapture/pointgrey/dump-current-settings
 src/videocapture/videocapture/pointgrey/setup-camera
-rc/dashboard/httplogs/*.json
+src/dashboard/profiles/*.zip
+src/dashboard/videos/*.webm
