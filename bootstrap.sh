@@ -37,6 +37,5 @@ make -C src/videocapture/videocapture/decklink
 export PIP_DEFAULT_TIMEOUT=120
 
 # Install local deps
-$VENV/bin/pip install -e src/templeton
 $VENV/bin/pip install -e src/eideticker
 $VENV/bin/pip install -e src/videocapture
