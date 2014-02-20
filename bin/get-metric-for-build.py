@@ -33,6 +33,9 @@ def runtest(device_prefs, testname, options, apk=None, appname=None,
 
     capture_results = []
 
+    if options.prepare_test:
+        eideticker.prepare_test(testname, device_prefs)
+
     for i in range(options.num_runs):
         # Kill any existing instances of the processes (for Android)
         if device:
@@ -53,9 +56,6 @@ def runtest(device_prefs, testname, options, apk=None, appname=None,
         current_date = time.strftime("%Y-%m-%d")
         capture_name = "%s - %s (taken on %s)" % (
             testname, appname, current_date)
-
-        if options.prepare_test:
-            eideticker.prepare_test(testname, device_prefs)
 
         testlog = eideticker.run_test(
             testname, options.capture_device,
