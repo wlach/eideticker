@@ -79,7 +79,7 @@ def runtest(device_prefs, testname, options, apk=None, appname=None,
         if not options.no_capture:
             capture = videocapture.Capture(capture_file)
 
-            metadata['captureFile'] = capture_file
+            datapoint['captureFile'] = metadata['captureFile'] = capture_file
             metadata['captureFPS'] = capture.fps
             metadata['generatedVideoFPS'] = capture.generated_video_fps
 
@@ -164,7 +164,7 @@ def runtest(device_prefs, testname, options, apk=None, appname=None,
             print
 
         print "  Capture files:"
-        print "  Capture files: %s" % map(lambda c: c['file'], capture_results)
+        print "  Capture files: %s" % map(lambda c: c['captureFile'], capture_results)
         print
 
     if options.get_internal_checkerboard_stats:
