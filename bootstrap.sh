@@ -40,5 +40,5 @@ export PIP_DEFAULT_TIMEOUT=120
 $VENV/bin/pip install --upgrade pip
 
 # Install local deps
-$VENV/bin/pip install --allow-external which -e src/eideticker
+$VENV/bin/pip install --allow-external which --allow-unverified which -e src/eideticker
 $VENV/bin/pip install -e src/videocapture
