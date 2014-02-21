@@ -36,6 +36,9 @@ make -C src/videocapture/videocapture/decklink
 # Set a long timeout for pip, especially for travis testing
 export PIP_DEFAULT_TIMEOUT=120
 
+# Upgrade pip to latest (so we can use --allow-external on all platforms)
+$VENV/bin/pip install --upgrade pip
+
 # Install local deps
-$VENV/bin/pip install -e src/eideticker
+$VENV/bin/pip install --allow-external which -e src/eideticker
 $VENV/bin/pip install -e src/videocapture
