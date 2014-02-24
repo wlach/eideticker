@@ -125,7 +125,9 @@ class AndroidBrowserRunner(log.LoggingMixin):
                        'browser.firstrun.show.uidiscovery': False,
                        'layers.low-precision-buffer': False,  # bug 815175
                        'toolkit.telemetry.prompted': 2,
-                       'toolkit.telemetry.rejected': True}
+                       'toolkit.telemetry.rejected': True,
+                       'browser.snippets.enabled': False,
+                       'browser.snippets.syncPromo.enabled': False}
         # Add frame counter to correlate video capture with profile
         if self.enable_profiling:
             preferences['layers.acceleration.frame-counter'] = True
