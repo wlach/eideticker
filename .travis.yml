@@ -4,11 +4,6 @@ python:
 install: sudo apt-get update && sudo apt-get install -y python-virtualenv g++ ffmpeg libblas-dev && ./bootstrap.sh
 script: ./bin/python bin/list-tests.py
 notifications:
-  irc:
-    channels:
-      - "irc.mozilla.org#ateam"
-    on_success: change
-    on_failure: always
   email:
     recipients:
       - wlachance@mozilla.com
