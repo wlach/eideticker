@@ -13,7 +13,7 @@ _hdmi_props = {
 _camera_props = {
     'input_threshold': 4096,
     'stable_frame_analysis_method': 'entropy',
-    'stable_frame_threshold': 0.05,
+    'stable_frame_threshold': 0.25,
     'animation_threshold': 4096
 }
 
