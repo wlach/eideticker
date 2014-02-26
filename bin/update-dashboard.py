@@ -122,6 +122,8 @@ def runtest(dm, device_prefs, capture_device, capture_area, product, appname,
     metadata['metrics'] = metrics
 
     metadata['frameDiffSums'] = videocapture.get_framediff_sums(capture)
+    metadata['frameSobelEntropies'] = videocapture.get_frame_entropies(capture,
+                                                                       sobelized=True)
 
     if enable_profiling:
         metadata['profile'] = profile_path
