@@ -24,7 +24,6 @@ def _get_frame_entropy((i, capture, sobelized)):
 
     return entropy
 
-
 def get_frame_entropies(capture, sobelized=False):
     try:
         cache = pickle.load(open(capture.cache_filename, 'r'))
@@ -64,4 +63,3 @@ def get_entropy_diffs(capture, num_samples=5, sobelized=False):
             prev_samples = prev_samples[1:]
 
     return entropy_diffs
-
