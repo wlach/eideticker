@@ -245,7 +245,7 @@ class AndroidBrowserRunner(log.LoggingMixin):
 
         if symbolicator.wait() == 0:
             if symbolicated_profile:
-                with zipfile.ZipFile(profile_file, 'w') as out:
+                with zipfile.ZipFile(profile_file, 'w', zipfile.ZIP_DEFLATED) as out:
                     out.writestr('symbolicated_profile.txt',
                                  symbolicated_profile)
             else:
