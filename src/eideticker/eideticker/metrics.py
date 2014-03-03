@@ -45,6 +45,8 @@ def get_standard_metrics(capture, actions):
         capture, threshold=analysis_props['animation_threshold'])
     metrics['checkerboard'] = videocapture.get_checkerboarding_area_duration(
         capture)
+    metrics['overallentropy'] = videocapture.get_overall_entropy(capture)
+
     if actions:
         # get the delta between the first non-sleep action being fired and
         # there being a visible change

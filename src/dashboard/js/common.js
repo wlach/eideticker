@@ -35,5 +35,7 @@ var measures = {
   'timetostableframe': { 'shortDesc': 'Time to first stable frame (seconds)',
                          'longDesc': 'The time to the first frame of the capture where the image is stable (i.e. mostly unchanging). This is a startup metric that indicates roughly when things have stopped loading. Lower values are better.' },
   'timetoresponse': { 'shortDesc': 'Time to visible response (seconds)',
-                      'longDesc': 'Time between event being first sent to device and an observable response. A long pause may indicate that the application is unresponsive.' }
+                      'longDesc': 'Time between event being first sent to device and an observable response. A long pause may indicate that the application is unresponsive.' },
+  'overallentropy': { 'shortDesc': 'Overall entropy over length of capture',
+                      'longDesc': 'Overall information content in frames of capture. Low values may indicate that some areas of the screen were left blank while the screen was redrawing. Higher values are generally better.' }
 }

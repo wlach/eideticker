@@ -46,6 +46,9 @@ def get_frame_entropies(capture, sobelized=False):
 
     return cache[cachekey]
 
+def get_overall_entropy(capture, sobelized=False):
+    return sum(get_frame_entropies(capture, sobelized=sobelized))
+
 def get_entropy_diffs(capture, num_samples=5, sobelized=False):
     prev_samples = []
     entropies = get_frame_entropies(capture, sobelized=sobelized)
