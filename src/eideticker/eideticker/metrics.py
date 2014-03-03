@@ -4,6 +4,7 @@ _hdmi_props = {
     'input_threshold': 4096,
     'stable_frame_analysis_method': 'framediff',
     'stable_frame_threshold': 4096,
+    'sobelize': False,
     'animation_threshold': 2048}
 
 # even with median filtering, pointgrey captures tend to have a
@@ -14,6 +15,7 @@ _camera_props = {
     'input_threshold': 4096,
     'stable_frame_analysis_method': 'entropy',
     'stable_frame_threshold': 3, # 3 times standard deviation, standard
+    'sobelize': True,
     'animation_threshold': 4096
 }
 
@@ -32,8 +34,8 @@ def get_stable_frame_time(capture):
     analysis_props = _get_analysis_props(capture.metadata['captureDevice'])
     return videocapture.get_stable_frame_time(
         capture, method=analysis_props['stable_frame_analysis_method'],
-        threshold=analysis_props['stable_frame_threshold'])
-
+        threshold=analysis_props['stable_frame_threshold'],
+        sobelized=analysis_props['sobelize'])
 
 def get_standard_metrics(capture, actions):
     analysis_props = _get_analysis_props(capture.metadata['captureDevice'])
@@ -45,7 +47,9 @@ def get_standard_metrics(capture, actions):
         capture, threshold=analysis_props['animation_threshold'])
     metrics['checkerboard'] = videocapture.get_checkerboarding_area_duration(
         capture)
-    metrics['overallentropy'] = videocapture.get_overall_entropy(capture)
+    metrics['overallentropy'] = \
+        videocapture.get_overall_entropy(capture,
+                                         sobelized=analysis_props['sobelize'])
 
     if actions:
         # get the delta between the first non-sleep action being fired and
