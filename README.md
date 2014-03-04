@@ -5,11 +5,10 @@ analyzes browser output via HDMI or an external camera.
 
 ## Requirements
 
-* Linux system with zip, ffmpeg, g++, gfortran, ntp, libblas-dev, liblapack-dev,
-  python 2.7 development and virtualenv installed. On Ubuntu, you can get this
-  setup by running:
+* Ubuntu Linux system with python and various other third-party dependencies
+  installed. You can get this by running:
 
-    `sudo apt-get install -y zip ffmpeg g++ gfortran python2.7-dev python-virtualenv ntp libblas-dev liblapack-dev`
+    `sudo apt-get install -y zip ffmpeg g++ python-scipy python2.7-dev python-virtualenv ntp`
 
   The recommended Linux distribution to use is Ubuntu 12.04 64-bit (32-bit is
   known not to work with the PointGrey cameras). Later versions

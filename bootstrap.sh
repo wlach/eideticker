@@ -8,7 +8,7 @@ BASEDIR=$PWD
 
 if [ ! $VENV ]; then
     VENV="."
-    virtualenv $VENV
+    virtualenv --system-site-packages $VENV
 fi
 
 for PROG in virtualenv g++ ffmpeg; do
