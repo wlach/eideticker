@@ -3,6 +3,8 @@
 import eideticker
 import json
 import os
+import shutil
+import subprocess
 import sys
 import time
 import videocapture
@@ -19,7 +21,7 @@ class NestedDict(dict):
 
 DOWNLOAD_DIR = os.path.join(os.path.dirname(__file__), "../downloads")
 CAPTURE_DIR = os.path.join(os.path.dirname(__file__), "../captures")
-
+DASHBOARD_DIR = os.path.join(os.path.dirname(__file__), "../src/dashboard")
 
 def get_revision_data(sources_xml):
     revision_data = {}
@@ -147,7 +149,7 @@ def runtest(dm, device_prefs, capture_device, capture_area, product, appname,
 
 
 def main(args=sys.argv[1:]):
-    usage = "usage: %prog [options] <product> <test> <output dir>"
+    usage = "usage: %prog [options] <product> <test>"
 
     parser = eideticker.TestOptionParser(usage=usage)
     parser.add_option("--enable-profiling",
@@ -174,14 +176,17 @@ def main(args=sys.argv[1:]):
     parser.add_option("--sources-xml", action="store", dest="sources_xml",
                       help="Path to sources XML file for getting revision "
                       "information (B2G-specific)")
+    parser.add_option("--output-dir", action="store",
+                      type="string", dest="outputdir", default=DASHBOARD_DIR,
+                      help="output results to directory instead of src/dashboard")
 
     options, args = parser.parse_args()
 
-    if len(args) != 3:
+    if len(args) != 2:
         parser.print_usage()
         sys.exit(1)
 
-    (productname, testkey, outputdir) = args
+    (productname, testkey) = args
     num_runs = 1
     if options.num_runs:
         num_runs = options.num_runs
@@ -208,7 +213,7 @@ def main(args=sys.argv[1:]):
     current_date = time.strftime("%Y-%m-%d")
     capture_name = "%s - %s (taken on %s)" % (testkey, product['name'],
                                               current_date)
-    datafile = os.path.join(outputdir, device_id, '%s.json' % testkey)
+    datafile = os.path.join(options.outputdir, device_id, '%s.json' % testkey)
 
     data = NestedDict()
     if os.path.isfile(datafile):
@@ -218,10 +223,10 @@ def main(args=sys.argv[1:]):
     device = eideticker.getDevice(**device_prefs)
 
     devices = {}
-    devicefile = os.path.join(outputdir, 'devices.json')
+    devicefile = os.path.join(options.outputdir, 'devices.json')
     if os.path.isfile(devicefile):
         devices = json.loads(open(devicefile).read())['devices']
-    testfile = os.path.join(outputdir, '%s' % device_id, 'tests.json')
+    testfile = os.path.join(options.outputdir, '%s' % device_id, 'tests.json')
     if os.path.isfile(testfile):
         tests = json.loads(open(testfile).read())['tests']
     else:
@@ -269,6 +274,22 @@ def main(args=sys.argv[1:]):
     else:
         print "Unknown device type '%s'!" % options.devicetype
 
+    dashboard_filenames = subprocess.check_output(['git', 'ls-files',
+                                               DASHBOARD_DIR]).splitlines()
+    relative_dashboard_filenames = map(lambda f: \
+                                       os.path.relpath(f, DASHBOARD_DIR),
+                                       dashboard_filenames)
+    dirnames = [options.outputdir] + \
+        sorted(set(map(lambda x: os.path.join(options.outputdir,
+                                              os.path.dirname(x)),
+                       relative_dashboard_filenames)))
+    for dirname in dirnames:
+        if not os.path.exists(dirname):
+            os.makedirs(dirname)
+    for filename in relative_dashboard_filenames:
+        shutil.copyfile(os.path.join(DASHBOARD_DIR, filename),
+                        os.path.join(options.outputdir, filename))
+
     # update the device / test list for the dashboard
     with open(devicefile, 'w') as f:
         f.write(json.dumps({'devices': devices}))
@@ -286,7 +307,7 @@ def main(args=sys.argv[1:]):
         runtest(device, device_prefs, options.capture_device,
                 options.capture_area,
                 product, appname, appinfo, testinfo,
-                capture_name + " #%s" % i, outputdir, datafile, data,
+                capture_name + " #%s" % i, options.outputdir, datafile, data,
                 enable_profiling=options.enable_profiling,
                 log_http_requests=log_http_requests,
                 log_actions=log_actions,

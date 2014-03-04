@@ -83,9 +83,9 @@ for TEST in $TESTS; do
   echo "Running $TEST"
   if [ $PRODUCT = nightly -o $PRODUCT = nightly-armv6 ]; then
     APK="downloads/$PRODUCT-$DATE.apk"
-    timeout $UPDATE_TIMEOUT ./bin/update-dashboard.py --apk $APK --num-runs $NUM_RUNS $EXTRA_UPDATE_DASHBOARD_ARGS $PRODUCT $TEST src/dashboard
+    timeout $UPDATE_TIMEOUT ./bin/update-dashboard.py --apk $APK --num-runs $NUM_RUNS $EXTRA_UPDATE_DASHBOARD_ARGS $PRODUCT $TEST
   else
-    timeout $UPDATE_TIMEOUT ./bin/update-dashboard.py --baseline --app-version $VERSION --num-runs $NUM_RUNS $EXTRA_UPDATE_DASHBOARD_ARGS $PRODUCT $TEST src/dashboard
+    timeout $UPDATE_TIMEOUT ./bin/update-dashboard.py --baseline --app-version $VERSION --num-runs $NUM_RUNS $EXTRA_UPDATE_DASHBOARD_ARGS $PRODUCT $TEST
   fi
   RET=$?
   if [ $RET == 124 ]; then
