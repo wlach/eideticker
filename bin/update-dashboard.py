@@ -274,21 +274,27 @@ def main(args=sys.argv[1:]):
     else:
         print "Unknown device type '%s'!" % options.devicetype
 
-    dashboard_filenames = subprocess.check_output(['git', 'ls-files',
-                                               DASHBOARD_DIR]).splitlines()
-    relative_dashboard_filenames = map(lambda f: \
-                                       os.path.relpath(f, DASHBOARD_DIR),
-                                       dashboard_filenames)
-    dirnames = [options.outputdir] + \
-        sorted(set(map(lambda x: os.path.join(options.outputdir,
-                                              os.path.dirname(x)),
-                       relative_dashboard_filenames)))
-    for dirname in dirnames:
-        if not os.path.exists(dirname):
-            os.makedirs(dirname)
-    for filename in relative_dashboard_filenames:
-        shutil.copyfile(os.path.join(DASHBOARD_DIR, filename),
-                        os.path.join(options.outputdir, filename))
+    if not os.path.abspath(options.outputdir) == os.path.abspath(DASHBOARD_DIR):
+        # copy dashboard files to output directory
+        dashboard_filenames = subprocess.check_output(
+            ['git', 'ls-files', DASHBOARD_DIR]).splitlines()
+        relative_dashboard_filenames = map(lambda f:
+                                           os.path.relpath(f, DASHBOARD_DIR),
+                                           dashboard_filenames)
+        dirnames = [options.outputdir] + \
+            sorted(set(map(lambda x: os.path.join(options.outputdir,
+                                                  os.path.dirname(x)),
+                           relative_dashboard_filenames)))
+        for dirname in dirnames:
+            if not os.path.exists(dirname):
+                os.makedirs(dirname)
+        for filename in relative_dashboard_filenames:
+            source = os.path.join(DASHBOARD_DIR, filename)
+            dest = os.path.join(options.outputdir, filename)
+            if os.path.isfile(dest):
+                # remove any existing files to ensure we use the latest
+                os.remove(dest)
+            shutil.copyfile(source, dest)
 
     # update the device / test list for the dashboard
     with open(devicefile, 'w') as f:
