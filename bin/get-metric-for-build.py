@@ -4,14 +4,12 @@ import datetime
 import eideticker
 import json
 import os
-import shutil
 import sys
 import time
 import uuid
 import videocapture
 
 CAPTURE_DIR = os.path.join(os.path.dirname(__file__), "../captures")
-DASHBOARD_DIR = os.path.join(os.path.dirname(__file__), "../src/dashboard")
 
 
 def runtest(device_prefs, testname, options, apk=None, appname=None,
@@ -259,38 +257,8 @@ def main(args=sys.argv[1:]):
     device_prefs = eideticker.getDevicePrefs(options)
 
     if options.outputdir:
-        for dirname in [options.outputdir,
-                        os.path.join(options.outputdir, 'css'),
-                        os.path.join(options.outputdir, 'fonts'),
-                        os.path.join(options.outputdir, 'js'),
-                        os.path.join(options.outputdir, 'videos'),
-                        os.path.join(options.outputdir, 'metadata')]:
-            if not os.path.exists(dirname):
-                os.makedirs(dirname)
-        for filename in [
-                'css/bootstrap.min.css',
-                'fonts/glyphicons-halflings-regular.eot',
-                'fonts/glyphicons-halflings-regular.svg',
-                'fonts/glyphicons-halflings-regular.ttf',
-                'fonts/glyphicons-halflings-regular.woff',
-                'framediff-view.html',
-                'js/ICanHaz.min.js',
-                'js/SS.min.js',
-                'js/bootstrap.min.js',
-                'js/common.js',
-                'js/framediff.js',
-                'js/jquery-1.7.1.min.js',
-                'js/jquery.flot.axislabels.js',
-                'js/jquery.flot.js',
-                'js/jquery.flot.stack.js',
-                'js/metric.js',
-                'metric.html']:
-            if filename == 'metric.html':
-                outfilename = 'index.html'
-            else:
-                outfilename = filename
-            shutil.copyfile(os.path.join(DASHBOARD_DIR, filename),
-                            os.path.join(options.outputdir, outfilename))
+        eideticker.copy_dashboard_files(options.outputdir,
+                                        indexfile='metric.html')
 
     if options.devicetype == "b2g":
         runtest(device_prefs, testname, options)
