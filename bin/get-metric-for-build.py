@@ -89,7 +89,7 @@ def runtest(device_prefs, testname, options, apk=None, appname=None,
                     eideticker.get_standard_metrics(capture, testlog.actions))
             metadata['metrics'] = metrics
 
-            metadata['framediffSums'] = videocapture.get_framediff_sums(capture)
+            metadata['frameDiffSums'] = videocapture.get_framediff_sums(capture)
 
             if options.outputdir:
                 # video

@@ -26,12 +26,12 @@ function updateGraph(rawdata, measure) {
   // show individual data points
   var graphdata = [];
   var colorCounter = 0;
-  var metadataHash = {};
+  var uuidHash = {};
 
   var seriesIndex = 0;
   var barPosition = 1;
   Object.keys(rawdata).sort().forEach(function(appname) {
-    metadataHash[seriesIndex] = [];
+    uuidHash[seriesIndex] = [];
 
     var label;
     var color = colorCounter;
@@ -60,8 +60,9 @@ function updateGraph(rawdata, measure) {
     };
     rawdata[appname].forEach(function(sample) {
       series.data.push([ barPosition, sample[measure] ]);
+      console.log(sample.uuid);
+      uuidHash[seriesIndex].push(sample.uuid);
 
-      metadataHash[seriesIndex].push({'videoURL': sample.video, 'appDate': sample.appdate, 'revision': sample.revision, 'buildId': sample.buildid, 'frameDiff': sample.frameDiff, 'fps': sample.captureFPS, 'generatedVideoFPS': sample.generatedVideoFPS });
       barPosition++;
     });
     graphdata.push(series);
@@ -94,21 +95,21 @@ function updateGraph(rawdata, measure) {
   $("#graph-container").bind("plotclick", function (event, pos, item) {
     plot.unhighlight();
     if (item) {
-      var metadata = metadataHash[item.seriesIndex][item.dataIndex];
-      $('#datapoint-info').html(ich.graphDatapoint({ 'date': null,
-                                                     'videoURL': metadata.videoURL,
-                                                     'measureName': measure,
-                                                     'appDate': metadata.appDate,
-                                                     'revision': metadata.revision,
-                                                     'buildId': metadata.buildId,
-                                                     'measureValue': Math.round(100.0*item.datapoint[1])/100.0,
-                                                     'frameDiff': metadata.frameDiff,
-                                                     'fps': metadata.fps,
-                                                     'generatedVideoFPS': metadata.generatedVideoFPS
-                                                   }));
-      $('#video').css('width', $('#video').parent().width());
-      $('#video').css('max-height', $('#graph-container').height());
-
+      var uuid = uuidHash[item.seriesIndex][item.dataIndex];
+      $.getJSON('metadata/' + uuid + '.json', function(metadata) {
+        $('#datapoint-info').html(ich.graphDatapoint({ 'uuid': uuid,
+                                                       'date': null,
+                                                       'videoURL': metadata.video,
+                                                       'measureName': measure,
+                                                       'appDate': metadata.appDate,
+                                                       'revision': metadata.revision,
+                                                       'buildId': metadata.buildId,
+                                                       'measureValue': Math.round(100.0*item.datapoint[1])/100.0,
+                                                       'frameDiff': (metadata.frameDiffSums) ? true : false
+                                                     }));
+        $('#video').css('width', $('#video').parent().width());
+        $('#video').css('max-height', $('#graph-container').height());
+      });
       plot.highlight(item.series, item.datapoint);
     } else {
       $('#datapoint-info').html(null);
