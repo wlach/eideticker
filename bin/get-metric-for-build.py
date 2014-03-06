@@ -198,10 +198,6 @@ def main(args=sys.argv[1:]):
     parser.add_option("--output-dir", action="store",
                       type="string", dest="outputdir",
                       help="output results to web site")
-    parser.add_option("--no-capture", action="store_true",
-                      dest="no_capture",
-                      help="run through the test, but don't actually capture "
-                      "anything")
     parser.add_option("--enable-profiling", action="store_true",
                       dest="enable_profiling",
                       help="Collect performance profiles using the built in "

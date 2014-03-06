@@ -34,10 +34,9 @@ def get_revision_data(sources_xml):
     return revision_data
 
 
-def runtest(dm, device_prefs, capture_device, capture_area, product, appname,
-            appinfo, testinfo, capture_name, outputdir, datafile, data,
-            enable_profiling=False, log_http_requests=False, log_actions=False,
-            baseline=False, wifi_settings_file=None, sync_time=True):
+def runtest(dm, device_prefs, options, product, appname,
+            appinfo, testinfo, capture_name, datafile, data,
+            log_http_requests=False, log_actions=False):
     capture_file = os.path.join(CAPTURE_DIR,
                                 "%s-%s-%s-%s.zip" % (testinfo['key'],
                                                      appname,
@@ -46,11 +45,11 @@ def runtest(dm, device_prefs, capture_device, capture_area, product, appname,
     productname = product['name']
 
     profile_file = None
-    if enable_profiling:
+    if options.enable_profiling:
         productname += "-profiling"
         profile_path = os.path.join(
             'profiles', 'sps-profile-%s.zip' % time.time())
-        profile_file = os.path.join(outputdir, profile_path)
+        profile_file = os.path.join(options.outputdir, profile_path)
 
     test_completed = False
     for i in range(3):
@@ -61,13 +60,14 @@ def runtest(dm, device_prefs, capture_device, capture_area, product, appname,
 
         try:
             testlog = eideticker.run_test(
-                testinfo['key'], capture_device,
+                testinfo['key'], options.capture_device,
                 appname, capture_name, device_prefs,
                 profile_file=profile_file,
-                capture_area=capture_area,
+                capture_area=options.capture_area,
+                no_capture=options.no_capture,
                 capture_file=capture_file,
-                wifi_settings_file=wifi_settings_file,
-                sync_time=sync_time)
+                wifi_settings_file=options.wifi_settings_file,
+                sync_time=options.sync_time)
             test_completed = True
             break
         except eideticker.TestException, e:
@@ -80,12 +80,15 @@ def runtest(dm, device_prefs, capture_device, capture_area, product, appname,
         raise Exception("Failed to run test %s for %s (after 3 tries). "
                         "Aborting." % (testinfo['key'], productname))
 
-    capture = videocapture.Capture(capture_file)
+    if not options.no_capture:
+        capture = videocapture.Capture(capture_file)
 
-    # video file
-    video_relpath = os.path.join('videos', 'video-%s.webm' % time.time())
-    video_path = os.path.join(outputdir, video_relpath)
-    open(video_path, 'w').write(capture.get_video().read())
+        # video file
+        video_relpath = os.path.join('videos', 'video-%s.webm' % time.time())
+        video_path = os.path.join(options.outputdir, video_relpath)
+        open(video_path, 'w').write(capture.get_video().read())
+    else:
+        video_relpath = None
 
     # need to initialize dict for product if not there already
     if not data['testdata'].get(productname):
@@ -109,25 +112,26 @@ def runtest(dm, device_prefs, capture_device, capture_area, product, appname,
     if not appinfo.get('revision') and appinfo.get('version'):
         metadata.update({ 'version': appinfo['version'] })
 
-    if baseline:
+    if options.baseline:
         datapoint.update({'baseline': True})
 
     metrics = {}
-    if testinfo['type'] == 'startup' or testinfo['type'] == 'webstartup' or \
-            testinfo['defaultMeasure'] == 'timetostableframe':
-        metrics['timetostableframe'] = eideticker.get_stable_frame_time(
-            capture)
-    else:
-        # standard test metrics
-        metrics = eideticker.get_standard_metrics(capture, testlog.actions)
+    if not options.no_capture:
+        if testinfo['type'] == 'startup' or testinfo['type'] == 'webstartup' or \
+                testinfo['defaultMeasure'] == 'timetostableframe':
+            metrics['timetostableframe'] = eideticker.get_stable_frame_time(
+                capture)
+        else:
+            # standard test metrics
+            metrics = eideticker.get_standard_metrics(capture, testlog.actions)
+        metadata['frameDiffSums'] = videocapture.get_framediff_sums(capture)
+        metadata['frameSobelEntropies'] = videocapture.get_frame_entropies(
+            capture, sobelized=True)
+
     datapoint.update(metrics)
     metadata['metrics'] = metrics
 
-    metadata['frameDiffSums'] = videocapture.get_framediff_sums(capture)
-    metadata['frameSobelEntropies'] = videocapture.get_frame_entropies(capture,
-                                                                       sobelized=True)
-
-    if enable_profiling:
+    if options.enable_profiling:
         metadata['profile'] = profile_path
 
     # add logs (if any) to test metadata
@@ -137,7 +141,8 @@ def runtest(dm, device_prefs, capture_device, capture_area, product, appname,
     data['testdata'][productname][appdate].append(datapoint)
 
     # Dump metadata
-    open(os.path.join(outputdir, 'metadata', '%s.json' % datapoint['uuid']),
+    open(os.path.join(options.outputdir, 'metadata',
+                      '%s.json' % datapoint['uuid']),
          'w').write(json.dumps(metadata))
 
     # Write test data to disk immediately (so we don't lose it if we fail later)
@@ -146,7 +151,6 @@ def runtest(dm, device_prefs, capture_device, capture_area, product, appname,
         os.mkdir(datafile_dir)
     with open(datafile, 'w') as f:
         f.write(json.dumps(data))
-
 
 def main(args=sys.argv[1:]):
     usage = "usage: %prog [options] <product> <test>"
@@ -310,16 +314,11 @@ def main(args=sys.argv[1:]):
 
     # Run the test the specified number of times
     for i in range(num_runs):
-        runtest(device, device_prefs, options.capture_device,
-                options.capture_area,
+        runtest(device, device_prefs, options,
                 product, appname, appinfo, testinfo,
-                capture_name + " #%s" % i, options.outputdir, datafile, data,
-                enable_profiling=options.enable_profiling,
+                capture_name + " #%s" % i, datafile, data,
                 log_http_requests=log_http_requests,
-                log_actions=log_actions,
-                baseline=options.baseline,
-                wifi_settings_file=options.wifi_settings_file,
-                sync_time=options.sync_time)
+                log_actions=log_actions)
         if options.devicetype == "android":
             # Kill app after test complete
             device.killProcess(appname)

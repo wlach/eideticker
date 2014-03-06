@@ -20,10 +20,6 @@ def main(args=sys.argv[1:]):
     parser.add_option("--capture-file", action="store",
                       type="string", dest="capture_file",
                       help="name to give to capture file")
-    parser.add_option("--no-capture", action="store_true",
-                      dest="no_capture",
-                      help="run through the test, but don't actually "
-                      "capture anything")
     parser.add_option("--app-name", action="store",
                       type="string", dest="appname",
                       help="Specify an application name (android only)")
