@@ -2,9 +2,9 @@
 
 $(function() {
 
-  function render(metadata) {
+  function render(metadata, measureId) {
 
-    var frameDiffSums = metadata.frameDiffSums;
+    var measureValues = metadata[measureId];
     var actions = metadata.actionLog;
 
     var seriesList = [];
@@ -21,7 +21,13 @@ $(function() {
     if (!fps) fps = 60.0;
     if (!generatedVideoFPS) generatedVideoFPS = 60.0;
 
-    frameDiffSums.forEach(function(diffsum) {
+    $('#measure-'+measureId).attr("selected", "true");
+    $('#measure').change(function() {
+      var newMeasureId = $(this).val();
+      window.location.hash = '/' + newMeasureId;
+    });
+
+    measureValues.forEach(function(diffsum) {
       // if we have a current action, check to make sure
       // we're still within it
       if (currentAction && i > currentAction.end) {
@@ -83,7 +89,7 @@ $(function() {
         axisLabel: "Time (seconds)"
       },
       yaxis: {
-        axisLabel: "Pixel difference from previous frame",
+        axisLabel: perFrameMeasures[measureId].shortDesc,
         min: 0
       },
       legend: { show: false },
@@ -108,11 +114,11 @@ $(function() {
       frameNum = parseInt(currentTime * fps);
 
       var video = $("#frameview").get(0);
-      console.log(videoTime);
       video.currentTime = videoTime;
       $("#datapoint").html(ich.graphDatapoint({ 'time': currentTime.toFixed(8),
                                                 'frameNum': frameNum,
-                                                'framediff': datum[1],
+                                                'measureName': perFrameMeasures[measureId].shortDesc,
+                                                'measureValue': datum[1],
                                                 'eventName': series.label }));
       var modal = $('#videoDetailModal');
       if (modal.length) {
@@ -174,7 +180,6 @@ $(function() {
       });
 
       document.onkeydown = function(e) {
-        console.log("HEY");
         if (e.keyCode == '37') {
           // left arrow
           backward();
@@ -210,9 +215,23 @@ $(function() {
     }
     document.title = title;
     $('#header').html(ich.pageHeader({ 'title': title }));
+    var availableMeasureIds = getMeasureIdsInSample(metadata, perFrameMeasures);
+    var defaultMeasureId = availableMeasureIds[0]; // if none provided, any will do?
 
-    $('#maincontent').html(ich.pageContent({ 'videoPath': metadata.video }));
+    var routes = {
+      '/:measureId': {
+        on: function(measureId) {
+          $('#maincontent').html(ich.pageContent({ 'videoPath': metadata.video,
+                                                   'measures': measureDisplayList(availableMeasureIds,
+                                                                                  perFrameMeasures),
+                                                   'measureDescription': perFrameMeasures[measureId].longDesc
+                                                 }));
 
-    render(metadata);
+          render(metadata, measureId);
+        }
+      }
+    };
+
+    var router = Router(routes).init('/' + defaultMeasureId);
   });
 });

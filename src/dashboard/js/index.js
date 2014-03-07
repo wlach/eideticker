@@ -18,14 +18,14 @@ function updateContent(testInfo, deviceId, testId, measureId) {
     var testData = dict['testdata'];
 
     // figure out which measures could apply to this graph
-    var availableMeasures = [];
+    var availableMeasureIds = [];
     Object.keys(testData).forEach(function(type) {
       Object.keys(testData[type]).forEach(function(datestr) {
         testData[type][datestr].forEach(function(sample) {
-          Object.keys(measures).forEach(function(measure) {
-            if (jQuery.inArray(measure, Object.keys(sample)) !== -1 &&
-                jQuery.inArray(measure, availableMeasures) === -1) {
-              availableMeasures.push(measure);
+          var measureIds = getMeasureIdsInSample(sample, overallMeasures);
+          measureIds.forEach(function(measureId) {
+            if (jQuery.inArray(measureId, availableMeasureIds) === -1) {
+              availableMeasureIds.push(measureId);
             }
           });
         });
@@ -33,13 +33,8 @@ function updateContent(testInfo, deviceId, testId, measureId) {
     });
 
     $('#data-view').html(ich.graph({'title': testInfo.shortDesc,
-                                  'measureDescription': measures[measureId].longDesc,
-                                  'measures': availableMeasures.map(
-                                    function(measureId) {
-                                      return { 'id': measureId,
-                                               'desc': measures[measureId].shortDesc
-                                             };
-                                    })
+                                    'measureDescription': overallMeasures[measureId].longDesc,
+                                    'measures': measureDisplayList(availableMeasureIds, overallMeasures)
                                  }));
 
     // update graph
@@ -47,8 +42,8 @@ function updateContent(testInfo, deviceId, testId, measureId) {
 
     $('#measure-'+measureId).attr("selected", "true");
     $('#measure').change(function() {
-      var newMeasure = $(this).val();
-      window.location.hash = '/' + [ deviceId, testId, newMeasure ].join('/');
+      var newMeasureId = $(this).val();
+      window.location.hash = '/' + [ deviceId, testId, newMeasureId ].join('/');
     });
 
   });
@@ -60,7 +55,7 @@ function updateFooter() {
                                            $("#graph-main").height())));
 }
 
-function updateGraph(title, rawdata, measure) {
+function updateGraph(title, rawdata, measureId) {
   // show individual data points
   var graphdata = [];
   var color = 0;
@@ -88,8 +83,8 @@ function updateGraph(title, rawdata, measure) {
 
     Object.keys(rawdata[type]).sort().forEach(function(datestr) {
       rawdata[type][datestr].forEach(function(sample) {
-        if (measure in sample) {
-          series1.data.push([ parseDate(datestr), sample[measure] ]);
+        if (measureId in sample) {
+          series1.data.push([ parseDate(datestr), sample[measureId] ]);
           var sourceRepo = sample.sourceRepo;
           if (!sourceRepo) {
             sourceRepo = "http://hg.mozilla.org/mozilla-central";
@@ -119,8 +114,8 @@ function updateGraph(title, rawdata, measure) {
       var total = 0;
       rawdata[type][datestr].forEach(function(sample) {
         lastSample = sample;
-        if (sample[measure]) {
-          total += sample[measure];
+        if (sample[measureId]) {
+          total += sample[measureId];
           numSamples++;
         }
       });
@@ -148,10 +143,11 @@ function updateGraph(title, rawdata, measure) {
       }
 
       function updateDataPoint(prevRevision) {
+        var defaultDetailParameter = getDefaultDetailParameter(measureName, metadata);
         $('#datapoint-info').html(ich.graphDatapoint({ 'uuid': uuid,
                                                        'videoURL': metadata.video,
                                                        'profileURL': metadata.profile,
-                                                       'frameDiff': metadata.frameDiffSums ? true : false,
+                                                       'defaultDetailParameter': defaultDetailParameter,
                                                        'httpLog': metadata.httpLog ? true : false,
                                                        'measureName': measureName,
                                                        'date': getDateStr(date),
@@ -197,7 +193,7 @@ function updateGraph(title, rawdata, measure) {
         timeformat: "%m-%d"
       },
       yaxis: {
-        axisLabel: measures[measure].shortDesc,
+        axisLabel: overallMeasures[measureId].shortDesc,
         min: 0
       },
       legend: {
@@ -259,7 +255,7 @@ function updateGraph(title, rawdata, measure) {
       plot.unhighlight();
       if (item) {
         var uuid = uuidHash[item.seriesIndex][item.dataIndex];
-        updateDataPointDisplay(uuid, item.datapoint[0], measure, item.series);
+        updateDataPointDisplay(uuid, item.datapoint[0], measureId, item.series);
         plot.highlight(item.series, item.datapoint);
       } else {
         $('#datapoint-info').html(null);
@@ -299,16 +295,16 @@ $(function() {
       deviceIds.forEach(function(deviceId) {
         var tests = devices[deviceId].tests;
         var firstTestKey = Object.keys(tests).sort()[0];
-        var defaultMeasure = tests[firstTestKey].defaultMeasure;
+        var defaultMeasureId = tests[firstTestKey].defaultMeasure;
 
-        var deviceURL = "#/" + [ deviceId, firstTestKey, defaultMeasure ].join('/');
+        var deviceURL = "#/" + [ deviceId, firstTestKey, defaultMeasureId ].join('/');
         $('<a href="' + deviceURL + '" id="device-' + deviceId + '" deviceid= ' + deviceId + ' class="list-group-item">' + devices[deviceId].name+'</a></li>').appendTo(
             $('#device-chooser'));
       });
 
       var routes = {
         '/:deviceId/:testId/:measureId': {
-          on: function(deviceId, testId, measure) {
+          on: function(deviceId, testId, measureId) {
             if (!devices[deviceId] || !devices[deviceId]['tests'][testId]) {
               $('#data-view').html("<p><b>That device/test/measure combination does not seem to exist. Maybe you're using an expired link? <a href=''>Reload page</a>?</b></p>");
               return;
@@ -335,16 +331,16 @@ $(function() {
             $('#test-chooser').children('a').each(function() {
               var testIdAttr = $(this).attr('id');
               if (testIdAttr) {
-                var defaultMeasure = tests[testIdAttr].defaultMeasure;
+                var defaultMeasureId = tests[testIdAttr].defaultMeasure;
                 $(this).attr('href', '#/' +
                              [ deviceId, testIdAttr,
-                               defaultMeasure ].join('/'));
+                               defaultMeasureId ].join('/'));
               }
             });
 
             var testInfo = tests[testId];
             updateFooter();
-            updateContent(testInfo, deviceId, testId, measure);
+            updateContent(testInfo, deviceId, testId, measureId);
           }
         }
       };
@@ -355,7 +351,7 @@ $(function() {
 
       var router = Router(routes).init('/' + [ defaultDeviceId,
                                                initialTestKey,
-                                               initialTest.defaultMeasure ].join('/'));
+                                               initialTest.defaultMeasureId ].join('/'));
     });
   });
 });

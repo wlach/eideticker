@@ -72,19 +72,19 @@
         </div>
         <div id="maincontent">
         </div>
-        <p class="help-block">Hover over a point on the graph to skip to associated point in capture.</p>
       </div>
     </div>
     <script src="js/jquery-1.7.1.min.js"></script>
     <script src="js/bootstrap.min.js"></script>
     <script src="js/ICanHaz.min.js"></script>
+    <script src="js/SS.min.js"></script>
     <script src="js/jquery.flot.js"></script>
     <script src="js/jquery.flot.time.js"></script>
     <script src="js/jquery.flot.stack.js"></script>
     <script src="js/jquery.flot.axislabels.js"></script>
     <script src="js/jquery.flot.navigate.js"></script>
     <script src="js/common.js"></script>
-    <script src="js/framediff.js"></script>
+    <script src="js/detail.js"></script>
 
     <script id="videoDetail" type="text/html">
       <div class="modal fade" id="videoDetailModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
@@ -112,7 +112,21 @@
 
     <script id="pageContent" type="text/html">
       <div class="row">
-        <div id="graph-container"></div>
+        <div class="col-md-12">
+          <div id="graph-container"></div>
+          <div id="measure-form">
+            <form>
+              <select id="measure" type="text">
+                {{#measures}}
+                <option id="measure-{{id}}" value="{{id}}">{{desc}}</option>
+                {{/measures}}
+              </select>
+            </form>
+            <p>
+              {{measureDescription}}
+            </p>
+          </div>
+        </div>
       </div>
       <div class="row">
         <div class="col-md-3">
@@ -131,8 +145,8 @@
         <dd>{{time}}s</dd>
         <dt>Frame</dt>
         <dd>{{frameNum}}</dd>
-        <dt>Pixel Difference to Previous Frame</dt>
-        <dd>{{framediff}}</dd>
+        <dt>{{measureName}}</dt>
+        <dd>{{measureValue}}</dd>
         {{#eventName}}
         <dt>Event / Gesture</dt>
         <dd>{{eventName}}</dd>

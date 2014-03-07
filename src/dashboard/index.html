@@ -174,9 +174,9 @@
       {{#profileURL}}
       <p><a href="http://people.mozilla.com/~bgirard/cleopatra/?zippedProfile={{profileURL}}&videoCapture={{videoURL}}" target="_blank">View SPS profile</a></p>
       {{/profileURL}}
-      {{#frameDiff}}
-      <p><a href="framediff.html?id={{uuid}}" target="_blank">Frame difference view</a></p>
-      {{/frameDiff}}
+      {{#defaultDetailParameter}}
+      <p><a href="detail.html?id={{uuid}}#/{{defaultDetailParameter}}" target="_blank">Detail view</a></p>
+      {{/defaultDetailParameter}}
       {{#httpLog}}
       <p><a href="httplog.html?id={{uuid}}" target="_blank">HTTP Request Log</a></p>
       {{/httpLog}}

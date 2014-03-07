@@ -25,7 +25,7 @@ function getDateStr(timestamp) {
   return date.getUTCFullYear() + "-" + ((month < 10) ? "0" : "") + month + '-' + ((day < 10) ? "0" : "") + day;
 }
 
-var measures = {
+var overallMeasures = {
   'checkerboard': { 'shortDesc': 'Checkerboard',
                     'longDesc': 'The measure is the sum of the percentages of frames that are checkerboarded over the entire capture. Lower values are better.' },
   'uniqueframes': { 'shortDesc': 'Unique frames',
@@ -38,4 +38,47 @@ var measures = {
                       'longDesc': 'Time between event being first sent to device and an observable response. A long pause may indicate that the application is unresponsive.' },
   'overallentropy': { 'shortDesc': 'Overall entropy over length of capture',
                       'longDesc': 'Overall information content in frames of capture. Low values may indicate that some areas of the screen were left blank while the screen was redrawing. Higher values are generally better.' }
+};
+
+var perFrameMeasures = {
+  'framediffsums': { 'shortDesc': 'Frame difference (pixels)',
+                     'longDesc': 'Number of pixels different between frames (low differences filtered out)'
+                     },
+  'framesobelentropies': { 'shortDesc': 'Frame entropy (sobelized)',
+                           'longDesc': 'Amount of entropy in each frame, after running a sobel filter pass on it. Higher values indicate more information in the frame. Lower values may indicate checkerboarding.'
+                           }
+};
+
+function getMeasureIdsInSample(sample, measures) {
+  var measuresInSample = [];
+  Object.keys(measures).forEach(function(measureId) {
+    if (jQuery.inArray(measureId, Object.keys(sample)) !== -1) {
+      measuresInSample.push(measureId);
+    }
+  });
+
+  return measuresInSample;
+}
+
+function measureDisplayList(measureIds, measures) {
+  console.log(measures);
+
+  return measureIds.map(function(measureId) {
+    return { 'id': measureId,
+             'desc': measures[measureId].shortDesc
+           };
+  });
+}
+
+// default value for detail view: usually frame diff sums, unless we're
+// looking at entropy, in which case we'll look at the entropy values
+function getDefaultDetailParameter(measureName, metadata) {
+  if (measureName === "overallentropy" && metadata.framesobelentropies) {
+    return "framesobelentropies";
+  } else if (metadata.framediffsums) {
+    return "framediffsums";
+  }
+
+  // we don't have anything to display! (old data most likely)
+  return null;
 }

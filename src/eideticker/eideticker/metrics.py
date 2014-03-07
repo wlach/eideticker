@@ -70,3 +70,8 @@ def get_standard_metrics(capture, actions):
                     return metrics
 
     return metrics
+
+def get_standard_metric_metadata(capture):
+    return { 'framediffsums': videocapture.get_framediff_sums(capture),
+             'framesobelentropies': videocapture.get_frame_entropies(
+            capture, sobelized=True) }

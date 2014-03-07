@@ -121,9 +121,8 @@ def runtest(dm, device_prefs, options, product, appname,
         else:
             # standard test metrics
             metrics = eideticker.get_standard_metrics(capture, testlog.actions)
-        metadata['frameDiffSums'] = videocapture.get_framediff_sums(capture)
-        metadata['frameSobelEntropies'] = videocapture.get_frame_entropies(
-            capture, sobelized=True)
+
+        metadata.update(eideticker.get_standard_metric_metadata(capture))
 
     datapoint.update(metrics)
     metadata['metrics'] = metrics

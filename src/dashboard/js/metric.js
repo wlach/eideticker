@@ -1,28 +1,18 @@
 "use strict";
 
-var availableMeasures = [];
-
-function updateContent(title, measure) {
-
-  var measureDescription = measures[measure].longDesc;
-
+function updateContent(title, availableMeasureIds, measureId) {
   $('#content').html(ich.graph({'title': title,
-                                'measureDescription': measureDescription,
-                                'measures': availableMeasures.map(
-                                  function(measureId) {
-                                    return { 'id': measureId,
-                                             'desc': measures[measureId].shortDesc
-                                           };
-                                  })
+                                'measureDescription': overallMeasures[measureId].longDesc,
+                                'measures': measureDisplayList(availableMeasureIds, overallMeasures)
                                }));
-  $('#measure-'+measure).attr("selected", "true");
+  $('#measure-'+measureId).attr("selected", "true");
   $('#measure').change(function() {
-    var newMeasure = $(this).val();
-    window.location.hash = '/' + newMeasure;
+    var newMeasureId = $(this).val();
+    window.location.hash = '/' + newMeasureId;
   });
 }
 
-function updateGraph(rawdata, measure) {
+function updateGraph(rawdata, measureId) {
   // show individual data points
   var graphdata = [];
   var colorCounter = 0;
@@ -59,7 +49,7 @@ function updateGraph(rawdata, measure) {
       data: []
     };
     rawdata[appname].forEach(function(sample) {
-      series.data.push([ barPosition, sample[measure] ]);
+      series.data.push([ barPosition, sample[measureId] ]);
       console.log(sample.uuid);
       uuidHash[seriesIndex].push(sample.uuid);
 
@@ -72,14 +62,7 @@ function updateGraph(rawdata, measure) {
     barPosition++; // space between apps
   });
 
-  var axisLabel;
-  if (measure == "checkerboard") {
-    axisLabel = "Checkerboard (lower is better)";
-  } else if (measure === "uniqueframes") {
-    axisLabel = "Unique frames (higher is better)";
-  } else {
-    axisLabel = "Frames per second (higher is better)";
-  }
+  var axisLabel = overallMeasures[measureId].shortDesc;
 
   var plot = $.plot($("#graph-container"), graphdata, {
     xaxis: { show: false },
@@ -97,15 +80,17 @@ function updateGraph(rawdata, measure) {
     if (item) {
       var uuid = uuidHash[item.seriesIndex][item.dataIndex];
       $.getJSON('metadata/' + uuid + '.json', function(metadata) {
+        var defaultDetailParameter = getDefaultDetailParameter(measureId, metadata);
+
         $('#datapoint-info').html(ich.graphDatapoint({ 'uuid': uuid,
                                                        'date': null,
                                                        'videoURL': metadata.video,
-                                                       'measureName': measure,
+                                                       'measureName': measureId,
                                                        'appDate': metadata.appDate,
                                                        'revision': metadata.revision,
                                                        'buildId': metadata.buildId,
                                                        'measureValue': Math.round(100.0*item.datapoint[1])/100.0,
-                                                       'frameDiff': (metadata.frameDiffSums) ? true : false
+                                                       'defaultDetailParameter': defaultDetailParameter
                                                      }));
         $('#video').css('width', $('#video').parent().width());
         $('#video').css('max-height', $('#graph-container').height());
@@ -125,24 +110,25 @@ $(function() {
 
   $.getJSON(dataFilename, function(data) {
     // figure out which measures could apply to this graph
+    var availableMeasureIds = [];
     Object.keys(data['data']).forEach(function(appname) {
       data['data'][appname].forEach(function(sample) {
-        Object.keys(sample).forEach(function(potentialMeasure) {
-          if (jQuery.inArray(potentialMeasure, Object.keys(measures)) !== -1 &&
-              jQuery.inArray(potentialMeasure, availableMeasures) === -1) {
-            availableMeasures.push(potentialMeasure);
+        var measureIds = getMeasureIdsInSample(sample, overallMeasures);
+        measureIds.forEach(function(measureId) {
+          if (jQuery.inArray(measureId, availableMeasureIds) === -1) {
+            availableMeasureIds.push(measureId);
           }
         });
       });
     });
 
-    var defaultMeasure = availableMeasures[0];
+    var defaultMeasureId = availableMeasureIds[0];
 
     var router = Router({ '/:measureId': {
       on: function(measureId) {
-        updateContent(data['title'], measureId);
+        updateContent(data['title'], availableMeasureIds, measureId);
         updateGraph(data['data'], measureId);
       }
-    } }).init('/' + defaultMeasure);
+    } }).init('/' + defaultMeasureId);
   });
 });
