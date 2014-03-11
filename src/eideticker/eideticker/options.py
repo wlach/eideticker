@@ -84,6 +84,8 @@ class TestOptionParser(CaptureOptionParser):
         self.add_option("--no-capture", action="store_false",
                         dest="capture", default=True,
                         help="Skip video capture (mainly for debugging)")
+        self.add_option("--vpxenc", action="store_true",
+                        dest="use_vpxenc", help="Use vpxenc for encoding video")
 
     def parse_args(self):
         (options, args) = CaptureOptionParser.parse_args(self)

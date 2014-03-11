@@ -22,6 +22,7 @@ from zipfile import ZipFile
 DECKLINK_DIR = os.path.join(os.path.dirname(__file__), 'decklink')
 POINTGREY_DIR = os.path.join(os.path.dirname(__file__), 'pointgrey')
 MAX_VIDEO_FPS = 60
+DEFAULT_WEBM_BIT_RATE = 1024
 
 valid_capture_devices = ["decklink", "pointgrey"]
 valid_decklink_modes = ["720p", "1080p"]
@@ -136,7 +137,7 @@ class CaptureController(object):
 
     def __init__(self, capture_device, capture_area=None,
                  find_start_signal=True, find_end_signal=True,
-                 custom_tempdir=None, fps=None):
+                 custom_tempdir=None, fps=None, use_vpxenc=False):
         self.capture_process = None
         self.null_read = file('/dev/null', 'r')
         self.null_write = file('/dev/null', 'w')
@@ -151,6 +152,7 @@ class CaptureController(object):
         self.find_start_signal = find_start_signal
         self.find_end_signal = find_end_signal
         self.fps = fps
+        self.use_vpxenc = use_vpxenc
 
     def log(self, msg):
         print "%s Capture Controller | %s" % (
@@ -331,9 +333,30 @@ class CaptureController(object):
 
             moviefile = tempfile.NamedTemporaryFile(dir=self.custom_tempdir,
                                                     suffix=".webm")
-            subprocess.Popen(('ffmpeg', '-y', '-r', str(generated_video_fps), '-i',
-                              os.path.join(rewritten_imagedir, '%d.png'),
-                              moviefile.name), close_fds=True).wait()
+            # png2yuv is broken on Ubuntu 12.04 and earlier, so we can't use
+            # vpxenc there by default
+            if self.use_vpxenc:
+                with tempfile.NamedTemporaryFile(dir=self.custom_tempdir) as yuvfile:
+                    yuvconv = subprocess.Popen(('png2yuv', '-I',  'p', '-f',
+                                                str(capturefps), '-n',
+                                                str(last_frame-start_frame), '-j',
+                                                '%s/%%d.png' % rewritten_imagedir),
+                                               stdout=subprocess.PIPE)
+                    while yuvconv.poll() == None:
+                        yuvfile.write(yuvconv.stdout.read())
+                    yuvfile.write(yuvconv.stdout.read())
+                    yuvfile.flush()
+
+                    subprocess.Popen(('vpxenc', '--good', '--cpu-used=0',
+                                      '--end-usage=vbr', '--passes=2',
+                                      '--threads=%s' % (multiprocessing.cpu_count() - 1),
+                                      '--target-bitrate=%s' % DEFAULT_WEBM_BIT_RATE,
+                                      '-o', moviefile.name, yuvfile.name)).wait()
+            else:
+                subprocess.Popen(('ffmpeg', '-y', '-r', str(generated_video_fps), '-i',
+                                  os.path.join(rewritten_imagedir, '%d.png'),
+                                  moviefile.name), close_fds=True).wait()
+
 
         self.log("Writing final capture '%s'..." % self.output_filename)
         zipfile = ZipFile(self.output_filename, 'a')

@@ -62,7 +62,8 @@ def runtest(device_prefs, testname, options, apk=None, appname=None,
             fps=options.fps,
             capture_file=capture_file,
             wifi_settings_file=options.wifi_settings_file,
-            sync_time=options.sync_time)
+            sync_time=options.sync_time,
+            use_vpxenc=options.use_vpxenc)
 
         capture_uuid = uuid.uuid1().hex
         datapoint = { 'uuid': capture_uuid }

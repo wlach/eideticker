@@ -61,7 +61,8 @@ def main(args=sys.argv[1:]):
         fps=options.fps,
         capture_file=options.capture_file,
         wifi_settings_file=options.wifi_settings_file,
-        sync_time=options.sync_time)
+        sync_time=options.sync_time,
+        use_vpxenc=options.use_vpxenc)
 
     # save logs if applicable
     testlog.save_logs(http_request_log_path=options.request_log_file,
