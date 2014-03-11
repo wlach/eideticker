@@ -61,8 +61,6 @@ function getMeasureIdsInSample(sample, measures) {
 }
 
 function measureDisplayList(measureIds, measures) {
-  console.log(measures);
-
   return measureIds.map(function(measureId) {
     return { 'id': measureId,
              'desc': measures[measureId].shortDesc

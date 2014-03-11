@@ -331,7 +331,7 @@ $(function() {
             $('#test-chooser').children('a').each(function() {
               var testIdAttr = $(this).attr('id');
               if (testIdAttr) {
-                var defaultMeasureId = tests[testIdAttr].defaultMeasure;
+                var defaultMeasureId = tests[testIdAttr].defaultMeasureId;
                 $(this).attr('href', '#/' +
                              [ deviceId, testIdAttr,
                                defaultMeasureId ].join('/'));
