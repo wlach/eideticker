@@ -36,18 +36,11 @@ def prepare_test(testkey, device_prefs):
             logger.info("Populating database...")
             test.populate_databases()
 
-        logger.info("Starting B2G")
         device.startB2G()
-        device.unlock()
-        device.killApps()
 
         if hasattr(test, 'prepare_app'):
             logger.info("Doing initial setup on app for test")
             test.prepare_app()
-
-        # close down marionette so we can create a new session later
-        device.marionette.delete_session()
-
 
 def run_test(testkey, capture_device, appname, capture_name,
              device_prefs, extra_prefs={}, test_type=None, profile_file=None,
@@ -131,7 +124,7 @@ def run_test(testkey, capture_device, appname, capture_name,
                     tempdir=EIDETICKER_TEMP_DIR)
 
     if device_prefs['devicetype'] == 'b2g':
-        device.setupMarionette()
+        device.restartB2G()
 
         if sync_time or test.requires_wifi:
             # we catch when the user requests synchronized time but doesn't
@@ -143,12 +136,8 @@ def run_test(testkey, capture_device, appname, capture_name,
                                 "file (-w) provided!")
             wifi_settings = json.loads(open(wifi_settings_file).read())
             device.connectWIFI(wifi_settings)
-
-        # unlock device, so it doesn't go to sleep
-        device.unlock()
-
-        # reset orientation to default for this type of device
-        device.resetOrientation()
+    elif device_prefs['devicetype'] == 'android':
+        device.killProcess(appname)
 
     # synchronize time unless instructed not to
     if sync_time:

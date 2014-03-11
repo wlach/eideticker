@@ -14,7 +14,6 @@ CAPTURE_DIR = os.path.join(os.path.dirname(__file__), "../captures")
 
 def runtest(device_prefs, testname, options, apk=None, appname=None,
             appdate=None):
-    device = None
     if apk:
         appinfo = eideticker.get_fennec_appinfo(apk)
         appname = appinfo['appname']
@@ -35,10 +34,6 @@ def runtest(device_prefs, testname, options, apk=None, appname=None,
         eideticker.prepare_test(testname, device_prefs)
 
     for i in range(options.num_runs):
-        # Kill any existing instances of the processes (for Android)
-        if device:
-            device.killProcess(appname)
-
         # Now run the test
         curtime = int(time.time())
         capture_file = os.path.join(CAPTURE_DIR,

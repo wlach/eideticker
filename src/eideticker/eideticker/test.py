@@ -539,9 +539,6 @@ class B2GAppStartupTest(B2GAppTest):
         super(B2GAppStartupTest, self).__init__(testinfo, appname, **kwargs)
 
     def run(self):
-        # kill any open apps (e.g. "firstrun")
-        self.device.killApps()
-
         from gaiatest.apps.homescreen.app import Homescreen
         homescreen = Homescreen(self.device.marionette)
         self.device.gaiaApps.switch_to_displayed_app()  # switch to homescreen

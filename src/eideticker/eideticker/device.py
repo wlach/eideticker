@@ -443,6 +443,7 @@ class EidetickerB2GMixin(EidetickerMixin):
             raise mozdevice.DMError("Could not kill b2g process")
 
     def startB2G(self):
+        self._logger.info("Starting B2G")
         self.shellCheckOutput(['start', 'b2g'])
         self.setupMarionette()
 
@@ -457,31 +458,25 @@ marionetteScriptFinished();
         # TODO: Remove this sleep when Bug 924912 is addressed
         time.sleep(5)
 
+        # unlock device, so it doesn't go to sleep
+        self._logger.info("Unlocking screen...")
+        self.gaiaDevice.unlock()
+
+        # kill running apps so they don't interfere with the test
+        self._logger.info("Killing all running apps...")
+        self.gaiaApps.kill_all()
+
+        # set correct orientation
+        self._logger.info("Setting orientation")
+        self.marionette.execute_script("screen.mozLockOrientation('%s');" %
+                                       self.deviceProperties['defaultOrientation'])
+
     def restartB2G(self):
         """
         Restarts the b2g process on the device.
         """
         self.stopB2G()
         self.startB2G()
-
-    def resetOrientation(self):
-        self.setOrientation(self.deviceProperties['defaultOrientation'])
-
-    def setOrientation(self, orientation):
-        # set landscape or portrait mode
-        self._logger.info("Setting orientation: %s" % orientation)
-        self.marionette.execute_script("screen.mozLockOrientation('%s');" %
-                                       orientation)
-
-    def unlock(self):
-        # unlock device, so it doesn't go to sleep
-        self._logger.info("Unlocking screen...")
-        self.gaiaDevice.unlock()
-
-    def killApps(self):
-        self._logger.info("Killing all running apps...")
-        self.gaiaApps.kill_all()
-
 
 class B2GADB(EidetickerB2GMixin, mozdevice.DeviceManagerADB):
 

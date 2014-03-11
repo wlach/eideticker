@@ -296,8 +296,5 @@ def main(args=sys.argv[1:]):
                 capture_name + " #%s" % i, datafile, data,
                 log_http_requests=log_http_requests,
                 log_actions=log_actions)
-        if options.devicetype == "android":
-            # Kill app after test complete
-            device.killProcess(appname)
 
 main()

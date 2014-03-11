@@ -92,15 +92,7 @@ def run_capture(options, capture_file):
             sys.exit(1)
         device.restartB2G()
         device.connectWIFI(json.loads(open(options.wifi_settings_file).read()))
-        session = device.marionette.session
-        if 'b2g' not in session:
-            raise Exception("bad session value %s returned by start_session" %
-                            session)
 
-        device.unlock()
-        # wait for device to become ready (yes, this is terrible, can we
-        # detect this condition in marionette somehow?)
-        time.sleep(5)
         device.marionette.execute_script("window.location.href='%s';" % url)
 
     while not capture_server.finished:
@@ -108,7 +100,6 @@ def run_capture(options, capture_file):
 
     capture_server.convert_capture()
 
-    device.killProcess(options.appname)
     httpd.stop()
 
 def _get_biggest_framediff_square((framenum, capture)):
