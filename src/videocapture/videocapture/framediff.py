@@ -2,10 +2,12 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 
-import math
-import numpy
 from PIL import Image
+from itertools import repeat
 import cPickle as pickle
+import math
+import multiprocessing
+import numpy
 
 # Note: we consider frame differences to be the number of pixels with an rgb
 # component > 5 components (out of 255) different from the previous frame.
@@ -57,6 +59,17 @@ def get_framediff_image(capture, framenum1, framenum2, cropped=False):
     return Image.fromarray(framediff.astype(numpy.uint8))
 
 
+def _get_framediff_sum((i, capture, ignored_areas, filter_threshold)):
+    frame1 = capture.get_frame(i-1, True).astype('float')
+    frame2 = capture.get_frame(i, True).astype('float')
+
+    framediff = abs(frame2 - frame1)
+    for ignored_area in ignored_areas:
+        for x in range(ignored_area[0], ignored_area[2]):
+            for y in range(ignored_area[1], ignored_area[3]):
+                framediff[x][y] = 0.0
+    return len(framediff[framediff >= filter_threshold])
+
 def get_framediff_sums(capture, filter_low_differences=True):
     filter_threshold = 0
     if filter_low_differences:
@@ -77,19 +90,11 @@ def get_framediff_sums(capture, filter_low_differences=True):
     except:
         # Frame differences
         diffsums = None
-        prevframe = None
-        diffsums = [0]
-        for i in range(1, capture.num_frames + 1):
-            frame = capture.get_frame(i, True).astype('float')
-            if prevframe is not None:
-                framediff = abs(frame - prevframe)
-                for ignored_area in ignored_areas:
-                    for x in range(ignored_area[0], ignored_area[2]):
-                        for y in range(ignored_area[1], ignored_area[3]):
-                            framediff[x][y] = 0.0
-                framediff = framediff[framediff >= filter_threshold]
-                diffsums.append(len(framediff))
-            prevframe = frame
+        pool = multiprocessing.Pool()
+        diffsums = [0] + pool.map(_get_framediff_sum,
+                                  zip(range(1, capture.num_frames + 1),
+                                      repeat(capture), repeat(ignored_areas),
+                                      repeat(filter_threshold)))
         cache['diffsums'] = diffsums
         pickle.dump(cache, open(capture.cache_filename, 'w'))
 
