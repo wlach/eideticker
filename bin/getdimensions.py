@@ -22,8 +22,8 @@ class CaptureServer(object):
     capture_controller = None
     capture_file = None
 
-    def __init__(self, capture_file, capture_device, mode, no_capture=False):
-        if not no_capture:
+    def __init__(self, capture_file, capture_device, mode, capture=True):
+        if capture:
             self.capture_controller = videocapture.CaptureController(
                 capture_device)
             self.mode = mode
@@ -62,7 +62,7 @@ def run_capture(options, capture_file):
 
     capture_server = CaptureServer(capture_file, options.capture_device,
                                    options.mode,
-                                   no_capture=options.no_capture)
+                                   capture=options.capture)
     host = moznetwork.get_ip()
     docroot = eideticker.runtest.TEST_DIR
     httpd = mozhttpd.MozHttpd(port=0, host=host, docroot=docroot, urlhandlers=[
@@ -115,8 +115,8 @@ def main(args=sys.argv[1:]):
     usage = "usage: %prog [options] <app name>"
     parser = eideticker.CaptureOptionParser(
         usage=usage, capture_area_option=False)
-    parser.add_option("--no-capture", action="store_true",
-                      dest="no_capture",
+    parser.add_option("--no-capture", action="store_false",
+                      dest="capture", default=True,
                       help="run through the test, but don't actually "
                       "capture anything")
     parser.add_option("--capture-file", action="store",
@@ -139,13 +139,13 @@ def main(args=sys.argv[1:]):
 
     capture_file = options.capture_file
     if not capture_file:
-        if not options.no_capture:
+        if options.capture:
             capture_file = os.path.join(CAPTURE_DIR, "capture-test-%s.zip" %
                                         time.time())
             print "Capturing to file %s" % capture_file
         run_capture(options, capture_file)
 
-    if options.no_capture:
+    if not options.capture:
         # we were just doing a test run through the steps here, we're done
         return
 

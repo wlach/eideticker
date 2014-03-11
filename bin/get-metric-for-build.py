@@ -58,7 +58,7 @@ def runtest(device_prefs, testname, options, apk=None, appname=None,
             log_checkerboard_stats=options.get_internal_checkerboard_stats,
             profile_file=profile_file,
             capture_area=options.capture_area,
-            no_capture=options.no_capture,
+            capture=options.capture,
             fps=options.fps,
             capture_file=capture_file,
             wifi_settings_file=options.wifi_settings_file,
@@ -69,7 +69,7 @@ def runtest(device_prefs, testname, options, apk=None, appname=None,
         metadata = {}
         metrics = {}
 
-        if not options.no_capture:
+        if options.capture:
             capture = videocapture.Capture(capture_file)
 
             datapoint['captureFile'] = metadata['captureFile'] = capture_file
@@ -131,7 +131,7 @@ def runtest(device_prefs, testname, options, apk=None, appname=None,
 
     print "=== Results on %s for %s ===" % (testname, display_key)
 
-    if not options.no_capture:
+    if options.capture:
         if stableframecapture:
             print "  Times to first stable frame (seconds):"
             print "  %s" % map(

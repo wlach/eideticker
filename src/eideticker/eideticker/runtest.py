@@ -46,7 +46,7 @@ def run_test(testkey, capture_device, appname, capture_name,
              device_prefs, extra_prefs={}, test_type=None, profile_file=None,
              wifi_settings_file=None, request_log_file=None,
              actions_log_file=None, log_checkerboard_stats=False,
-             extra_env_vars={}, capture_area=None, no_capture=False,
+             extra_env_vars={}, capture_area=None, capture=True,
              capture_file=None, sync_time=True, fps=None):
     testinfo = get_testinfo(testkey)
 
@@ -65,10 +65,10 @@ def run_test(testkey, capture_device, appname, capture_name,
     capture_name = capture_name
     if not capture_name:
         capture_name = testinfo['shortDesc']
-    if not capture_file and not no_capture:
+    if capture and not capture_file:
         capture_file = os.path.join(CAPTURE_DIR, "capture-%s.zip" %
                                     datetime.datetime.now().isoformat())
-    elif no_capture:
+    elif not capture:
         capture_file = None
 
     device = getDevice(**device_prefs)

@@ -81,8 +81,8 @@ class TestOptionParser(CaptureOptionParser):
                         default="{}",
                         help="Extra profile preference for Firefox browsers. "
                         "Must be passed in as a JSON dictionary")
-        self.add_option("--no-capture", action="store_true",
-                        dest="no_capture",
+        self.add_option("--no-capture", action="store_false",
+                        dest="capture", default=True,
                         help="Skip video capture (mainly for debugging)")
 
     def parse_args(self):

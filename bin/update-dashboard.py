@@ -60,7 +60,7 @@ def runtest(dm, device_prefs, options, product, appname,
                 appname, capture_name, device_prefs,
                 profile_file=profile_file,
                 capture_area=options.capture_area,
-                no_capture=options.no_capture,
+                capture=options.capture,
                 capture_file=capture_file,
                 wifi_settings_file=options.wifi_settings_file,
                 sync_time=options.sync_time)
@@ -76,7 +76,7 @@ def runtest(dm, device_prefs, options, product, appname,
         raise Exception("Failed to run test %s for %s (after 3 tries). "
                         "Aborting." % (testinfo['key'], productname))
 
-    if not options.no_capture:
+    if options.capture:
         capture = videocapture.Capture(capture_file)
 
         # video file
@@ -112,7 +112,7 @@ def runtest(dm, device_prefs, options, product, appname,
         datapoint.update({'baseline': True})
 
     metrics = {}
-    if not options.no_capture:
+    if options.capture:
         if testinfo['type'] == 'startup' or testinfo['type'] == 'webstartup' or \
                 testinfo['defaultMeasure'] == 'timetostableframe':
             metrics['timetostableframe'] = eideticker.get_stable_frame_time(
