@@ -295,7 +295,7 @@ $(function() {
       deviceIds.forEach(function(deviceId) {
         var tests = devices[deviceId].tests;
         var firstTestKey = Object.keys(tests).sort()[0];
-        var defaultMeasureId = tests[firstTestKey].defaultMeasure;
+        var defaultMeasureId = tests[firstTestKey].defaultMeasureId;
 
         var deviceURL = "#/" + [ deviceId, firstTestKey, defaultMeasureId ].join('/');
         $('<a href="' + deviceURL + '" id="device-' + deviceId + '" deviceid= ' + deviceId + ' class="list-group-item">' + devices[deviceId].name+'</a></li>').appendTo(
