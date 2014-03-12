@@ -281,7 +281,7 @@ $(function() {
 
   $.getJSON(getResourceURL('devices.json'), function(deviceData) {
     var devices = deviceData['devices'];
-    var deviceIds = Object.keys(devices);
+    var deviceIds = Object.keys(devices).sort();
 
     $.when.apply($, deviceIds.map(function(deviceId) {
       return $.getJSON(getResourceURL([deviceId, 'tests.json'].join('/')),
