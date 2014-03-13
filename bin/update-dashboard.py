@@ -115,7 +115,7 @@ def runtest(dm, device_prefs, options, product, appname,
     metrics = {}
     if options.capture:
         if testinfo['type'] == 'startup' or testinfo['type'] == 'webstartup' or \
-                testinfo['defaultMeasure'] == 'timetostableframe':
+                testinfo['defaultMeasureId'] == 'timetostableframe':
             metrics['timetostableframe'] = eideticker.get_stable_frame_time(
                 capture)
         else:
@@ -232,7 +232,7 @@ def main(args=sys.argv[1:]):
     else:
         tests = {}
     tests[testkey] = {'shortDesc': testinfo['shortDesc'],
-                      'defaultMeasure': testinfo['defaultMeasure']}
+                      'defaultMeasureId': testinfo['defaultMeasure']}
 
     device_name = options.device_name
     if not device_name:
