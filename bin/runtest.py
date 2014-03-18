@@ -4,6 +4,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 
+import json
 import sys
 import eideticker
 
@@ -65,7 +66,9 @@ def main(args=sys.argv[1:]):
         use_vpxenc=options.use_vpxenc)
 
     # save logs if applicable
-    testlog.save_logs(http_request_log_path=options.request_log_file,
-                      actions_log_path=options.actions_log_file)
+    if options.request_log_file:
+        open(options.request_log_file, 'w').write(json.dumps(testlog.http_request_log))
+    if options.actions_log_file:
+        open(options.actions_log_file, 'w').write(json.dumps(testlog.actions))
 
 main()
