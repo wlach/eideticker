@@ -150,6 +150,7 @@ class EidetickerMixin(object):
         return pids
 
     def synchronizeTime(self):
+        self._logger.info("Synchronizing time...")
         self.shellCheckOutput([self.DEFAULT_NTPDATE_LOCATION, "-c", "1", "-d",
                                "-h", moznetwork.get_ip(), "-s"], root=True)
 
