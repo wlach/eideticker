@@ -47,7 +47,8 @@ def main(args=sys.argv[1:]):
     device_prefs = eideticker.getDevicePrefs(options)
 
     if options.prepare_test:
-        eideticker.prepare_test(testkey, device_prefs)
+        eideticker.prepare_test(
+            testkey, device_prefs, options.wifi_settings_file)
 
     testlog = eideticker.run_test(
         testkey, options.capture_device,

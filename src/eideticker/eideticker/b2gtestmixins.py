@@ -3,9 +3,12 @@
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 
 from gaiatest.apps.contacts.app import Contacts
+from marionette import expected
 from marionette.errors import NoSuchElementException
 from marionette.errors import ElementNotVisibleException
 from marionette.wait import Wait
+from marionette.by import By
+from gaiatest.gaia_test import GaiaApps
 
 
 class B2GContactsTestMixin(object):
@@ -26,6 +29,32 @@ class B2GContactsTestMixin(object):
             NoSuchElementException, ElementNotVisibleException)).until(
             lambda m: m.find_element(
                 *contacts._contact_locator).is_displayed())
+
+    def prepare_app(self):
+        self.launch_app()
+
+
+class B2GMarketplaceTestMixin(object):
+
+    requires_wifi = True
+
+    def launch_app(self):
+        apps = GaiaApps(self.device.marionette)
+        apps.launch('Marketplace')
+        self.wait_for_finish()
+
+    def wait_for_finish(self):
+        apps = GaiaApps(self.device.marionette)
+        Wait(self.device.marionette).until(
+            lambda m: apps.displayed_app.name.lower() == 'marketplace')
+        apps.switch_to_displayed_app()
+        iframe = Wait(self.device.marionette).until(
+            expected.element_present(
+                By.CSS_SELECTOR, 'iframe[src*="marketplace"]'))
+        self.device.marionette.switch_to_frame(iframe)
+        Wait(self.device.marionette).until(expected.element_displayed(
+            Wait(self.device.marionette).until(expected.element_present(
+                By.ID, 'site-header'))))
 
     def prepare_app(self):
         self.launch_app()

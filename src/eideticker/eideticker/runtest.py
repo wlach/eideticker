@@ -12,7 +12,7 @@ GECKO_PROFILER_ADDON_DIR = os.path.join(SRC_DIR, "../src/GeckoProfilerAddon")
 EIDETICKER_TEMP_DIR = "/tmp/eideticker"
 
 
-def prepare_test(testkey, device_prefs):
+def prepare_test(testkey, device_prefs, wifi_settings_file=None):
     # prepare test logic -- currently only done on b2g
     if device_prefs['devicetype'] == 'b2g':
         testinfo = get_testinfo(testkey)
@@ -38,9 +38,17 @@ def prepare_test(testkey, device_prefs):
 
         device.startB2G()
 
+        if test.requires_wifi:
+            if not wifi_settings_file:
+                raise Exception("WIFI required for this test but no settings "
+                                "file (-w) provided!")
+            wifi_settings = json.loads(open(wifi_settings_file).read())
+            device.connectWIFI(wifi_settings)
+
         if hasattr(test, 'prepare_app'):
             logger.info("Doing initial setup on app for test")
             test.prepare_app()
+
 
 def run_test(testkey, capture_device, appname, capture_name,
              device_prefs, extra_prefs={}, test_type=None, profile_file=None,

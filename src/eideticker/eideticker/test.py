@@ -3,7 +3,6 @@
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import eideticker
-import json
 import mozhttpd
 import moznetwork
 import urlparse
@@ -490,6 +489,7 @@ class AndroidAppStartupTest(Test):
         self.device.launchApplication(self.appname, self.activity, self.intent)
         self.wait()
 
+
 class B2GWebTest(WebTest):
 
     def run(self):
@@ -498,6 +498,7 @@ class B2GWebTest(WebTest):
         self.device.marionette.execute_script(
             "window.location.href='%s';" % self.url)
         self.wait()
+
 
 class B2GAppTest(Test):
 
@@ -577,7 +578,11 @@ class B2GAppStartupTest(B2GAppTest):
         self.start_capture()
         self.execute_actions([['tap', tap_x, tap_y]],
                              test_finished_after_actions=False)
-        self.log("Waiting %s seconds for app to finish starting" %
+
+        if hasattr(self, 'wait_for_finish'):
+            self.wait_for_finish()
+
+        self.log("Waiting %s seconds for app to finish starting (or settle)" %
                  self.capture_timeout)
         time.sleep(self.capture_timeout)
 
