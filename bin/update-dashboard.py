@@ -287,7 +287,8 @@ def main(args=sys.argv[1:]):
         f.write(json.dumps({'tests': tests}))
 
     if options.prepare_test:
-        eideticker.prepare_test(testkey, device_prefs)
+        eideticker.prepare_test(
+            testkey, device_prefs, options.wifi_settings_file)
 
     # Run the test the specified number of times
     for i in range(num_runs):

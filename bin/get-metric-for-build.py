@@ -31,7 +31,8 @@ def runtest(device_prefs, testname, options, apk=None, appname=None,
     capture_results = []
 
     if options.prepare_test:
-        eideticker.prepare_test(testname, device_prefs)
+        eideticker.prepare_test(
+            testname, device_prefs, options.wifi_settings_file)
 
     for i in range(options.num_runs):
         # Now run the test
