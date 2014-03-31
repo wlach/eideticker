@@ -132,6 +132,16 @@ class CaptureProcess(multiprocessing.Process):
             pass
         self.capture_proc.wait()  # or poll and error out if still running?
 
+def _rewrite_frame(framenum, dirname, imagefilename, capture_area,
+                   capture_device):
+    im = Image.open(imagefilename)
+    if capture_area:
+        im = im.crop(capture_area)
+    # pointgrey needs a median filter because it's so noisy
+    if capture_device == "pointgrey":
+        im = im.filter(ImageFilter.MedianFilter())
+    im = im.convert("RGB")
+    im.save(os.path.join(dirname, '%s.png' % framenum))
 
 class CaptureController(object):
 
@@ -285,41 +295,32 @@ class CaptureController(object):
         self.log("Rewriting images in %s..." % self.outputdir)
         rewritten_imagedir = tempfile.mkdtemp(dir=self.custom_tempdir)
 
-        def _rewrite_frame(framenum, dirname, imagefilename):
-            im = Image.open(imagefilename)
-            if self.capture_area:
-                im = im.crop(self.capture_area)
-            # pointgrey needs a median filter because it's so noisy
-            if self.capture_device == "pointgrey":
-                im = im.filter(ImageFilter.MedianFilter())
-            im = im.convert("RGB")
-            im.save(os.path.join(dirname, '%s.png' % framenum))
+        pool = multiprocessing.Pool()
 
-        # map the frame before the start frame to the zeroth
-        # frame (if possible)
+        # map the frame before the start frame to the zeroth frame (if
+        # possible). HACK: otherwise, create a copy of the start
+        # frame (this duplicates a frame).
+        remapped_frame = 0
         if start_frame > 1:
-            _rewrite_frame(0, rewritten_imagedir, imagefiles[start_frame - 1])
-        else:
-            # HACK: otherwise, create a copy of the start frame
-            # (this duplicates a frame)
-            _rewrite_frame(0, rewritten_imagedir, imagefiles[0])
+            remapped_frame = start_frame - 1
+        pool.apply_async(_rewrite_frame,
+                         [0, rewritten_imagedir, imagefiles[remapped_frame],
+                          self.capture_area, self.capture_device])
+
         # last frame is the specified end frame or the first red frame if
         # no last frame specified, or the very last frame in the
         # sequence if there is no red frame and no specified last frame
         last_frame = min(num_frames - 1, end_frame + 2)
 
         # copy the remaining frames into numeric order starting from 1
-        # (use multiprocessing to speed this up: there's probably a more
-        # elegant way of doing this, but I'm not sure what it is)
-        multiprocesses = []
         for (i, j) in enumerate(range(start_frame, last_frame)):
-            p = multiprocessing.Process(target=_rewrite_frame, args=((i + 1),
-                                        rewritten_imagedir, imagefiles[j]))
-            p.start()
-            multiprocesses.append(p)
-           # _rewrite_frame((i+1), rewritten_imagedir, imagefiles[j])
-        for p in multiprocesses:
-            p.join()
+            pool.apply_async(_rewrite_frame, [(i + 1),
+                             rewritten_imagedir, imagefiles[j],
+                             self.capture_area, self.capture_device])
+
+        # wait for the rewriting of the images to complete
+        pool.close()
+        pool.join()
 
         capturefps = self.fps
         if not capturefps:
