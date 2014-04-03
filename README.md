@@ -304,7 +304,7 @@ the one you're interested in to dive into fine grained detail.
 ## Eideticker "dashboard"
 
 Dashboard mode is used to generate a dashboard of Eideticker results, like
-what you see at http://wrla.ch/eideticker/dashboard. From a toplevel, it
+what you see at http://eideticker.mozilla.org. From a toplevel, it
 is run from a script called `bin/run-update-dashboard.sh`, which can be called
 standalone. This script then in turn calls another script called
 `bin/update-dashboard.py` with various arguments corresponding to Firefox
