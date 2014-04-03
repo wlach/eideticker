@@ -134,29 +134,22 @@ def runtest(device_prefs, testname, options, apk=None, appname=None,
     print "=== Results on %s for %s ===" % (testname, display_key)
 
     if options.capture:
-        if stableframecapture:
-            print "  Times to first stable frame (seconds):"
-            print "  %s" % map(
-                lambda c: c['timetostableframe'], capture_results)
-            print
-        else:
-            print "  Number of unique frames:"
-            print "  %s" % map(lambda c: c['uniqueframes'], capture_results)
-            print
-
-            print "  Average number of unique frames per second:"
-            print "  %s" % map(lambda c: c['fps'], capture_results)
-            print
-
-            print "  Checkerboard area/duration (sum of percents NOT "
-            "percentage):"
-            print "  %s" % map(lambda c: c['checkerboard'], capture_results)
-            print
-
-            print "  Time to first input response: "
-            print "  %s" % map(
-                lambda c: c.get('timetoresponse'), capture_results)
-            print
+        measures = [ ('timetostableframe',
+                      'Times to first stable frame (seconds)'),
+                     ('uniqueframes', 'Number of unique frames'),
+                     ('fps', 'Average number of unique frames per second'),
+                     ('overallentropy',
+                      'Overall entropy over length of capture'),
+                     ('checkerboard',
+                      'Checkerboard area/duration (sum of percents NOT '
+                      'percentage)'),
+                     ('timetoresponse',
+                      'Time to first input response (seconds)') ]
+        for measure in measures:
+            if capture_results[0].get(measure[0]):
+                print "  %s:" % measure[1]
+                print "  %s" % map(lambda c: c[measure[0]], capture_results)
+                print
 
         print "  Capture files:"
         print "  Capture files: %s" % map(lambda c: c['captureFile'], capture_results)
