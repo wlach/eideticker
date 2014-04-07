@@ -100,7 +100,6 @@ def get_framediff_sums(capture, filter_low_differences=True):
 
     return diffsums
 
-
 def image_entropy(img):
     """calculate the entropy of an image"""
     # based on: http://brainacle.com/calculating-image-entropy-with-python-how-and-why.html
@@ -109,25 +108,6 @@ def image_entropy(img):
     histogram_length = sum(histogram)
     samples_probability = [float(h) / histogram_length for h in histogram]
     return -sum([p * math.log(p, 2) for p in samples_probability if p != 0])
-
-
-def get_entropy_diffs(capture, num_samples=5):
-    prev_samples = []
-    entropy_diffs = [0]
-    for i in range(1, capture.num_frames + 1):
-        frame = capture.get_frame_image(i)
-        frame_entropy = image_entropy(frame)
-        if prev_samples:
-            entropy_diff = 0
-            for prev_sample in prev_samples:
-                entropy_diff += abs(frame_entropy - prev_sample)
-            entropy_diff /= (1 + len(prev_samples))
-            entropy_diffs.append(entropy_diff)
-        prev_samples.append(frame_entropy)
-        if len(prev_samples) > num_samples:
-            prev_samples = prev_samples[1:]
-    return entropy_diffs
-
 
 def get_num_unique_frames(capture, threshold=0):
     framediff_sums = get_framediff_sums(capture)
@@ -138,7 +118,6 @@ def get_num_unique_frames(capture, threshold=0):
         num_uniques += 1
 
     return num_uniques
-
 
 def get_fps(capture, threshold=0):
     return get_num_unique_frames(capture, threshold=threshold) / capture.length
