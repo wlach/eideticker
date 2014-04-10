@@ -1,5 +1,9 @@
 #!/bin/bash
 
+if [ -z $DASHBOARD_USERNAME ]; then
+    DASHBOARD_USERNAME="eideticker"
+fi
+
 if [ -z $DASHBOARD_SERVER ]; then
     if [ $# != 1 ]; then
         echo "Usage $0 <destination server>"
@@ -9,11 +13,12 @@ if [ -z $DASHBOARD_SERVER ]; then
     fi
 fi
 
-if [ -z $DASHBOARD_SERVER_DIR ]; then
-    DASHBOARD_SERVER_DIR="~/www/"
+if [ -z $DASHBOARD_REMOTE_PATH ]; then
+    DASHBOARD_REMOTE_PATH="~/www/"
 fi
 
-EIDETICKER=$(dirname $0)/../
+if [ -z $DASHBOARD_LOCAL_PATH ]; then
+    DASHBOARD_LOCAL_PATH=$(dirname $0)/../src/dashboard/
+fi
 
-rsync -avz --copy-links -e ssh $EIDETICKER/src/dashboard/ eideticker@$DASHBOARD_SERVER:$DASHBOARD_SERVER_DIR
-
+rsync -avz --copy-links -e ssh $DASHBOARD_LOCAL_PATH $DASHBOARD_USERNAME@$DASHBOARD_SERVER:$DASHBOARD_REMOTE_PATH
