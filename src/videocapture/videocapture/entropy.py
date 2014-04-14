@@ -50,19 +50,14 @@ def get_overall_entropy(capture, sobelized=False):
     return sum(get_frame_entropies(capture, sobelized=sobelized))
 
 def get_entropy_diffs(capture, num_samples=5, sobelized=False):
-    prev_samples = []
     entropies = get_frame_entropies(capture, sobelized=sobelized)
     entropy_diffs = [0]
-    for i in range(1, len(entropies)):
-        frame_entropy = entropies[i]
-        if prev_samples:
-            entropy_diff = 0
-            for prev_sample in prev_samples:
-                entropy_diff += abs(frame_entropy - prev_sample)
-            entropy_diff /= (1 + len(prev_samples))
-            entropy_diffs.append(entropy_diff)
-        prev_samples.append(frame_entropy)
-        if len(prev_samples) > num_samples:
-            prev_samples = prev_samples[1:]
+    for i in range(1, len(entropies) - num_samples):
+        if i < num_samples:
+            num_prev_samples = i
+        else:
+            num_prev_samples = num_samples
+        entropy_diffs.append((sum(entropies[i:i+num_samples]) / num_samples) -
+                             (sum(entropies[i-num_prev_samples:i])/num_prev_samples))
 
     return entropy_diffs

@@ -11,10 +11,12 @@ def get_stable_frame(capture, method='framediff', sobelized=False,
                 return i + 1
         return len(framediff_sums) - 1
     elif method == 'entropy':
-        entropy_diffs = get_entropy_diffs(capture, sobelized=sobelized)
+        num_samples = 5
+        entropy_diffs = get_entropy_diffs(capture, num_samples=num_samples,
+                                           sobelized=sobelized)
         standard_deviation = numpy.std(entropy_diffs)
         threshold = threshold * standard_deviation
-        for i in range(len(entropy_diffs) - 1, 0, -1):
+        for i in range(len(entropy_diffs) - num_samples, 0, -1):
             if abs(entropy_diffs[i]) > threshold:
                 return i + 1
         return len(entropy_diffs) - 1
