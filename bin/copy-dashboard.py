@@ -20,14 +20,14 @@ def download_file(url, filename):
     r = requests.get(url)
     open(filename, 'w').write(r.content)
 
-def download_metadata(url, baseurl, filename, full_mirror, videodir, profiledir):
+def download_metadata(url, baseurl, filename, options, videodir, profiledir):
     r = requests.get(url)
     metadata = r.json()
     videourl = baseurl + metadata['video']
     profileurl = None
     if metadata.get('profile'):
         profileurl = baseurl + metadata['profile']
-    if full_mirror:
+    if options.full_mirror:
         download_file(videourl,
                       os.path.join(videodir, os.path.basename(metadata['video'])))
         if profileurl:
@@ -39,10 +39,9 @@ def download_metadata(url, baseurl, filename, full_mirror, videodir, profiledir)
         metadata['video'] = videourl
         if profileurl:
             metadata['profile'] = profileurl
+    save_file(filename, json.dumps(metadata))
 
-    open(filename, 'w').write(json.dumps(metadata))
-
-def download_testdata(url, baseurl, filename, full_mirror, metadatadir,
+def download_testdata(url, baseurl, filename, options, metadatadir,
                       videodir, profiledir):
     r = requests.get(url)
     open(filename, 'w').write(r.content)
@@ -52,11 +51,14 @@ def download_testdata(url, baseurl, filename, full_mirror, metadatadir,
         for date in testdata[appname].keys():
             for datapoint in testdata[appname][date]:
                 uuid = datapoint['uuid']
-                pool.apply_async(download_metadata,
-                                 [baseurl + 'metadata/%s.json' % uuid,
-                                  baseurl,
-                                  os.path.join(metadatadir, '%s.json' % uuid),
-                                  full_mirror, videodir, profiledir])
+                if options.download_metadata:
+                    pool.apply_async(download_metadata,
+                                     [baseurl + 'metadata/%s.json' % uuid,
+                                      baseurl,
+                                      os.path.join(metadatadir,
+                                                   '%s.json' % uuid),
+                                      options, videodir,
+                                      profiledir])
     pool.close()
     pool.join()
 
@@ -65,10 +67,17 @@ parser = optparse.OptionParser(usage)
 parser.add_option("--full-mirror", action="store_true",
                   default=False, dest="full_mirror",
                   help="Download videos, profiles to disk")
+parser.add_option("--skip-metadata", action="store_false",
+                  dest="download_metadata", default=True,
+                  help="Skip downloading metadata JSON files")
 options, args = parser.parse_args()
 
 if len(args) != 2:
     parser.print_usage()
+    sys.exit(1)
+
+if options.full_mirror and not options.download_metadata:
+    parser.error("ERROR: Need to download metadata for full mirror")
     sys.exit(1)
 
 (baseurl, outputdir) = args
@@ -99,7 +108,7 @@ for device_name in device_names:
                           baseurl,
                           os.path.join(outputdir, device_name,
                                        '%s.json' % testname),
-                          options.full_mirror,
+                          options,
                           metadatadir, videodir, profiledir])
 
 pool.close()
