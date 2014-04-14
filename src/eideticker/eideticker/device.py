@@ -77,6 +77,12 @@ DEVICE_PROPERTIES = {
             "inputDevice": "/dev/input/event4",
             "defaultOrientation": "portrait",
             "dimensions": (320, 480),
+            "swipePadding": (40, 40, 40, 40)},
+        "sp6821a": {
+            "hdmiResolution": None,
+            "inputDevice": "/dev/input/event1",
+            "defaultOrientation": "portrait",
+            "dimensions": (320, 480),
             "swipePadding": (40, 40, 40, 40)}
     }
 }
