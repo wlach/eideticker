@@ -49,7 +49,7 @@ class CaptureProcess(multiprocessing.Process):
 
     def __init__(self, capture_device, video_format, frame_counter,
                  finished_semaphore, output_raw_filename=None,
-                 outputdir=None, fps=None):
+                 outputdir=None, fps=None, camera_settings_file=None):
         multiprocessing.Process.__init__(self, args=(frame_counter,
                                                      finished_semaphore,))
         self.frame_counter = frame_counter
@@ -59,6 +59,7 @@ class CaptureProcess(multiprocessing.Process):
         self.video_format = video_format
         self.finished_semaphore = finished_semaphore
         self.fps = fps
+        self.camera_settings_file = camera_settings_file
 
     def stop(self):
         self.finished_semaphore.value = True
@@ -81,13 +82,17 @@ class CaptureProcess(multiprocessing.Process):
             # get the device type
             camera_id = subprocess.check_output([os.path.join(
                 POINTGREY_DIR, "get-camera-id")]).strip()
-            camera_config = camera_configs.get(camera_id)
-            if not camera_config:
-                raise Exception("No camera configuration for model '%s'" %
-                                camera_id)
+            if self.camera_settings_file:
+                camera_settings_file = self.camera_settings_file
+            else:
+                camera_config = camera_configs.get(camera_id)
+                if not camera_config:
+                    raise Exception("No camera configuration for model '%s'" %
+                                    camera_id)
+                camera_settings_file = os.path.join(POINTGREY_DIR, camera_config)
             args = [os.path.join(POINTGREY_DIR, 'pointgrey-capture'),
                     '-c',
-                    os.path.join(POINTGREY_DIR, camera_config),
+                    camera_settings_file,
                     '-o',
                     '-n',
                     '1200',
@@ -147,7 +152,8 @@ class CaptureController(object):
 
     def __init__(self, capture_device, capture_area=None,
                  find_start_signal=True, find_end_signal=True,
-                 custom_tempdir=None, fps=None, use_vpxenc=False):
+                 custom_tempdir=None, fps=None, use_vpxenc=False,
+                 camera_settings_file=None):
         self.capture_process = None
         self.null_read = file('/dev/null', 'r')
         self.null_write = file('/dev/null', 'w')
@@ -163,6 +169,7 @@ class CaptureController(object):
         self.find_end_signal = find_end_signal
         self.fps = fps
         self.use_vpxenc = use_vpxenc
+        self.camera_settings_file = camera_settings_file
 
     def log(self, msg):
         print "%s Capture Controller | %s" % (
@@ -195,7 +202,8 @@ class CaptureController(object):
             self.finished_semaphore,
             output_raw_filename=output_raw_filename,
             outputdir=self.outputdir,
-            fps=self.fps)
+            fps=self.fps,
+            camera_settings_file=self.camera_settings_file)
         self.log("Starting capture...")
         self.capture_process.start()
         # wait for capture to actually start...

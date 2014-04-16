@@ -26,6 +26,10 @@ class OptionParser(optparse.OptionParser):
         self.add_option("--fps", action="store", type="int", dest="fps",
                         help="Custom fps value to use (certain pointgrey "
                         "cameras only)", default=None)
+        self.add_option("--camera-settings-file", action="store", type="string",
+                        default=None, dest="camera_settings_file",
+                        help="Custom camera settings json to use with "
+                        "pointgrey cameras")
 
         if self.capture_area_option:
             self.add_option("--capture-area", action="store",

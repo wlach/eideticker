@@ -54,8 +54,9 @@ def run_test(testkey, capture_device, appname, capture_name,
              device_prefs, extra_prefs={}, test_type=None, profile_file=None,
              wifi_settings_file=None, request_log_file=None,
              actions_log_file=None, log_checkerboard_stats=False,
-             extra_env_vars={}, capture_area=None, capture=True,
-             capture_file=None, sync_time=True, fps=None, use_vpxenc=False):
+             extra_env_vars={}, capture_area=None, camera_settings_file=None,
+             capture=True, capture_file=None, sync_time=True, fps=None,
+             use_vpxenc=False):
     testinfo = get_testinfo(testkey)
 
     if device_prefs['devicetype'] == 'android' and not appname and \
@@ -99,7 +100,8 @@ def run_test(testkey, capture_device, appname, capture_name,
 
     capture_controller = videocapture.CaptureController(
         capture_device, capture_area, custom_tempdir=EIDETICKER_TEMP_DIR,
-        fps=fps, use_vpxenc=use_vpxenc)
+        fps=fps, use_vpxenc=use_vpxenc,
+        camera_settings_file=camera_settings_file)
 
     testtype = test_type or testinfo['type']
 
