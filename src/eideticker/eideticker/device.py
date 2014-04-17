@@ -159,6 +159,7 @@ class EidetickerMixin(object):
         self._logger.info("Synchronizing time...")
         self.shellCheckOutput([self.DEFAULT_NTPDATE_LOCATION, "-c", "1", "-d",
                                "-h", moznetwork.get_ip(), "-s"], root=True)
+        self._logger.info("Time synchronized!")
 
     def sendSaveProfileSignal(self, appName):
         pids = self.getPIDs(appName)
