@@ -57,7 +57,7 @@ def get_entropy_diffs(capture, num_samples=5, sobelized=False):
             num_prev_samples = i
         else:
             num_prev_samples = num_samples
-        entropy_diffs.append((sum(entropies[i:i+num_samples]) / num_samples) -
-                             (sum(entropies[i-num_prev_samples:i])/num_prev_samples))
+        entropy_diffs.append(abs((sum(entropies[i:i+num_samples]) / num_samples) -
+                                 (sum(entropies[i-num_prev_samples:i])/num_prev_samples)))
 
     return entropy_diffs
