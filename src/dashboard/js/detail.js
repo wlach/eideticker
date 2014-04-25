@@ -83,6 +83,13 @@ $(function() {
     if (currentSeries)
       seriesList.push(currentSeries);
 
+    var markings = [];
+    var timeToStableFrame = null;
+    if (metadata.metrics && metadata.metrics.timetostableframe) {
+      timeToStableFrame = metadata.metrics.timetostableframe
+      markings.push({ color: "#000", lineWidth: 1, xaxis: { from: timeToStableFrame, to: timeToStableFrame } });
+    }
+
     var graphContainer = $("#graph-container");
     var plot = $.plot(graphContainer, seriesList, {
       xaxis: {
@@ -93,9 +100,16 @@ $(function() {
         min: 0
       },
       legend: { show: false },
-      grid: { clickable: true, hoverable: true, mouseActiveRadius: 1000 },
+      grid: { clickable: true, hoverable: true, mouseActiveRadius: 1000, markings: markings },
       pan: { interactive: true }
     });
+
+    if (timeToStableFrame) {
+      var min = Math.min.apply(Math, measureValues)
+      var mid = min + ((Math.max.apply(Math, measureValues) - min) / 2);
+      var o = plot.pointOffset({ x: timeToStableFrame, y: mid});
+      graphContainer.append("<div style='position:absolute;left:" + (o.left + 4) + "px;top:" + o.top + "px;color:#666;font-size:smaller'>Image stable</div>");
+    }
 
     graphContainer.bind("plotclick", function (event, pos, item) {
       var video = $("#frameview").get(0);
