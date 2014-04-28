@@ -20,8 +20,8 @@ function updateContent(testInfo, deviceId, testId, measureId) {
     // figure out which measures could apply to this graph
     var availableMeasureIds = [];
     Object.keys(testData).forEach(function(type) {
-      Object.keys(testData[type]).forEach(function(datestr) {
-        testData[type][datestr].forEach(function(sample) {
+      Object.keys(testData[type]).forEach(function(timestamp) {
+        testData[type][timestamp].forEach(function(sample) {
           var measureIds = getMeasureIdsInSample(sample, overallMeasures);
           measureIds.forEach(function(measureId) {
             if (jQuery.inArray(measureId, availableMeasureIds) === -1) {
@@ -66,7 +66,7 @@ function updateGraph(title, rawdata, measureId) {
   // get global maximum date (for baselining)
   var globalMaxDate = 0;
   Object.keys(rawdata).forEach(function(type) {
-    var dates = Object.keys(rawdata[type]).map(parseDate);
+    var dates = Object.keys(rawdata[type]).map(parseTimestamp);
     globalMaxDate = Math.max(globalMaxDate, Math.max.apply(null, dates));
   });
 
@@ -81,10 +81,10 @@ function updateGraph(title, rawdata, measureId) {
       data: []
     };
 
-    Object.keys(rawdata[type]).sort().forEach(function(datestr) {
-      rawdata[type][datestr].forEach(function(sample) {
+    Object.keys(rawdata[type]).sort().forEach(function(timestamp) {
+      rawdata[type][timestamp].forEach(function(sample) {
         if (measureId in sample) {
-          series1.data.push([ parseDate(datestr), sample[measureId] ]);
+          series1.data.push([ parseTimestamp(timestamp), sample[measureId] ]);
           var sourceRepo = sample.sourceRepo;
           if (!sourceRepo) {
             sourceRepo = "http://hg.mozilla.org/mozilla-central";
@@ -109,17 +109,17 @@ function updateGraph(title, rawdata, measureId) {
 
     var lastSample;
     var lastData;
-    Object.keys(rawdata[type]).sort().forEach(function(datestr) {
+    Object.keys(rawdata[type]).sort().forEach(function(timestamp) {
       var numSamples = 0;
       var total = 0;
-      rawdata[type][datestr].forEach(function(sample) {
+      rawdata[type][timestamp].forEach(function(sample) {
         lastSample = sample;
         if (sample[measureId]) {
           total += sample[measureId];
           numSamples++;
         }
       });
-      lastData = [parseDate(datestr), total/numSamples];
+      lastData = [parseTimestamp(timestamp), total/numSamples];
       series2.data.push(lastData);
     });
     // if last sample was a baseline and there's a great data, extend
@@ -150,8 +150,7 @@ function updateGraph(title, rawdata, measureId) {
                                                        'defaultDetailParameter': defaultDetailParameter,
                                                        'httpLog': metadata.httpLog ? true : false,
                                                        'measureName': measureName,
-                                                       'date': getDateStr(date),
-                                                       'appDate': metadata.appdate,
+                                                       'date': getDateStr(metadata.appdate * 1000),
                                                        'buildRevision': sliceIfExist(metadata.buildRevision),
                                                        'gaiaRevision': sliceIfExist(metadata.gaiaRevision),
                                                        'prevRevision': prevRevision,
@@ -167,16 +166,16 @@ function updateGraph(title, rawdata, measureId) {
       }
 
       // try to find the previous revision
-      var prevDateStr = null;
-      Object.keys(rawdata[series.label]).sort().forEach(function(dateStr) {
-        if (parseDate(dateStr) < date) {
+      var prevTimestamp = null;
+      Object.keys(rawdata[series.label]).sort().forEach(function(timestamp) {
+        if (parseTimestamp(timestamp) < date) {
           // potential candidate
-          prevDateStr = dateStr;
+          prevTimestamp = timestamp;
         }
       });
 
-      if (prevDateStr) {
-        var prevDayData = rawdata[series.label][prevDateStr];
+      if (prevTimestamp) {
+        var prevDayData = rawdata[series.label][prevTimestamp];
         $.getJSON(getResourceURL('metadata/' + prevDayData[0].uuid + '.json'), function(prevMetadata) {
           updateDataPoint(prevMetadata.revision)
         });

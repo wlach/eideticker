@@ -18,11 +18,13 @@ function parseDate(datestr) {
   return Date.UTC(year, month, day);
 }
 
+function parseTimestamp(timestamp) {
+  return new Date(timestamp*1000);
+}
+
 function getDateStr(timestamp) {
-  var date = new Date(timestamp);
-  var month = (date.getUTCMonth() + 1);
-  var day = date.getUTCDate();
-  return date.getUTCFullYear() + "-" + ((month < 10) ? "0" : "") + month + '-' + ((day < 10) ? "0" : "") + day;
+  var date = new Date(parseInt(timestamp));
+  return date.toUTCString();
 }
 
 var overallMeasures = {

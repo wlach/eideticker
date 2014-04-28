@@ -142,12 +142,8 @@
     <div class="well">
       <video id="video" src="{{videoURL}}" controls></video>
       <dl>
-        <dt>Test Date</dt>
-        <dd>{{date}}</dd>
-        {{#appDate}}
         <dt>Build Date</dt>
-        <dd>{{appDate}}</dd>
-        {{/appDate}}
+        <dd>{{date}}</dd>
         {{#revision}}
         <dt>Revision</dt>
         <dd><a href="{{sourceRepo}}/rev/{{revision}}" target="_blank">{{revision}}</a></dd>

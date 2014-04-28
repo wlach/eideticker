@@ -4,7 +4,8 @@
 
 import ConfigParser
 import zipfile
-
+import datetime
+import time
 
 def get_appinfo(fh):
     config = ConfigParser.ConfigParser()
@@ -16,12 +17,13 @@ def get_appinfo(fh):
         # happens if we're not using mercurial to build fennec
         revision = None
     version = config.get('App', 'Version')
-    (year, month, day) = (buildid[0:4], buildid[4:6], buildid[6:8])
+    tm = time.strptime(buildid, '%Y%m%d%H%M%S')
+    date = datetime.datetime(*tm[:6])
     try:
         sourcerepo = config.get('App', 'SourceRepository')
     except ConfigParser.NoOptionError:
         sourcerepo = None
-    return {'appdate': "%s-%s-%s" % (year, month, day),
+    return {'appdate': "%s" % int(time.mktime(date.timetuple())),
             'buildid': buildid,
             'revision': revision,
             'sourceRepo': sourcerepo,
