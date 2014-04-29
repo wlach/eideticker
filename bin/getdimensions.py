@@ -1,12 +1,10 @@
 #!/usr/bin/env python
 
 from PIL import ImageDraw
-from itertools import repeat
 import eideticker
 import json
 import mozhttpd
 import moznetwork
-import multiprocessing
 import os
 import sys
 import time
@@ -102,15 +100,6 @@ def run_capture(options, capture_file):
 
     httpd.stop()
 
-def _get_biggest_framediff_square((framenum, capture)):
-    imgarray = videocapture.get_framediff_imgarray(capture, framenum - 2,
-                                                   framenum)
-    return square.get_biggest_square([255, 0, 0],
-                                     imgarray,
-                                     x_tolerance_min=100,
-                                     x_tolerance_max=100,
-                                     handle_multiple_scanlines=True)
-
 def main(args=sys.argv[1:]):
     usage = "usage: %prog [options] <app name>"
     parser = eideticker.CaptureOptionParser(
@@ -152,15 +141,18 @@ def main(args=sys.argv[1:]):
     print "Processing capture..."
     capture = videocapture.Capture(capture_file)
 
-    pool = multiprocessing.Pool()
-    possible_squares = pool.map(_get_biggest_framediff_square, zip(
-            range(4, capture.num_frames), repeat(capture)))
+    # create a difference. threshold differences above 32 to 255, then
+    # run our existing algorithm on it
+    framediff = capture.get_frame(0) - capture.get_frame(capture.num_frames-1)
+    for y,row in enumerate(framediff):
+        for x,px in enumerate(row):
+            if px[0] > 32 or px[1] > 32 or px[2] > 32:
+                framediff[y][x] = [255.0,255.0,255.0]
 
-    largest_square = None
-    for s in possible_squares:
-        if square and (not largest_square or square.get_area(s) > square.get_area(
-                largest_square)):
-            largest_square = s
+    largest_square = square.get_biggest_square([255,255,255], framediff,
+                                               x_tolerance_min=100,
+                                               x_tolerance_max=100,
+                                               handle_multiple_scanlines=True)
 
     if largest_square is not None:
         print "Capture area: %s" % largest_square
