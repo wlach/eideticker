@@ -417,6 +417,7 @@ class EidetickerB2GMixin(EidetickerMixin):
 
         self.b2gpopulate = B2GPopulate(self.marionette)
         self.gaiaApps = GaiaApps(self.marionette)
+        self.gaiaData = GaiaData(self.marionette)
         self.gaiaDevice = GaiaDevice(self.marionette)
 
     def connectWIFI(self, wifiSettings):
@@ -424,8 +425,7 @@ class EidetickerB2GMixin(EidetickerMixin):
         Tries to connect to the wifi network
         """
         self._logger.info("Setting up wifi...")
-        data = GaiaData(self.marionette)
-        data.connect_to_wifi(wifiSettings)
+        self.gaiaData.connect_to_wifi(wifiSettings)
         self._logger.info("WIFI ready!")
 
     def cleanup(self):
@@ -469,6 +469,10 @@ marionetteScriptFinished();
         # unlock device, so it doesn't go to sleep
         self._logger.info("Unlocking screen...")
         self.gaiaDevice.unlock()
+
+        # turn off automatic brightness adjustments and set to 100%
+        self.gaiaData.set_setting('screen.automatic-brightness', '')
+        self.gaiaData.set_setting('screen.brightness', 1)
 
         # kill running apps so they don't interfere with the test
         self._logger.info("Killing all running apps...")
