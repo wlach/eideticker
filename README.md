@@ -54,7 +54,7 @@ For more information on the Decklink cards, see the
   (possibly add a hub depending on machine)
 
 * [PointGrey Flea3 FL3-U3-13E4C-C](http://www.ptgreystore.com/products/229-flea3-13mp-color-usb-30-e2v-ev76c560.aspx)
-  camera.
+  camera. Note that the iris on the camera should be fully open for the distributed settings file to be most effective.
 
 * [Fujinon HF12.5HA-1B](http://www.ptgreystore.com/products/98-fujinon-hf125ha-1b-lens.aspx)
   camera lens.

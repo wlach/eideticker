@@ -8,10 +8,10 @@
             "valueB": 0
         },
         "GAIN": {
-            "absValue": 18.06179,
+            "absValue": 0.000000,
             "autoManualMode": false,
             "onOff": true,
-            "valueA": 162,
+            "valueA": 0,
             "valueB": 0
         },
         "SHARPNESS": {
@@ -22,10 +22,10 @@
             "valueB": 0
         },
         "SHUTTER": {
-            "absValue": 3.078401,
+            "absValue": 1.601994,
             "autoManualMode": false,
             "onOff": true,
-            "valueA": 196,
+            "valueA": 102,
             "valueB": 0
         },
         "WHITE_BALANCE": {
