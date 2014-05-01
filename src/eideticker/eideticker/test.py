@@ -539,6 +539,12 @@ class B2GAppStartupTest(B2GAppTest):
     def __init__(self, testinfo, appname, **kwargs):
         super(B2GAppStartupTest, self).__init__(testinfo, appname, **kwargs)
 
+    def wait_for_content_ready(self):
+        self.log("No explicit logic for detecting content ready specified. "
+                 "Waiting %s seconds for app to finish starting (or settle)" %
+                 self.capture_timeout)
+        time.sleep(self.capture_timeout)
+
     def run(self):
         from gaiatest.apps.homescreen.app import Homescreen
         homescreen = Homescreen(self.device.marionette)
@@ -579,12 +585,11 @@ class B2GAppStartupTest(B2GAppTest):
         self.execute_actions([['tap', tap_x, tap_y]],
                              test_finished_after_actions=False)
 
-        if hasattr(self, 'wait_for_finish'):
-            self.wait_for_finish()
+        self.wait_for_content_ready()
 
-        self.log("Waiting %s seconds for app to finish starting (or settle)" %
-                 self.capture_timeout)
-        time.sleep(self.capture_timeout)
+        self.log("Content ready. Waiting an additional second to make sure "
+                 "it has settled")
+        time.sleep(1)
 
         self.test_finished()
         self.end_capture()

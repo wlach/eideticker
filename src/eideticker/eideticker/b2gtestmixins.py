@@ -25,6 +25,16 @@ class B2GContactsTestMixin(object):
         # the first launch after populating the data takes a long time.
         contacts = Contacts(self.device.marionette)
         contacts.launch()
+        self.wait_for_content_ready()
+
+    def wait_for_content_ready(self):
+        apps = GaiaApps(self.device.marionette)
+        contacts = Contacts(self.device.marionette)
+
+        Wait(self.device.marionette).until(
+            lambda m: apps.displayed_app.name.lower() == 'contacts')
+        apps.switch_to_displayed_app()
+
         Wait(self.device.marionette, 120, ignored_exceptions=(
             NoSuchElementException, ElementNotVisibleException)).until(
             lambda m: m.find_element(
@@ -41,9 +51,9 @@ class B2GMarketplaceTestMixin(object):
     def launch_app(self):
         apps = GaiaApps(self.device.marionette)
         apps.launch('Marketplace')
-        self.wait_for_finish()
+        self.wait_for_content_ready()
 
-    def wait_for_finish(self):
+    def wait_for_content_ready(self):
         apps = GaiaApps(self.device.marionette)
         Wait(self.device.marionette).until(
             lambda m: apps.displayed_app.name.lower() == 'marketplace')
