@@ -23,7 +23,7 @@ def get_stable_frame(capture, method='framediff', sobelized=False,
         return len(framediff_sums) - 1
     elif method == 'entropy':
         return _get_stable_frame_from_entropies(
-            get_frame_entropies(sobelized=sobelized))
+            get_frame_entropies(capture, sobelized=sobelized))
 
 def get_stable_frame_time(capture, method='framediff', threshold=4096,
                           sobelized=False):
