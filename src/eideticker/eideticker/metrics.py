@@ -20,7 +20,7 @@ _camera_props = {
     'stable_frame_threshold': 3, # 3 times standard deviation, standard
     'sobelize': True,
     'animation_threshold': 4096,
-    'valid_measures': [ 'uniqueframes', 'fps', 'overallentropy' ]
+    'valid_measures': [ 'overallentropy' ]
 }
 
 
