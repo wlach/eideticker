@@ -4,58 +4,42 @@
 
 from gaiatest.apps.contacts.app import Contacts
 from marionette import expected
-from marionette.errors import NoSuchElementException
-from marionette.errors import ElementNotVisibleException
-from marionette.wait import Wait
+from marionette import Wait
 from marionette.by import By
-from gaiatest.gaia_test import GaiaApps
 
 
 class B2GContactsTestMixin(object):
+
+    def launch_app(self):
+        app = Contacts(self.device.marionette)
+        app.launch()
+        self.wait_for_content_ready()
 
     def populate_databases(self):
         self.device.b2gpopulate.populate_contacts(
             200, include_pictures=False, restart=False)
 
-    def launch_app(self):
-
-        self.log("Launching app and waiting for it to be ready!")
-
-        # launch the contacts app and wait for the contacts to be displayed,
-        # the first launch after populating the data takes a long time.
-        contacts = Contacts(self.device.marionette)
-        contacts.launch()
-        self.wait_for_content_ready()
-
-    def wait_for_content_ready(self):
-        apps = GaiaApps(self.device.marionette)
-        contacts = Contacts(self.device.marionette)
-
-        Wait(self.device.marionette).until(
-            lambda m: apps.displayed_app.name.lower() == 'contacts')
-        apps.switch_to_displayed_app()
-
-        Wait(self.device.marionette, 120, ignored_exceptions=(
-            NoSuchElementException, ElementNotVisibleException)).until(
-            lambda m: m.find_element(
-                *contacts._contact_locator).is_displayed())
-
     def prepare_app(self):
         self.launch_app()
+
+    def wait_for_content_ready(self):
+        app = Contacts(self.device.marionette)
+        contact = Wait(self.device.marionette, timeout=240).until(
+            expected.element_present(*app._contact_locator))
+        Wait(self.device.marionette, timeout=30).until(
+            expected.element_displayed(contact))
 
 
 class B2GMarketplaceTestMixin(object):
 
     def launch_app(self):
-        apps = GaiaApps(self.device.marionette)
-        apps.launch('Marketplace')
+        self.device.gaiaApps.launch('Marketplace')
         self.wait_for_content_ready()
 
+    def prepare_app(self):
+        self.launch_app()
+
     def wait_for_content_ready(self):
-        apps = GaiaApps(self.device.marionette)
-        Wait(self.device.marionette).until(
-            lambda m: apps.displayed_app.name.lower() == 'marketplace')
-        apps.switch_to_displayed_app()
         if 'index.html' in self.device.marionette.get_url():
             # only switch to iframe if Marketplace is not packaged
             iframe = Wait(self.device.marionette).until(
@@ -66,5 +50,31 @@ class B2GMarketplaceTestMixin(object):
             lambda m: 'loaded' in m.find_element(
                 By.TAG_NAME, 'body').get_attribute('class').split())
 
+
+class B2GMessagesTestMixin(object):
+
+    def launch_app(self):
+        self.device.gaiaApps.launch('Messages')
+        self.wait_for_content_ready()
+
     def prepare_app(self):
         self.launch_app()
+
+    def populate_databases(self):
+        self.device.b2gpopulate.populate_messages(200, restart=False)
+
+    def wait_for_content_ready(self):
+        # the 200 message workload contains 37 threads (36 on v1.3)
+        Wait(self.device.marionette, timeout=60).until(
+            lambda m: len(m.find_elements(
+                By.CSS_SELECTOR, '#threads-container li')) >= 36)
+
+
+class B2GSettingsTestMixin(object):
+
+    def wait_for_content_ready(self):
+        # _currentPanel is set after all handlers are set
+        Wait(self.device.marionette).until(
+            lambda m: m.execute_script(
+                "return window.wrappedJSObject.Settings && "
+                "window.wrappedJSObject.Settings._currentPanel === '#root'"))

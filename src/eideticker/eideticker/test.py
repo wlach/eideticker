@@ -19,6 +19,7 @@ from log import LoggingMixin
 
 from marionette.errors import NoSuchElementException
 from marionette.by import By
+from marionette.wait import Wait
 
 SRC_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
 TEST_DIR = os.path.abspath(os.path.join(SRC_DIR, "tests"))
@@ -566,6 +567,12 @@ class B2GAppStartupTest(B2GAppTest):
         self.start_capture()
         self.execute_actions([['tap', tap_x, tap_y]],
                              test_finished_after_actions=False)
+
+        # wait for the app to be displayed
+        apps = GaiaApps(self.device.marionette)
+        Wait(self.device.marionette).until(
+            lambda m: apps.displayed_app.name.lower() == self.appname.lower())
+        apps.switch_to_displayed_app()
 
         self.wait_for_content_ready()
 

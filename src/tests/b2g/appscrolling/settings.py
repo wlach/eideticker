@@ -2,9 +2,10 @@ from gaiatest.apps.settings.app import Settings
 from marionette.by import By
 
 from eideticker.test import B2GAppActionTest
+from eideticker.b2gtestmixins import B2GSettingsTestMixin
 
 
-class Test(B2GAppActionTest):
+class Test(B2GSettingsTestMixin, B2GAppActionTest):
 
     def launch_app(self):
         settings = Settings(self.device.marionette)
