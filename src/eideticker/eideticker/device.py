@@ -12,7 +12,7 @@ import posixpath
 import re
 import tempfile
 import time
-from gaiatest.gaia_test import GaiaDevice, GaiaData, GaiaApps
+from gaiatest.gaia_test import FakeUpdateChecker, GaiaDevice, GaiaData, GaiaApps
 from b2gpopulate import B2GPopulate
 
 # I know specifying resolution manually like this is ugly, but as far as I
@@ -465,6 +465,9 @@ marionetteScriptFinished();
 
         # TODO: Remove this sleep when Bug 924912 is addressed
         time.sleep(5)
+
+        # run the fake update checker
+        FakeUpdateChecker(self.marionette).check_updates()
 
         # unlock device, so it doesn't go to sleep
         self._logger.info("Unlocking screen...")
