@@ -6,6 +6,6 @@ from controller import CaptureController
 from capture import Capture, BadCapture
 from checkerboard import *
 from framediff import get_framediff_imgarray, get_framediff_image, get_framediff_sums, get_num_unique_frames, get_fps
-from entropy import get_entropy_diffs, get_overall_entropy, get_frame_entropies
+from entropy import get_overall_entropy, get_frame_entropies
 from stableframe import get_stable_frame, get_stable_frame_time
 from options import OptionParser

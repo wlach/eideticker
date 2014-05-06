@@ -13,7 +13,7 @@ def _get_stable_frame_from_entropies(entropies, window_size=10, pvalue_threshold
             return i
     return 0
 
-def get_stable_frame(capture, method='framediff', sobelized=False,
+def get_stable_frame(capture, method='framediff', edge_detection=None,
                      threshold=4096):
     if method == 'framediff':
         framediff_sums = get_framediff_sums(capture)
@@ -23,9 +23,9 @@ def get_stable_frame(capture, method='framediff', sobelized=False,
         return len(framediff_sums) - 1
     elif method == 'entropy':
         return _get_stable_frame_from_entropies(
-            get_frame_entropies(capture, sobelized=sobelized))
+            get_frame_entropies(capture, edge_detection=None))
 
 def get_stable_frame_time(capture, method='framediff', threshold=4096,
-                          sobelized=False):
+                          edge_detection=None):
     return get_stable_frame(capture, method=method, threshold=threshold,
-                            sobelized=sobelized) / float(capture.fps)
+                            edge_detection=edge_detection) / float(capture.fps)

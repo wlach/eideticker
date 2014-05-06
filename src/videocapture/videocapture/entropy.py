@@ -1,21 +1,28 @@
 from itertools import repeat
 from scipy import ndimage
 import cPickle as pickle
+import cv2
 import math
 import multiprocessing
 import numpy
 
 DEFAULT_POOL_SIZE=8
 
-def _get_frame_entropy((i, capture, sobelized)):
-    frame = capture.get_frame(i, True).astype('float')
-    if sobelized:
+def _get_frame_entropy((i, capture, edge_detection)):
+    """ Function calculates and returns the entropy of a single frame.
+        Values for edge_detection can be 'sobel', 'canny' and None. """
+
+    frame = capture.get_frame(i, True).astype('uint8') #ndarray is float64 by default
+
+    if edge_detection=='sobel':
         frame = ndimage.median_filter(frame, 3)
 
         dx = ndimage.sobel(frame, 0)  # horizontal derivative
         dy = ndimage.sobel(frame, 1)  # vertical derivative
         frame = numpy.hypot(dx, dy)  # magnitude
         frame *= 255.0 / numpy.max(frame)  # normalize (Q&D)
+    elif edge_detection=='canny':
+        frame = cv2.Canny(frame,100,200) # Using set params at the moment
 
     histogram = numpy.histogram(frame, bins=256)[0]
     histogram_length = sum(histogram)
@@ -24,15 +31,17 @@ def _get_frame_entropy((i, capture, sobelized)):
 
     return entropy
 
-def get_frame_entropies(capture, sobelized=False):
+def get_frame_entropies(capture, edge_detection=None):
     try:
         cache = pickle.load(open(capture.cache_filename, 'r'))
     except:
         cache = {}
 
     cachekey = 'frame_entropies'
-    if sobelized:
+    if edge_detection=='sobel':
         cachekey += '_sobel'
+    elif edge_detection=='canny':
+        cachekey += '_canny'
 
     if cache.get(cachekey):
         return cache[cachekey]
@@ -40,24 +49,11 @@ def get_frame_entropies(capture, sobelized=False):
     pool = multiprocessing.Pool(processes=DEFAULT_POOL_SIZE)
     results = pool.map(_get_frame_entropy, zip(range(capture.num_frames+1),
                                                repeat(capture),
-                                               repeat(sobelized)))
+                                               repeat(edge_detection)))
     cache[cachekey] = results
     pickle.dump(cache, open(capture.cache_filename, 'w'))
 
     return cache[cachekey]
 
-def get_overall_entropy(capture, sobelized=False):
-    return sum(get_frame_entropies(capture, sobelized=sobelized))
-
-def get_entropy_diffs(capture, num_samples=5, sobelized=False):
-    entropies = get_frame_entropies(capture, sobelized=sobelized)
-    entropy_diffs = [0]
-    for i in range(1, len(entropies) - num_samples):
-        if i < num_samples:
-            num_prev_samples = i
-        else:
-            num_prev_samples = num_samples
-        entropy_diffs.append(abs((sum(entropies[i:i+num_samples]) / num_samples) -
-                                 (sum(entropies[i-num_prev_samples:i])/num_prev_samples)))
-
-    return entropy_diffs
+def get_overall_entropy(capture, edge_detection=None):
+    return sum(get_frame_entropies(capture, edge_detection))

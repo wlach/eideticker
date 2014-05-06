@@ -46,8 +46,8 @@ var perFrameMeasures = {
   'framediffsums': { 'shortDesc': 'Frame difference (pixels)',
                      'longDesc': 'Number of pixels different between frames (low differences filtered out)'
                      },
-  'framesobelentropies': { 'shortDesc': 'Frame entropy (sobelized)',
-                           'longDesc': 'Amount of entropy in each frame, after running a sobel filter pass on it. Higher values indicate more information in the frame. Lower values may indicate checkerboarding.'
+  'framecannyentropies': { 'shortDesc': 'Frame entropy (canny)',
+                           'longDesc': 'Amount of entropy in each frame, after running canny edge detection on it. Higher values indicate more information in the frame. Lower values may indicate checkerboarding.'
                            }
 };
 
@@ -73,7 +73,9 @@ function measureDisplayList(measureIds, measures) {
 // default value for detail view: usually frame diff sums, unless we're
 // looking at entropy, in which case we'll look at the entropy values
 function getDefaultDetailParameter(measureName, metadata) {
-  if (measureName === "overallentropy" && metadata.framesobelentropies) {
+  if (measureName === "overallentropy" && metadata.framecannyentropies) {
+    return "framecannyentropies";
+  } else if (measureName === "overallentropy" && metadata.framesobelentropies) {
     return "framesobelentropies";
   } else if (metadata.framediffsums) {
     return "framediffsums";

@@ -4,7 +4,7 @@ _hdmi_props = {
     'input_threshold': 4096,
     'stable_frame_analysis_method': 'framediff',
     'stable_frame_threshold': 4096,
-    'sobelize': False,
+    'edge_detection': None,
     'animation_threshold': 2048,
     'valid_measures': [ 'uniqueframes', 'fps', 'checkerboard',
                         'overallentropy' ]
@@ -18,7 +18,7 @@ _camera_props = {
     'input_threshold': 4096,
     'stable_frame_analysis_method': 'entropy',
     'stable_frame_threshold': 3, # 3 times standard deviation, standard
-    'sobelize': True,
+    'edge_detection': 'canny',
     'animation_threshold': 4096,
     'valid_measures': [ 'overallentropy' ]
 }
@@ -39,7 +39,7 @@ def get_stable_frame_time(capture):
     return videocapture.get_stable_frame_time(
         capture, method=analysis_props['stable_frame_analysis_method'],
         threshold=analysis_props['stable_frame_threshold'],
-        sobelized=analysis_props['sobelize'])
+        edge_detection=analysis_props['edge_detection'])
 
 def get_standard_metrics(capture, actions):
     analysis_props = _get_analysis_props(capture.metadata['captureDevice'])
@@ -55,9 +55,8 @@ def get_standard_metrics(capture, actions):
         metrics['checkerboard'] = videocapture.get_checkerboarding_area_duration(
             capture)
     if 'overallentropy' in analysis_props['valid_measures']:
-        metrics['overallentropy'] = \
-                                    videocapture.get_overall_entropy(capture,
-                                         sobelized=analysis_props['sobelize'])
+        metrics['overallentropy'] = videocapture.get_overall_entropy(
+            capture, edge_detection=analysis_props['edge_detection'])
 
     if actions:
         # get the delta between the first non-sleep action being fired and
@@ -81,5 +80,5 @@ def get_standard_metrics(capture, actions):
 
 def get_standard_metric_metadata(capture):
     return { 'framediffsums': videocapture.get_framediff_sums(capture),
-             'framesobelentropies': videocapture.get_frame_entropies(
-            capture, sobelized=True) }
+             'framecannyentropies': videocapture.get_frame_entropies(
+            capture, edge_detection='canny') }
