@@ -9,7 +9,7 @@ from marionette.errors import ElementNotVisibleException
 from marionette.wait import Wait
 from marionette.by import By
 from gaiatest.gaia_test import GaiaApps
-import time
+
 
 class B2GContactsTestMixin(object):
 
@@ -58,16 +58,15 @@ class B2GMarketplaceTestMixin(object):
         Wait(self.device.marionette).until(
             lambda m: apps.displayed_app.name.lower() == 'marketplace')
         apps.switch_to_displayed_app()
-        iframe = Wait(self.device.marionette).until(
-            expected.element_present(
-                By.CSS_SELECTOR, 'iframe[src*="marketplace"]'))
-        self.device.marionette.switch_to_frame(iframe)
-        # FIXME: The below *should* work, but doesn't... just doing an
-        # arbitrary
-        #Wait(self.device.marionette).until(
-        #    lambda m: 'loaded' in m.find_element(
-        #        By.TAG_NAME, 'body').get_attribute('class').split()
-        time.sleep(30)
+        if 'index.html' in self.device.marionette.get_url():
+            # only switch to iframe if Marketplace is not packaged
+            iframe = Wait(self.device.marionette).until(
+                expected.element_present(
+                    By.CSS_SELECTOR, 'iframe[src*="marketplace"]'))
+            self.device.marionette.switch_to_frame(iframe)
+        Wait(self.device.marionette).until(
+            lambda m: 'loaded' in m.find_element(
+                By.TAG_NAME, 'body').get_attribute('class').split())
 
     def prepare_app(self):
         self.launch_app()
