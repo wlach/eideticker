@@ -21,8 +21,9 @@ class Test(B2GAppStartupTest):
         gallery = Gallery(self.device.marionette)
         gallery.app = self.device.gaiaApps.launch('Gallery')
         time.sleep(5)
-        end_time = time.time() + 120
-        while time.time() < end_time:
+        timeout = 200
+        starttime = time.time()
+        while (time.time() - starttime) < timeout:
             try:
                 items = self.device.marionette.find_elements(
                     *gallery._gallery_items_locator)
