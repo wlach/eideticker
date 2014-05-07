@@ -8,9 +8,9 @@ analyzes browser output via HDMI or an external camera.
 * Ubuntu Linux system with python and various other third-party dependencies
   installed. You can get this by running:
 
-    `sudo apt-get install -y zip ffmpeg g++ python-scipy python2.7-dev python-virtualenv ntp`
+    `sudo apt-get install -y zip libav-tools g++ python-scipy python2.7-dev python-virtualenv ntp`
 
-  The recommended Linux distribution to use is Ubuntu 12.04 64-bit (32-bit is
+  The recommended Linux distribution to use is Ubuntu 14.04 64-bit (32-bit is
   known not to work with the PointGrey cameras). Later versions
   of Ubuntu are probably also fine.
 

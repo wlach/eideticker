@@ -11,10 +11,10 @@ if [ ! $VENV ]; then
     virtualenv --system-site-packages $VENV
 fi
 
-for PROG in virtualenv g++ ffmpeg; do
+for PROG in virtualenv g++ avconv; do
     which $PROG > /dev/null
     if [ $? != 0 ]; then
-        echo "Required dep $PROG not found. Please install ('sudo apt-get install -y python-virtualenv g++ ffmpeg' on Ubuntu gets them all)"
+        echo "Required dep $PROG not found. Please install ('sudo apt-get install -y python-virtualenv g++ libav-tools' on Ubuntu gets them all)"
         exit 1
     fi
 done

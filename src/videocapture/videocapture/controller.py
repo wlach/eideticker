@@ -362,7 +362,7 @@ class CaptureController(object):
                                       '--target-bitrate=%s' % DEFAULT_WEBM_BIT_RATE,
                                       '-o', moviefile.name, yuvfile.name)).wait()
             else:
-                subprocess.Popen(('ffmpeg', '-y', '-r', str(generated_video_fps), '-i',
+                subprocess.Popen(('avconv', '-y', '-r', str(generated_video_fps), '-i',
                                   os.path.join(rewritten_imagedir, '%d.png'),
                                   moviefile.name), close_fds=True).wait()
 

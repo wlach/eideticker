@@ -1,7 +1,7 @@
 language: python
 python:
   - "2.7"
-install: sudo apt-get update && sudo apt-get install -y python-virtualenv python-scipy g++ ffmpeg && ./bootstrap.sh
+install: sudo apt-get update && sudo apt-get install -y python-virtualenv python-scipy g++ libav-tools && ./bootstrap.sh
 script: ./bin/python bin/list-tests.py
 notifications:
   email:
