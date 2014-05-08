@@ -128,7 +128,16 @@ int main(int argc, char *argv[])
     f7Settings.width = 1280;
     f7Settings.height = 1024;
     f7Settings.pixelFormat = PIXEL_FORMAT_RAW8;
-    error = cam.SetFormat7Configuration(&f7Settings, (unsigned int)24764);
+
+    bool valid = false;
+    Format7PacketInfo packetInfo;
+    error = cam.ValidateFormat7Settings(&f7Settings, &valid, &packetInfo);
+    if (error != PGRERROR_OK) {
+      printError(error);
+      return -1;
+    }
+
+    error = cam.SetFormat7Configuration(&f7Settings, packetInfo.recommendedBytesPerPacket);
     if (error != PGRERROR_OK) {
       printError(error);
       return -1;
