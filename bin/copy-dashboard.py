@@ -70,6 +70,9 @@ parser.add_option("--full-mirror", action="store_true",
 parser.add_option("--skip-metadata", action="store_false",
                   dest="download_metadata", default=True,
                   help="Skip downloading metadata JSON files")
+parser.add_option("--device-id", action="store",
+                  dest="device_id",
+                  help="Only download information for device id")
 options, args = parser.parse_args()
 
 if len(args) != 2:
@@ -93,7 +96,10 @@ profiledir = os.path.join(outputdir, 'profiles')
 devices = requests.get(baseurl + 'devices.json')
 save_file(os.path.join(outputdir, 'devices.json'), devices.content)
 
-device_names = devices.json()['devices'].keys()
+if options.device_id:
+    device_names = [ options.device_id ]
+else:
+    device_names = devices.json()['devices'].keys()
 
 pool = ThreadPool()
 for device_name in device_names:
