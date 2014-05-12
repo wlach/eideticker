@@ -64,7 +64,7 @@ class B2GMarketplaceTestMixin(object):
                 expected.element_present(
                     By.CSS_SELECTOR, 'iframe[src*="marketplace"]'))
             self.device.marionette.switch_to_frame(iframe)
-        Wait(self.device.marionette).until(
+        Wait(self.device.marionette, timeout=30).until(
             lambda m: 'loaded' in m.find_element(
                 By.TAG_NAME, 'body').get_attribute('class').split())
 
