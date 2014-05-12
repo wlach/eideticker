@@ -351,11 +351,6 @@ class AndroidWebTest(WebTest):
         if self.profile_file:
             self.capture_metadata['ignoreAreas'] = [[0, 0, 3 * 64, 3]]
 
-        # precondition: app should not be running. abort if it is
-        if self.device.processExist(self.appname):
-            raise Exception("An instance of %s is running. Please stop it "
-                            "before running Eideticker." % self.appname)
-
         self.runner = eideticker.AndroidBrowserRunner(
             self.device, self.appname,
             self.url, self.tempdir,
@@ -475,11 +470,6 @@ class AndroidAppStartupTest(Test):
         self.appname = appname
         self.activity = testinfo.get('activity')
         self.intent = testinfo.get('intent')
-
-        # precondition: app should not be running. abort if it is
-        if self.device.processExist(self.appname):
-            raise Exception("An instance of %s is running. Please stop it "
-                            "before running Eideticker." % self.appname)
 
     def run(self):
         # FIXME: currently start capture before launching app because we wait

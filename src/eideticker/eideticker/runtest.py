@@ -147,7 +147,14 @@ def run_test(testkey, capture_device, appname, capture_name,
             wifi_settings = json.loads(open(wifi_settings_file).read())
             device.connectWIFI(wifi_settings)
     elif device_prefs['devicetype'] == 'android':
-        device.killProcess(appname)
+        num_tries = 0
+        max_tries = 5
+        while device.processExist(appname):
+            if num_tries > max_tries:
+                raise Exception("Couldn't successfully kill %s after %s "
+                                "tries" % (appname, max_tries))
+            device.killProcess(appname)
+            num_tries+=1
 
     # synchronize time unless instructed not to
     if sync_time:
