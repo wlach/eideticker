@@ -165,8 +165,32 @@ class EidetickerMixin(object):
 
     def synchronizeTime(self):
         self._logger.info("Synchronizing time...")
-        self.shellCheckOutput([self.DEFAULT_NTPDATE_LOCATION, "-c", "1", "-d",
-                               "-h", moznetwork.get_ip(), "-s"], root=True)
+        ntpdate_wait_time = 5
+        ntpdate_retries = 5
+        num_retries = 0
+        synced_time = False
+        while not synced_time:
+            try:
+                self.shellCheckOutput([self.DEFAULT_NTPDATE_LOCATION, "-c", "1", "-d",
+                                       "-h", moznetwork.get_ip(), "-s"], root=True,
+                                      timeout=ntpdate_wait_time)
+                synced_time = True
+            except mozdevice.DMError:
+                # HACK: we need to force a reconnection here on SUT (until bug
+                # 1009862 is fixed and lands in a released version of
+                # mozdevice)
+                self._sock = None
+                if num_retries == ntpdate_retries:
+                    raise Exception("Exceeded maximum number of retries "
+                                    "synchronizing time!")
+
+                # FIXME: as of this writing mozdevice doesn't distinguishing
+                # between timeouts and other errors (bug 1010328), so we're
+                # just gonna assume timeout
+                num_retries+=1
+                self._logger.info("Attempt to synchronize time failed, "
+                                  "retrying (try %s/%s)..." % (num_retries,
+                                                               ntpdate_retries))
         self._logger.info("Time synchronized!")
 
     def sendSaveProfileSignal(self, appName):
