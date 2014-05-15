@@ -13,6 +13,7 @@ import os
 from square import get_biggest_square
 import re
 import multiprocessing
+import select
 import shutil
 
 from PIL import Image, ImageFilter
@@ -107,16 +108,19 @@ class CaptureProcess(multiprocessing.Process):
 
         self.capture_proc = subprocess.Popen(args, stdout=subprocess.PIPE)
 
+        # this loop keeps track of the frame counter while the capture is
+        # ongoing
         while not self.finished_semaphore.value:
             try:
-                line = self.capture_proc.stdout.readline()
+                ready, _, _ = select.select([self.capture_proc.stdout], [], [], .1)
+
+                if self.capture_proc.stdout in ready:
+                    line = self.capture_proc.stdout.readline()
+                    if not line:
+                        break # end of output, we're done
+                    self.frame_counter.value = int(line.rstrip())
             except KeyboardInterrupt:
                 break
-
-            if not line:
-                break
-
-            self.frame_counter.value = int(line.rstrip())
 
         print "Terminating capture proc..."
         self.capture_proc.terminate()
@@ -206,9 +210,20 @@ class CaptureController(object):
             camera_settings_file=self.camera_settings_file)
         self.log("Starting capture...")
         self.capture_process.start()
+
         # wait for capture to actually start...
+        self.log("Waiting for first frame...")
+        max_wait_for_frame = 5
+        elapsed = 0
+        interval = 0.1
         while self.capture_framenum() < 1:
-            time.sleep(0.1)
+            time.sleep(interval)
+            elapsed += interval
+            if elapsed > max_wait_for_frame:
+                self.log("Timed out waiting for first frame! Capture prog "
+                         "hung?")
+                self.terminate_capture()
+                raise Exception("Timed out waiting for first frame")
 
     @property
     def capturing(self):
