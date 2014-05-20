@@ -168,15 +168,19 @@ class Test(LoggingMixin):
                 timer += interval
         except KeyboardInterrupt:
             self.end_capture()
-            raise Exception("Aborted test")
+            raise
 
         if self.capture_timeout and not self.finished_capture:
             # this test was meant to time out, ok
             self.test_finished()
             self.end_capture()
         elif not self.finished_capture:
+            # Something weird happened -- we probably didn't get a capture
+            # callback. However, we can still retry the test.
             self.log("Did not finish test / capture. Error!")
-            raise Exception("Did not finish test / capture! Error!")
+            self.end_capture()
+            raise TestException("Did not finish test / capture",
+                                can_retry=True)
 
     def start_capture(self):
         # callback indicating we should start capturing (if we're not doing so
@@ -301,16 +305,16 @@ class WebTest(Test):
             self.log("Executing commands '%s' for device '%s' (framenum: %s)" % (
                      commandset, self.device.model, self.start_frame))
             if not self.actions.get(commandset):
-                raise Exception("Could not get actions for commandset "
-                                "'%s'" % (commandset))
+                raise TestException("Could not get actions for commandset "
+                                    "'%s'" % commandset)
             # try to get a device-specific set of actions, falling back to
             # "default" if none exist
             default_actions = self.actions[commandset].get('default')
             actions = self.actions[commandset].get(self.device.model,
                                                    default_actions)
             if not actions:
-                raise Exception("Could not get actions for device %s (and no "
-                                "default fallback)" % self.device.model)
+                raise TestException("Could not get actions for device %s (and "
+                                    "no default fallback)" % self.device.model)
 
             self.execute_actions(actions)
         else:
@@ -565,8 +569,8 @@ class B2GAppStartupTest(B2GAppTest):
                     if homescreen.homescreen_has_more_pages:
                         homescreen.go_to_next_page()
                     else:
-                        raise Exception("Cannot find icon for app with name "
-                                        "'%s'" % self.appname)
+                        raise TestException("Cannot find icon for app with name "
+                                            "'%s'" % self.appname)
 
         tap_x = appicon.location['x'] + (appicon.size['width'] / 2)
         tap_y = appicon.location['y'] + (appicon.size['height'] / 2)
