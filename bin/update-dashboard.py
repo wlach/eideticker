@@ -270,7 +270,9 @@ def main(args=sys.argv[1:]):
         # synchronize with dashboard
         dashboard_server = os.getenv('DASHBOARD_SERVER')
         if dashboard_server:
-            subprocess.check_call(['sync-dashboard.sh', dashboard_server])
+            subprocess.check_call([os.path.join(os.path.dirname(__file__),
+                                                'sync-dashboard.sh'),
+                                   dashboard_server])
 
     if failed_tests:
         print "The following tests failed: %s" % ", ".join(failed_tests)
