@@ -6,6 +6,7 @@ import os
 import urllib
 import videocapture
 from log import logger
+from marionette.errors import MarionetteException
 
 CAPTURE_DIR = os.path.abspath(os.path.join(SRC_DIR, "../captures"))
 GECKO_PROFILER_ADDON_DIR = os.path.join(SRC_DIR, "../src/GeckoProfilerAddon")
@@ -13,11 +14,12 @@ EIDETICKER_TEMP_DIR = "/tmp/eideticker"
 
 
 def prepare_test(testkey, device_prefs, wifi_settings_file=None):
+    device = getDevice(**device_prefs)
+
     # prepare test logic -- currently only done on b2g
     if device_prefs['devicetype'] == 'b2g':
         testinfo = get_testinfo(testkey)
 
-        device = getDevice(**device_prefs)
         # HACK: we need to setup marionette here so we can instantiate a
         # b2gpopulate instance inside the device object (even though we
         # wind up deleting the same marionette instance in just a moment...
@@ -48,7 +50,8 @@ def prepare_test(testkey, device_prefs, wifi_settings_file=None):
         if hasattr(test, 'prepare_app'):
             logger.info("Doing initial setup on app for test")
             test.prepare_app()
-
+    else:
+        device.cleanup()
 
 def run_test(testkey, capture_device, appname, capture_name,
              device_prefs, extra_prefs={}, test_type=None, profile_file=None,
@@ -160,7 +163,16 @@ def run_test(testkey, capture_device, appname, capture_name,
     if sync_time:
         device.synchronizeTime()
 
-    test.run()
+    try:
+        test.run()
+    except MarionetteException, e:
+        # there are many ways a test could throw a marionette exception, try
+        # to catch them all here (we'll consider them non-fatal, so we'll retry
+        # a few times before giving up)
+        print "Marionette exception caught running test:\n%s" % e
+        raise TestException("Marionette exception caught running test: %s" % e.msg,
+                            can_retry=True)
+
     test.cleanup()
 
     if capture_file:

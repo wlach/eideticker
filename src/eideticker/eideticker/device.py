@@ -353,7 +353,20 @@ class EidetickerMixin(object):
         return self._parseTimings(timings_str)
 
 
-class DroidADB(EidetickerMixin, mozdevice.DroidADB):
+class EidetickerDroidMixin(object):
+    """Common functionality between adb and sut android implementations"""
+
+    def cleanup(self):
+        # clean up any test stuff (profiles, etc.)
+        self.removeDir(self.getDeviceRoot())
+
+        # cleanup any stale profiles
+        files = self.listFiles('/mnt/sdcard/')
+        for file in files:
+            if re.match('profile_.*txt', file):
+                self.removeFile('/mnt/sdcard/%s' % file)
+
+class DroidADB(EidetickerMixin, EidetickerDroidMixin, mozdevice.DroidADB):
 
     def __init__(self, **kwargs):
         mozdevice.DroidADB.__init__(self, **kwargs)
@@ -382,7 +395,7 @@ class DroidADB(EidetickerMixin, mozdevice.DroidADB):
         return 0  # No way to find real rotation, assume 0
 
 
-class DroidSUT(EidetickerMixin, mozdevice.DroidSUT):
+class DroidSUT(EidetickerMixin, EidetickerDroidMixin, mozdevice.DroidSUT):
 
     cached_dimensions = None
     cached_rotation = None

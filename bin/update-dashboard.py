@@ -1,21 +1,14 @@
 #!/usr/bin/env python
 
 import eideticker
-import json
 import os
+import subprocess
 import sys
 import time
 import videocapture
 import uuid
 import xml
 import StringIO
-
-
-class NestedDict(dict):
-    def __getitem__(self, key):
-        if key in self:
-            return self.get(key)
-        return self.setdefault(key, NestedDict())
 
 DOWNLOAD_DIR = os.path.join(os.path.dirname(__file__), "../downloads")
 CAPTURE_DIR = os.path.join(os.path.dirname(__file__), "../captures")
@@ -31,7 +24,7 @@ def get_revision_data(sources_xml):
     return revision_data
 
 def runtest(dm, device_prefs, options, product, appname,
-            appinfo, testinfo, capture_name, datafile, data,
+            appinfo, testinfo, capture_name,
             log_http_requests=False, log_actions=False):
     capture_file = os.path.join(CAPTURE_DIR,
                                 "%s-%s-%s-%s.zip" % (testinfo['key'],
@@ -51,9 +44,6 @@ def runtest(dm, device_prefs, options, product, appname,
     for i in range(3):
         print "Running test (try %s of 3)" % (i + 1)
 
-        # Kill any existing instances of the processes before starting
-        dm.killProcess(appname)
-
         try:
             testlog = eideticker.run_test(
                 testinfo['key'], options.capture_device,
@@ -71,12 +61,16 @@ def runtest(dm, device_prefs, options, product, appname,
         except eideticker.TestException, e:
             if e.can_retry:
                 print "Test failed, but not fatally. Retrying..."
+                print e
             else:
+                print "Test failed (fatally). Aborting"
+                print e
                 raise
 
     if not test_completed:
-        raise Exception("Failed to run test %s for %s (after 3 tries). "
-                        "Aborting." % (testinfo['key'], productname))
+        raise eideticker.TestException("Failed to run test %s for %s (after 3 "
+                                       "tries). Aborting." % (testinfo['key'],
+                                                              productname))
 
     if options.capture:
         capture = videocapture.Capture(capture_file)
@@ -88,15 +82,8 @@ def runtest(dm, device_prefs, options, product, appname,
     else:
         video_relpath = None
 
-    # need to initialize dict for product if not there already
-    if not data['testdata'].get(productname):
-        data['testdata'][productname] = {}
-
-    # app date
+    # app/product date
     appdate = appinfo['appdate']
-
-    if not data['testdata'][productname].get(appdate):
-        data['testdata'][productname][appdate] = []
 
     datapoint = { 'uuid': uuid.uuid1().hex }
     metadata =  { 'video': video_relpath, 'appdate': appdate,
@@ -134,23 +121,13 @@ def runtest(dm, device_prefs, options, product, appname,
     # add logs (if any) to test metadata
     metadata.update(testlog.getdict())
 
-    # Add datapoint
-    data['testdata'][productname][appdate].append(datapoint)
-
-    # Dump metadata
-    open(os.path.join(options.outputdir, 'metadata',
-                      '%s.json' % datapoint['uuid']),
-         'w').write(json.dumps(metadata))
-
-    # Write test data to disk immediately (so we don't lose it if we fail later)
-    datafile_dir = os.path.dirname(datafile)
-    if not os.path.exists(datafile_dir):
-        os.mkdir(datafile_dir)
-    with open(datafile, 'w') as f:
-        f.write(json.dumps(data))
+    # Write testdata
+    eideticker.update_dashboard_testdata(options.outputdir, options.device_id,
+                                         testinfo, productname, appdate,
+                                         datapoint, metadata)
 
 def main(args=sys.argv[1:]):
-    usage = "usage: %prog [options] <product> <test>"
+    usage = "usage: %prog [options] TEST..."
 
     parser = eideticker.TestOptionParser(usage=usage)
     parser.add_option("--enable-profiling",
@@ -170,7 +147,7 @@ def main(args=sys.argv[1:]):
                       help="Create baseline results for dashboard")
     parser.add_option("--num-runs", action="store",
                       type="int", dest="num_runs",
-                      help="number of runs (default: 1)")
+                      help="number of runs (default: %default)", default=1)
     parser.add_option("--app-version", action="store", dest="app_version",
                       help="Specify app version (if not automatically "
                       "available; Android-specific)")
@@ -180,19 +157,17 @@ def main(args=sys.argv[1:]):
     parser.add_option("--output-dir", action="store",
                       type="string", dest="outputdir", default=eideticker.DASHBOARD_DIR,
                       help="output results to directory instead of src/dashboard")
+    parser.add_option("--product", action="store",
+                      type="string", dest="product",
+                      default="org.mozilla.fennec",
+                      help="product name (android-specific, default: "
+                      "%default)")
 
     options, args = parser.parse_args()
 
-    if len(args) != 2:
+    if not args: # need to specify at least one test to run!
         parser.print_usage()
         sys.exit(1)
-
-    (productname, testkey) = args
-    num_runs = 1
-    if options.num_runs:
-        num_runs = options.num_runs
-
-    testinfo = eideticker.get_testinfo(testkey)
 
     device_id = options.device_id
     if not device_id:
@@ -200,49 +175,32 @@ def main(args=sys.argv[1:]):
         "DEVICE_ID environment variable)"
         sys.exit(1)
 
-    # we'll log http requests for webstartup tests only
-    log_http_requests = False
-    if testinfo['type'] == 'webstartup':
-        log_http_requests = True
-
-    # likewise, log actions only for web tests and b2g tests
-    log_actions = False
-    if testinfo['type'] == 'web' or testinfo['type'] == 'b2g':
-        log_actions = True
-
-    product = eideticker.get_product(productname)
-    current_date = time.strftime("%Y-%m-%d")
-    capture_name = "%s - %s (taken on %s)" % (testkey, product['name'],
-                                              current_date)
-    datafile = os.path.join(options.outputdir, device_id, '%s.json' % testkey)
-
-    data = NestedDict()
-    if os.path.isfile(datafile):
-        data.update(json.loads(open(datafile).read()))
-
+    # get device info
     device_prefs = eideticker.getDevicePrefs(options)
     device = eideticker.getDevice(**device_prefs)
-
-    devices = {}
-    devicefile = os.path.join(options.outputdir, 'devices.json')
-    if os.path.isfile(devicefile):
-        devices = json.loads(open(devicefile).read())['devices']
-    testfile = os.path.join(options.outputdir, '%s' % device_id, 'tests.json')
-    if os.path.isfile(testfile):
-        tests = json.loads(open(testfile).read())['tests']
-    else:
-        tests = {}
-    tests[testkey] = {'shortDesc': testinfo['shortDesc'],
-                      'defaultMeasureId': testinfo['defaultMeasure']}
-
     device_name = options.device_name
     if not device_name:
         device_name = device.model
 
+    # copy dashboard files to output directory (if applicable)
+    eideticker.copy_dashboard_files(options.outputdir)
+
+    if options.devicetype == 'android':
+        product = eideticker.get_product(options.product)
+        device_info = { 'name': device_name,
+                        'version': device.getprop('ro.build.version.release')}
+    elif options.devicetype == 'b2g':
+        product = eideticker.get_product('b2g-nightly')
+        device_info = { 'name': device_name }
+    else:
+        print "ERROR: Unknown device type '%s'" % options.devicetype
+
+    # update device index
+    eideticker.update_dashboard_device_list(options.outputdir, device_id,
+                                            device_info)
+
+    # get application/build info
     if options.devicetype == "android":
-        devices[device_id] = {
-            'name': device_name,
-            'version': device.getprop('ro.build.version.release')}
         if options.apk:
             if options.app_version:
                 raise Exception("Should specify either --app-version or "
@@ -266,7 +224,6 @@ def main(args=sys.argv[1:]):
         if not options.sources_xml:
             raise Exception("Must specify --sources-xml on b2g!")
 
-        devices[device_id] = {'name': device_name}
         appinicontents = device.pullFile('/system/b2g/application.ini')
         sfh = StringIO.StringIO(appinicontents)
         appinfo = eideticker.get_appinfo(sfh)
@@ -275,28 +232,48 @@ def main(args=sys.argv[1:]):
     else:
         print "Unknown device type '%s'!" % options.devicetype
 
-    # copy dashboard files to output directory (if applicable)
-    eideticker.copy_dashboard_files(options.outputdir)
+    # run through the tests...
+    failed_tests = []
+    for testkey in args:
+        testinfo = eideticker.get_testinfo(testkey)
 
-    # update the device / test list for the dashboard
-    with open(devicefile, 'w') as f:
-        f.write(json.dumps({'devices': devices}))
-    testfiledir = os.path.dirname(testfile)
-    if not os.path.exists(testfiledir):
-        os.mkdir(testfiledir)
-    with open(testfile, 'w') as f:
-        f.write(json.dumps({'tests': tests}))
+        # we'll log http requests for webstartup tests only
+        log_http_requests = (testinfo['type'] == 'webstartup')
 
-    if options.prepare_test:
-        eideticker.prepare_test(
-            testkey, device_prefs, options.wifi_settings_file)
+        # likewise, log actions only for web tests and b2g tests
+        log_actions = (testinfo['type'] == 'web' or testinfo['type'] == 'b2g')
 
-    # Run the test the specified number of times
-    for i in range(num_runs):
-        runtest(device, device_prefs, options,
-                product, appname, appinfo, testinfo,
-                capture_name + " #%s" % i, datafile, data,
-                log_http_requests=log_http_requests,
-                log_actions=log_actions)
+        eideticker.update_dashboard_test_list(options.outputdir, device_id,
+                                              testinfo)
+
+        current_date = time.strftime("%Y-%m-%d")
+        capture_name = "%s - %s (taken on %s)" % (testkey, product['name'],
+                                                  current_date)
+
+        if options.prepare_test:
+            eideticker.prepare_test(
+                testkey, device_prefs, options.wifi_settings_file)
+
+        # Run the test the specified number of times
+        for i in range(options.num_runs):
+            try:
+                runtest(device, device_prefs, options,
+                        product, appname, appinfo, testinfo,
+                        capture_name + " #%s" % i,
+                        log_http_requests=log_http_requests,
+                        log_actions=log_actions)
+            except eideticker.TestException:
+                print "Unable to run test '%s'. Skipping and continuing." % testkey
+                failed_tests.append(testkey)
+                break
+
+        # synchronize with dashboard
+        dashboard_server = os.getenv('DASHBOARD_SERVER')
+        if dashboard_server:
+            subprocess.check_call(['sync-dashboard.sh', dashboard_server])
+
+    if failed_tests:
+        print "The following tests failed: %s" % ", ".join(failed_tests)
+        sys.exit(1)
 
 main()

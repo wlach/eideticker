@@ -31,12 +31,6 @@ if [ -z $NUM_RUNS ]; then
     NUM_RUNS=5
 fi
 
-# Update timeout is per sequence of test runs. Default is 30 minutes per test
-# (quite long)
-if [ -z $UPDATE_TIMEOUT ]; then
-    UPDATE_TIMEOUT=$((1800*NUM_RUNS))
-fi
-
 if [ -z $EXPIRY_THRESHOLD ]; then
     EXPIRY_THRESHOLD=3
 fi
@@ -71,37 +65,16 @@ cd $EIDETICKER
 # verbose about errors before exiting
 set +e
 
-FAILURES=0
-for TEST in $TESTS; do
-  # Clean out /tmp/eideticker directory (in case there are any artifacts
-  # from unsuccessful runs kicking around)
-  rm -rf /tmp/eideticker/*
+# Clean out /tmp/eideticker directory (in case there are any artifacts
+# from unsuccessful runs kicking around)
+rm -rf /tmp/eideticker/*
 
-  # Do a full cleanup before every test run
-  ./bin/cleanup-phone.py
-
-  echo "Running $TEST"
-  if [ $PRODUCT = nightly -o $PRODUCT = nightly-armv6 ]; then
-    APK="downloads/$PRODUCT-$DATE.apk"
-    timeout $UPDATE_TIMEOUT ./bin/update-dashboard.py --apk $APK --num-runs $NUM_RUNS $EXTRA_UPDATE_DASHBOARD_ARGS $PRODUCT $TEST
-  else
-    timeout $UPDATE_TIMEOUT ./bin/update-dashboard.py --baseline --app-version $VERSION --num-runs $NUM_RUNS $EXTRA_UPDATE_DASHBOARD_ARGS $PRODUCT $TEST
-  fi
-  RET=$?
-  if [ $RET == 124 ]; then
-      echo "ERROR: Timed out when updating dashboard (TEST: $TEST)"
-      cleanup
-      exit 1
-  elif [ ! $RET == 0 ]; then
-      echo "ERROR: Failure updating dashboard (TEST: $TEST)"
-      cleanup
-      exit 1
-  fi
-
-  if [ $DASHBOARD_SERVER ]; then
-      ./bin/sync-dashboard.sh
-  fi
-done
+if [ $PRODUCT = nightly -o $PRODUCT = nightly-armv6 ]; then
+   APK="downloads/$PRODUCT-$DATE.apk"
+   ./bin/update-dashboard.py --apk $APK --num-runs $NUM_RUNS --product $PRODUCT $EXTRA_UPDATE_DASHBOARD_ARGS $TESTS
+else
+   ./bin/update-dashboard.py --baseline --app-version $VERSION --num-runs $NUM_RUNS --product $PRODUCT $EXTRA_UPDATE_DASHBOARD_ARGS $TESTS
+fi
 
 cleanup
 exit 0
