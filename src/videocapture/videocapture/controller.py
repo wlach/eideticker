@@ -80,17 +80,6 @@ class CaptureProcess(multiprocessing.Process):
                     '-f',
                     self.output_raw_filename]
         elif self.capture_device == "pointgrey":
-            # for debugging purposes, it might be useful to print out the
-            # flycap version. the best way I could find to do this was to
-            # try to look up the .soname
-            flycap_lib = max([filename for filename in os.listdir('/usr/lib') \
-                              if 'libflycapture.so' in filename], key=len)
-            if flycap_lib:
-                version_index = flycap_lib.find('.so') + 3
-                self.log('Using PointGrey SDK version: %s' % flycap_lib[version_index])
-            else:
-                self.log("WARNING: Unable to determine PointGrey SDK version")
-
             # get the device type
             camera_id = subprocess.check_output([os.path.join(
                 POINTGREY_DIR, "get-camera-id")]).strip()
@@ -203,6 +192,17 @@ class CaptureController(object):
             self.output_raw_file = tempfile.NamedTemporaryFile(
                 dir=self.custom_tempdir)
             output_raw_filename = self.output_raw_file.name
+        elif self.capture_device == 'pointgrey':
+            # for debugging purposes, it might be useful to print out the
+            # flycap version. the best way I could find to do this was to
+            # try to look up the .soname
+            flycap_lib = max([filename for filename in os.listdir('/usr/lib') \
+                              if 'libflycapture.so' in filename], key=len)
+            if flycap_lib:
+                version_index = flycap_lib.find('.so') + 3
+                self.log('Using PointGrey SDK version: %s' % flycap_lib[version_index])
+            else:
+                self.log("WARNING: Unable to determine PointGrey SDK version")
 
         self.outputdir = tempfile.mkdtemp(dir=self.custom_tempdir)
         self.mode = mode
