@@ -48,7 +48,11 @@ var perFrameMeasures = {
                      },
   'framecannyentropies': { 'shortDesc': 'Frame entropy (canny)',
                            'longDesc': 'Amount of entropy in each frame, after running canny edge detection on it. Higher values indicate more information in the frame. Lower values may indicate checkerboarding.'
+                         },
+  'framesobelentropies': { 'shortDesc': 'Frame entropy (sobel)',
+                           'longDesc': 'Amount of entropy in each frame, after running sobel edge detection on it. Higher values indicate more information in the frame. Lower values may indicate checkerboarding.'
                            }
+
 };
 
 function getMeasureIdsInSample(sample, measures) {
