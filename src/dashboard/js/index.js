@@ -19,9 +19,9 @@ function updateContent(testInfo, deviceId, testId, measureId) {
 
     // figure out which measures could apply to this graph
     var availableMeasureIds = [];
-    Object.keys(testData).forEach(function(type) {
-      Object.keys(testData[type]).forEach(function(timestamp) {
-        testData[type][timestamp].forEach(function(sample) {
+    Object.keys(testData).forEach(function(product) {
+      Object.keys(testData[product]).forEach(function(timestamp) {
+        testData[product][timestamp].forEach(function(sample) {
           var measureIds = getMeasureIdsInSample(sample, overallMeasures);
           measureIds.forEach(function(measureId) {
             if (jQuery.inArray(measureId, availableMeasureIds) === -1) {
@@ -65,24 +65,26 @@ function updateGraph(title, rawdata, measureId) {
 
   // get global maximum date (for baselining)
   var globalMaxDate = 0;
-  Object.keys(rawdata).forEach(function(type) {
-    var dates = Object.keys(rawdata[type]).map(parseTimestamp);
+  Object.keys(rawdata).forEach(function(product) {
+    var dates = Object.keys(rawdata[product]).map(parseTimestamp);
     globalMaxDate = Math.max(globalMaxDate, Math.max.apply(null, dates));
   });
 
-  Object.keys(rawdata).sort().forEach(function(type) {
+  var products = Object.keys(rawdata).sort();
+
+  products.forEach(function(product) {
     uuidHash[seriesIndex] = [];
 
     // point graph
     var series1 = {
-      label: type,
+      label: product,
       points: { show: true },
       color: color,
       data: []
     };
 
-    Object.keys(rawdata[type]).sort().forEach(function(timestamp) {
-      rawdata[type][timestamp].forEach(function(sample) {
+    Object.keys(rawdata[product]).sort().forEach(function(timestamp) {
+      rawdata[product][timestamp].forEach(function(sample) {
         if (measureId in sample) {
           series1.data.push([ parseTimestamp(timestamp), sample[measureId] ]);
           var sourceRepo = sample.sourceRepo;
@@ -99,7 +101,6 @@ function updateGraph(title, rawdata, measureId) {
 
     // line graph (aggregate average per day + baseline results if appropriate)
     var series2 = {
-      hoverLabel: "Average per day for " + type,
       lines: { show: true },
       color: color,
       data: [],
@@ -109,10 +110,10 @@ function updateGraph(title, rawdata, measureId) {
 
     var lastSample;
     var lastData;
-    Object.keys(rawdata[type]).sort().forEach(function(timestamp) {
+    Object.keys(rawdata[product]).sort().forEach(function(timestamp) {
       var numSamples = 0;
       var total = 0;
-      rawdata[type][timestamp].forEach(function(sample) {
+      rawdata[product][timestamp].forEach(function(sample) {
         lastSample = sample;
         if (sample[measureId]) {
           total += sample[measureId];
@@ -185,6 +186,8 @@ function updateGraph(title, rawdata, measureId) {
     });
   }
 
+  var showGraphLegend = (products.length > 1);
+
   function updateGraphDisplay() {
     var plot = $.plot($("#graph-container"), graphdata, {
       xaxis: {
@@ -196,6 +199,7 @@ function updateGraph(title, rawdata, measureId) {
         min: 0
       },
       legend: {
+        show: showGraphLegend,
         position: "ne",
       },
       grid: { clickable: true, hoverable: true },
