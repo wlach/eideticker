@@ -2,7 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 
-from dashboard import DASHBOARD_DIR, copy_dashboard_files, update_dashboard_device_list, update_dashboard_test_list, update_dashboard_testdata
+from dashboard import add_dashboard_options, copy_dashboard_files, update_dashboard_device_list, update_dashboard_test_list, update_dashboard_testdata, upload_dashboard
 from runner import AndroidBrowserRunner
 from options import OptionParser, CaptureOptionParser, TestOptionParser
 from device import getDevicePrefs, getDevice

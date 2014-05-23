@@ -2,7 +2,6 @@
 
 import eideticker
 import os
-import subprocess
 import sys
 import time
 import videocapture
@@ -38,7 +37,7 @@ def runtest(dm, device_prefs, options, product, appname,
         productname += "-profiling"
         profile_path = os.path.join(
             'profiles', 'sps-profile-%s.zip' % time.time())
-        profile_file = os.path.join(options.outputdir, profile_path)
+        profile_file = os.path.join(options.dashboard_dir, profile_path)
 
     test_completed = False
     for i in range(3):
@@ -77,7 +76,7 @@ def runtest(dm, device_prefs, options, product, appname,
 
         # video file
         video_relpath = os.path.join('videos', 'video-%s.webm' % time.time())
-        video_path = os.path.join(options.outputdir, video_relpath)
+        video_path = os.path.join(options.dashboard_dir, video_relpath)
         open(video_path, 'w').write(capture.get_video().read())
     else:
         video_relpath = None
@@ -122,7 +121,7 @@ def runtest(dm, device_prefs, options, product, appname,
     metadata.update(testlog.getdict())
 
     # Write testdata
-    eideticker.update_dashboard_testdata(options.outputdir, options.device_id,
+    eideticker.update_dashboard_testdata(options.dashboard_dir, options.device_id,
                                          testinfo, productname, appdate,
                                          datapoint, metadata)
 
@@ -130,6 +129,7 @@ def main(args=sys.argv[1:]):
     usage = "usage: %prog [options] TEST..."
 
     parser = eideticker.TestOptionParser(usage=usage)
+    eideticker.add_dashboard_options(parser)
     parser.add_option("--enable-profiling",
                       action="store_true", dest="enable_profiling",
                       help="Create SPS profile to go along with capture")
@@ -154,9 +154,6 @@ def main(args=sys.argv[1:]):
     parser.add_option("--sources-xml", action="store", dest="sources_xml",
                       help="Path to sources XML file for getting revision "
                       "information (B2G-specific)")
-    parser.add_option("--output-dir", action="store",
-                      type="string", dest="outputdir", default=eideticker.DASHBOARD_DIR,
-                      help="output results to directory instead of src/dashboard")
     parser.add_option("--product", action="store",
                       type="string", dest="product",
                       default="org.mozilla.fennec",
@@ -183,7 +180,7 @@ def main(args=sys.argv[1:]):
         device_name = device.model
 
     # copy dashboard files to output directory (if applicable)
-    eideticker.copy_dashboard_files(options.outputdir)
+    eideticker.copy_dashboard_files(options.dashboard_dir)
 
     if options.devicetype == 'android':
         product = eideticker.get_product(options.product)
@@ -196,7 +193,7 @@ def main(args=sys.argv[1:]):
         print "ERROR: Unknown device type '%s'" % options.devicetype
 
     # update device index
-    eideticker.update_dashboard_device_list(options.outputdir, device_id,
+    eideticker.update_dashboard_device_list(options.dashboard_dir, device_id,
                                             device_info)
 
     # get application/build info
@@ -243,7 +240,7 @@ def main(args=sys.argv[1:]):
         # likewise, log actions only for web tests and b2g tests
         log_actions = (testinfo['type'] == 'web' or testinfo['type'] == 'b2g')
 
-        eideticker.update_dashboard_test_list(options.outputdir, device_id,
+        eideticker.update_dashboard_test_list(options.dashboard_dir, device_id,
                                               testinfo)
 
         current_date = time.strftime("%Y-%m-%d")
@@ -267,12 +264,9 @@ def main(args=sys.argv[1:]):
                 failed_tests.append(testkey)
                 break
 
-        # synchronize with dashboard
-        dashboard_server = os.getenv('DASHBOARD_SERVER')
-        if dashboard_server:
-            subprocess.check_call([os.path.join(os.path.dirname(__file__),
-                                                'sync-dashboard.sh'),
-                                   dashboard_server])
+        # synchronize with dashboard (if we have a server to upload to)
+        if options.dashboard_server:
+            eideticker.upload_dashboard(options)
 
     if failed_tests:
         print "The following tests failed: %s" % ", ".join(failed_tests)
