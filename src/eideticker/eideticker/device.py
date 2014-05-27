@@ -95,13 +95,12 @@ DEVICE_PROPERTIES = {
     }
 }
 
+ORANGUTAN = "orangtuan"
+NTPCLIENT = "ntpclient"
 
 class EidetickerMixin(object):
     """Mixin to extend DeviceManager with functionality to allow it to be
        remotely controlled and other related things"""
-
-    DEFAULT_ORNG_LOCATION = "/data/local/orng"
-    DEFAULT_NTPDATE_LOCATION = "/data/local/ntpclient"
 
     @property
     def hdmiResolution(self):
@@ -113,7 +112,7 @@ class EidetickerMixin(object):
 
     def _init(self):
         self.model = self.getprop("ro.product.model")
-        self.locations = {}
+        self.exec_locations = {}
 
         if not DEVICE_PROPERTIES.get(self.type) or \
                 not DEVICE_PROPERTIES[self.type].get(self.model):
@@ -121,12 +120,17 @@ class EidetickerMixin(object):
                 self.model, self.type))
         self.deviceProperties = DEVICE_PROPERTIES[self.type][self.model]
 
-        for (name, path) in [("orangutan", self.DEFAULT_ORNG_LOCATION),
-                             ("ntpdate", self.DEFAULT_NTPDATE_LOCATION)]:
-            if not self.fileExists(path):
-                raise mozdevice.DMError("%s not on device in %s! Please "
+        for (name, execname) in [(ORANGUTAN, "orng"),
+                                 (NTPCLIENT, "ntpclient")]:
+            for path in ['/data/local/', '/data/local/tmp/' ]:
+                fullpath = posixpath.join(path, execname)
+                if self.fileExists(fullpath):
+                    self.exec_locations[name] = fullpath
+
+            if not self.exec_locations.get(name):
+                raise mozdevice.DMError("%s not on device! Please "
                                         "install it according to the "
-                                        "documentation" % (name, path))
+                                        "documentation" % name)
 
         # Hack: this gets rid of the "finished charging" modal dialog that the
         # LG G2X sometimes brings up
@@ -146,7 +150,7 @@ class EidetickerMixin(object):
             if executeCallback:
                 executeCallback()
             command_output = self.shellCheckOutput([
-                self.DEFAULT_ORNG_LOCATION, '-t',
+                self.exec_locations[ORANGUTAN], '-t',
                 self.inputDevice,
                 remotefilename],
                 root=self._logcatNeedsRoot)
@@ -171,7 +175,7 @@ class EidetickerMixin(object):
         synced_time = False
         while not synced_time:
             try:
-                self.shellCheckOutput([self.DEFAULT_NTPDATE_LOCATION, "-c", "1", "-d",
+                self.shellCheckOutput([self.exec_locations[NTPCLIENT], "-c", "1", "-d",
                                        "-h", moznetwork.get_ip(), "-s"], root=True,
                                       timeout=ntpdate_wait_time)
                 synced_time = True

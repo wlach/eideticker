@@ -95,7 +95,8 @@ From the root directory, type:
 ### Phones
 
 You will need to install copies of [Orangutan](http://github.com/mozilla-b2g/orangutan)
-and [ntpdate-android](http://github.com/wlach/ntpclient-android) on each of the phones.
+and [ntpdate-android](http://github.com/wlach/ntpclient-android) on each of the phones
+in either `/data/local` or `/data/local/tmp`.
 
 ## Usage
 
