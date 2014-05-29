@@ -185,6 +185,7 @@ class Test(LoggingMixin):
     def start_capture(self):
         # callback indicating we should start capturing (if we're not doing so
         # already)
+        self.log("Start capture")
         if self.capture_file and not self.capture_controller.capturing:
             self.log("Starting capture on device '%s' with mode: '%s'" % (
                      self.capture_metadata['device'],
