@@ -142,7 +142,7 @@ class AndroidBrowserRunner(log.LoggingMixin):
             # waiting for 10 seconds
             self.launch_fennec(None, "about:home")
             time.sleep(10)
-            self.dm.killProcess(self.appname)
+            self.dm.stopApplication(self.appname)
 
     def start(self):
         self.log("Starting %s... " % self.appname)
@@ -259,7 +259,7 @@ class AndroidBrowserRunner(log.LoggingMixin):
 
     def cleanup(self):
         # stops the process and cleans up after a run
-        self.dm.killProcess(self.appname)
+        self.dm.stopApplication(self.appname)
 
         # Remove the Mozilla profile from the sdcard (not to be confused with
         # the sampling profile)
