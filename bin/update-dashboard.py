@@ -267,6 +267,8 @@ def main(args=sys.argv[1:]):
         # synchronize with dashboard (if we have a server to upload to)
         if options.dashboard_server:
             eideticker.upload_dashboard(options)
+        else:
+            print "No dashboard server specified. Skipping upload."
 
     if failed_tests:
         print "The following tests failed: %s" % ", ".join(failed_tests)

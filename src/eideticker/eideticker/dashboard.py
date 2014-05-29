@@ -118,8 +118,8 @@ def update_dashboard_testdata(dashboard_dir, device_id, testinfo, productname,
          'w').write(json.dumps(metadata))
 
 def upload_dashboard(options):
-    subprocess.check_call(['rsync', '-az', '--copy-links', '-e', 'ssh',
-                           options.dashboard_dir,
-                           '%s@%s:%s' % (options.dashboard_user,
-                                         options.dashboard_server,
-                                         options.dashboard_remote_path)])
+    print 'Uploading dashboard to %s' % options.dashboard_server
+    subprocess.check_call([
+        'rsync', '-avz', '--copy-links', '-e', 'ssh', options.dashboard_dir,
+            '%s@%s:%s' % (options.dashboard_user, options.dashboard_server,
+                          options.dashboard_remote_path)])
