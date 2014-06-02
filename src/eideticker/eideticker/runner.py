@@ -138,6 +138,7 @@ class AndroidBrowserRunner(log.LoggingMixin):
                                             os.path.basename(profile.profile)])
         self.dm.pushDir(profile.profile, self.remote_profile_dir)
         if self.preinitialize_user_profile:
+            self.log("Preinitializing user profile")
             # initialize user profile by launching to about:home then
             # waiting for 10 seconds
             self.launch_fennec(None, "about:home")
