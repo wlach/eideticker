@@ -97,7 +97,12 @@ devices = requests.get(baseurl + 'devices.json')
 save_file(os.path.join(outputdir, 'devices.json'), devices.content)
 
 if options.device_id:
-    device_names = [ options.device_id ]
+    if options.device_id in devices.json()['devices'].keys():
+        device_names = [ options.device_id ]
+    else:
+        print "WARNING: Device id '%s' specified but unavailable. Skipping." % \
+            options.device_id
+        device_names = []
 else:
     device_names = devices.json()['devices'].keys()
 
