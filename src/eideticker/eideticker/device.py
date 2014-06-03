@@ -21,34 +21,34 @@ from b2gpopulate import B2GPopulate
 # required HDMI mode)
 DEVICE_PROPERTIES = {
     "android": {
-        "Galaxy Nexus": {
+        "galaxy nexus": {
             "hdmiResolution": "720p",
             "inputDevice": "/dev/input/event1",
             "dimensions": (1180, 720),
             "swipePadding": (240, 40, 100, 40)},
-        "Panda": {
+        "panda": {
             "hdmiResolution": "720p",
             "inputDevice": "/dev/input/event0",
             "dimensions": (1280, 672),
             "swipePadding": (240, 40, 100, 40)},
-        "LG-P999": {
+        "lg-p999": {
             "hdmiResolution": "1080p",
             "inputDevice": "/dev/input/event1",
             "dimensions": (480, 800),
             "swipePadding": (240, 40, 100, 40)},
-        "MID": {
+        "mid": {
             "hdmiResolution": None,
             "inputDevice": "/dev/input/event2",
             "dimensions": (480, 800),
             "swipePadding": (240, 40, 100, 40)},
-        "Turkcell Maxi Plus 5": {
+        "turkcell maxi plus 5": {
             "hdmiResolution": None,
             "inputDevice": "/dev/input/event0",
             "dimensions": (320, 480),
             "swipePadding": (40, 40, 40, 40)}
     },
     "b2g": {
-        "Panda": {
+        "panda": {
             "hdmiResolution": "720p",
             "inputDevice": "/dev/input/event2",
             "defaultOrientation": "landscape",
@@ -72,7 +72,7 @@ DEVICE_PROPERTIES = {
             "defaultOrientation": "portrait",
             "dimensions": (320, 480),
             "swipePadding": (40, 40, 40, 40)},
-        "ALCATEL ONE TOUCH FIRE": {
+        "alcatel one touch fire": {
             "hdmiResolution": None,
             "inputDevice": "/dev/input/event4",
             "defaultOrientation": "portrait",
@@ -111,7 +111,7 @@ class EidetickerMixin(object):
         return self.deviceProperties['inputDevice']
 
     def _init(self):
-        self.model = self.getprop("ro.product.model")
+        self.model = self.getprop("ro.product.model").lower()
         self.exec_locations = {}
 
         if not DEVICE_PROPERTIES.get(self.type) or \
@@ -134,7 +134,7 @@ class EidetickerMixin(object):
 
         # Hack: this gets rid of the "finished charging" modal dialog that the
         # LG G2X sometimes brings up
-        if self.model == 'LG-P999':
+        if self.model == 'lg-p999':
             self.executeCommand("tap", [240, 617])
 
     # FIXME: make this part of devicemanager
