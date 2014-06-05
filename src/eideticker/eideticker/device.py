@@ -503,6 +503,7 @@ class EidetickerB2GMixin(EidetickerMixin):
         self._logger.info("Starting B2G")
         self.shellCheckOutput(['start', 'b2g'])
         self.setupMarionette()
+        self.gaiaData.set_setting('homescreen.manifestURL', 'app://homescreen.gaiamobile.org/manifest.webapp')
 
         self.marionette.execute_async_script("""
 window.addEventListener('mozbrowserloadend', function loaded(aEvent) {
