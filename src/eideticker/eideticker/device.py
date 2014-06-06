@@ -103,6 +103,10 @@ class EidetickerMixin(object):
        remotely controlled and other related things"""
 
     @property
+    def devicePixelRatio(self):
+        return 1
+
+    @property
     def hdmiResolution(self):
         return self.deviceProperties['hdmiResolution']
 
@@ -232,30 +236,35 @@ class EidetickerMixin(object):
             value = "\"\""
         self.shellCheckOutput(["setprop", str(prop), str(value)])
 
-    def _transformXY(self, coords):
+    def _transformXY(self, coords, prescaled):
         # FIXME: Only handling 90 degrees for now, everything else falls back
         # to default
         if hasattr(self, "rotation") and self.rotation == 90:
-            return (self.dimensions[1] - int(coords[1]), int(coords[0]))
+            coords = (self.dimensions[1] - int(coords[1]),
+                      int(coords[0]))
+
+        if not prescaled:
+            coords = (int(float(coords[0]) * self.devicePixelRatio),
+                      int(float(coords[1]) * self.devicePixelRatio))
 
         return coords
 
     def _getDragEvent(self, touchstart_x1, touchstart_y1, touchend_x1,
-                      touchend_y1, duration=1000, num_steps=5):
-        touchstart = self._transformXY((touchstart_x1, touchstart_y1))
-        touchend = self._transformXY((touchend_x1, touchend_y1))
+                      touchend_y1, duration=1000, num_steps=5, prescaled=False):
+        touchstart = self._transformXY((touchstart_x1, touchstart_y1), prescaled)
+        touchend = self._transformXY((touchend_x1, touchend_y1), prescaled)
 
         return "drag %s %s %s %s %s %s" % (
-            int(touchstart[0]), int(touchstart[1]),
-            int(touchend[0]), int(touchend[1]),
+            touchstart[0], touchstart[1],
+            touchend[0], touchend[1],
             num_steps, duration)
 
     def _getSleepEvent(self, duration=1.0):
         return "sleep %s" % int(float(duration) * 1000.0)
 
-    def _getTapEvent(self, x, y, times=1):
-        coords = self._transformXY((x, y))
-        return "tap %s %s %s 100" % (int(coords[0]), int(coords[1]), times)
+    def _getTapEvent(self, x, y, times=1, prescaled=False):
+        coords = self._transformXY((x, y), prescaled)
+        return "tap %s %s %s 100" % (coords[0], coords[1], times)
 
     def _getScrollEvents(self, direction, numtimes=1, numsteps=10,
                          duration=100):
@@ -268,7 +277,7 @@ class EidetickerMixin(object):
             (p1, p2) = (p2, p1)
         for i in range(int(numtimes)):
             events.append(self._getDragEvent(
-                p1[0], p1[1], p2[0], p2[1], duration, int(numsteps)))
+                p1[0], p1[1], p2[0], p2[1], duration, int(numsteps), prescaled=True))
         return events
 
     def _getSwipeEvents(self, direction, numtimes=1, numsteps=10,
@@ -282,18 +291,20 @@ class EidetickerMixin(object):
             (x1, x2) = (x2, x1)
         for i in range(int(numtimes)):
             events.append(self._getDragEvent(x1, y, x2, y, duration,
-                                             int(numsteps)))
+                                             int(numsteps), prescaled=True))
         return events
 
     def _getPinchEvent(self, touch1_x1, touch1_y1, touch1_x2, touch1_y2,
                        touch2_x1, touch2_y1, touch2_x2, touch2_y2,
-                       numsteps=10, duration=1000):
-        return "pinch %s %s %s %s %s %s %s %s %s %s" % (touch1_x1, touch1_y1,
-                                                        touch1_x2, touch1_y2,
-                                                        touch2_x1, touch2_y1,
-                                                        touch2_x2, touch2_y2,
-                                                        numsteps,
-                                                        duration)
+                       numsteps=10, duration=1000, prescaled=False):
+        cmd = "pinch "
+        for coords in [ (touch1_x1, touch1_y1), (touch1_x2, touch1_y2),
+                        (touch2_x1, touch2_y1), (touch2_x2, touch2_y2) ]:
+            transformedCoords = self._transformXY(coords, prescaled)
+            cmd += "%s %s " % transformedCoords
+        cmd += "%s %s" % (numsteps, duration)
+
+        return cmd
 
     def _getCmdEvents(self, cmd, args):
         if cmd == "scroll_down":
@@ -449,6 +460,7 @@ class EidetickerB2GMixin(EidetickerMixin):
     """B2G-specific extensions to the eideticker mixin"""
 
     marionette = None
+    _devicePixelRatio = None
 
     def setupMarionette(self):
         self.marionette = marionette.Marionette()
@@ -542,6 +554,14 @@ marionetteScriptFinished();
         """
         self.stopB2G()
         self.startB2G()
+
+    @property
+    def devicePixelRatio(self):
+        if not self._devicePixelRatio:
+            self._devicePixelRatio = self.marionette.execute_script(
+                'return window.wrappedJSObject.devicePixelRatio;') or 1
+        return self._devicePixelRatio
+
 
 class B2GADB(EidetickerB2GMixin, mozdevice.DeviceManagerADB):
 
