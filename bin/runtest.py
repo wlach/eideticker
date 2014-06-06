@@ -44,28 +44,13 @@ def main(args=sys.argv[1:]):
         sys.exit(1)
     testkey = args[0]
 
-    device_prefs = eideticker.getDevicePrefs(options)
 
     if options.prepare_test:
-        eideticker.prepare_test(
-            testkey, device_prefs, options.wifi_settings_file)
+        eideticker.prepare_test(testkey, options)
 
-    testlog = eideticker.run_test(
-        testkey, options.capture_device,
-        options.appname,
-        options.capture_name, device_prefs,
-        extra_prefs=options.extra_prefs,
-        extra_env_vars=options.extra_env_vars,
-        test_type=options.test_type,
-        profile_file=options.profile_file,
-        capture=options.capture,
-        capture_area=options.capture_area,
-        camera_settings_file=options.camera_settings_file,
-        fps=options.fps,
-        capture_file=options.capture_file,
-        wifi_settings_file=options.wifi_settings_file,
-        sync_time=options.sync_time,
-        use_vpxenc=options.use_vpxenc)
+    testlog = eideticker.run_test(testkey, options,
+                                  capture_filename=options.capture_file,
+                                  profile_filename=options.profile_file)
 
     # save logs if applicable
     if options.request_log_file:

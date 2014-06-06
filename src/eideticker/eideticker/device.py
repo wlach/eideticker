@@ -605,8 +605,6 @@ def getDevice(dmtype="adb", devicetype="android", host=None, port=None,
               logLevel=mozlog.INFO):
     '''Gets an eideticker device according to parameters'''
 
-    print "Using %s interface (type: %s, host: %s, port: %s, " \
-        "debuglevel: %s)" % (dmtype, devicetype, host, port, logLevel)
     if dmtype == "adb":
         if host and not port:
             port = 5555

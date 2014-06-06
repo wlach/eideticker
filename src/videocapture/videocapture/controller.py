@@ -154,41 +154,48 @@ def _rewrite_frame(framenum, dirname, imagefilename, capture_area,
 
 class CaptureController(object):
 
-    def __init__(self, capture_device, capture_area=None,
+    def __init__(self, output_filename, options,
+                 capture_metadata={},
                  find_start_signal=True, find_end_signal=True,
-                 custom_tempdir=None, fps=None, use_vpxenc=False,
-                 camera_settings_file=None):
+                 custom_tempdir=None):
+        self.output_filename = output_filename
+        self.capture_metadata = capture_metadata
+
+        self.mode = options.mode
+        self.capture_device = options.capture_device
+        self.fps = options.fps
+        self.camera_settings_file = options.camera_settings_file
+        # capture area and vpxencoding not always available in options
+        # object
+        self.capture_area = getattr(options, 'capture_area', None)
+        self.use_vpxenc = getattr(options, 'use_vpxenc', False)
+
+        self.find_start_signal = find_start_signal
+        self.find_end_signal = find_end_signal
+        self.custom_tempdir = custom_tempdir
+
         self.capture_process = None
         self.null_read = file('/dev/null', 'r')
         self.null_write = file('/dev/null', 'w')
-        self.output_filename = None
         self.output_raw_file = None
-        self.outputdir = None
-        self.capture_time = None
-        self.capture_name = None
-        self.custom_tempdir = custom_tempdir
-        self.capture_device = capture_device
-        self.capture_area = capture_area
-        self.find_start_signal = find_start_signal
-        self.find_end_signal = find_end_signal
-        self.fps = fps
-        self.use_vpxenc = use_vpxenc
-        self.camera_settings_file = camera_settings_file
+
 
     def log(self, msg):
         print "%s Capture Controller | %s" % (
             datetime.datetime.now().strftime("%b %d %H:%M:%S %Z"), msg)
 
-    def start_capture(self, output_filename, mode=None,
-                      capture_metadata={}, debug=False):
+    def start_capture(self):
         # should not call this more than once
         assert not self.capture_process
 
         output_raw_filename = None
 
+        self.log("Starting capture on device '%s' with mode: '%s'" % (
+                self.capture_device, self.mode))
+
         if self.capture_device == 'decklink':
-            if mode not in supported_formats.keys():
-                raise Exception("Unsupported video format %s" % mode)
+            if self.mode not in supported_formats.keys():
+                raise Exception("Unsupported video format %s" % self.mode)
             self.output_raw_file = tempfile.NamedTemporaryFile(
                 dir=self.custom_tempdir)
             output_raw_filename = self.output_raw_file.name
@@ -205,14 +212,10 @@ class CaptureController(object):
                 self.log("WARNING: Unable to determine PointGrey SDK version")
 
         self.outputdir = tempfile.mkdtemp(dir=self.custom_tempdir)
-        self.mode = mode
-        self.output_filename = output_filename
-        self.capture_time = datetime.datetime.now()
-        self.capture_metadata = capture_metadata
         self.frame_counter = multiprocessing.RawValue('i', 0)
         self.finished_semaphore = multiprocessing.RawValue('b', False)
         self.capture_process = CaptureProcess(
-            self.capture_device, mode,
+            self.capture_device, self.mode,
             self.frame_counter,
             self.finished_semaphore,
             output_raw_filename=output_raw_filename,
@@ -398,7 +401,7 @@ class CaptureController(object):
 
         zipfile.writestr('metadata.json',
                          json.dumps(dict({ 'captureDevice': self.capture_device,
-                                           'date': self.capture_time.isoformat(),
+                                           'date': datetime.datetime.now().isoformat(),
                                            'frameDimensions': frame_dimensions,
                                            'fps': capturefps,
                                            'generatedVideoFPS': generated_video_fps,
@@ -416,7 +419,3 @@ class CaptureController(object):
 
         shutil.rmtree(self.outputdir)
         shutil.rmtree(rewritten_imagedir)
-
-        self.output_filename = None
-        self.outputdir = None
-        self.output_raw_file = None

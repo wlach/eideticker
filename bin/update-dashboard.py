@@ -22,22 +22,22 @@ def get_revision_data(sources_xml):
             revision_data[path + 'Revision'] = revision
     return revision_data
 
-def runtest(dm, device_prefs, options, product, appname,
-            appinfo, testinfo, capture_name,
-            log_http_requests=False, log_actions=False):
-    capture_file = os.path.join(CAPTURE_DIR,
-                                "%s-%s-%s-%s.zip" % (testinfo['key'],
-                                                     appname,
-                                                     appinfo.get('appdate'),
-                                                     int(time.time())))
+def runtest(dm, device_prefs, options, product, appinfo, testinfo,
+            capture_name):
+    capture_filename = os.path.join(CAPTURE_DIR,
+                                    "%s-%s-%s-%s.zip" % (testinfo['key'],
+                                                         options.appname,
+                                                         appinfo.get('appdate'),
+                                                         int(time.time())))
     productname = product['name']
 
-    profile_file = None
     if options.enable_profiling:
         productname += "-profiling"
         profile_path = os.path.join(
             'profiles', 'sps-profile-%s.zip' % time.time())
-        profile_file = os.path.join(options.dashboard_dir, profile_path)
+        profile_filename = os.path.join(options.dashboard_dir, profile_path)
+    else:
+        profile_filename = None
 
     test_completed = False
     for i in range(3):
@@ -45,16 +45,8 @@ def runtest(dm, device_prefs, options, product, appname,
 
         try:
             testlog = eideticker.run_test(
-                testinfo['key'], options.capture_device,
-                appname, capture_name, device_prefs,
-                profile_file=profile_file,
-                capture_area=options.capture_area,
-                camera_settings_file=options.camera_settings_file,
-                capture=options.capture,
-                capture_file=capture_file,
-                wifi_settings_file=options.wifi_settings_file,
-                sync_time=options.sync_time,
-                use_vpxenc=options.use_vpxenc)
+                testinfo['key'], options, capture_filename=capture_filename,
+                profile_filename=profile_filename, capture_name=capture_name)
             test_completed = True
             break
         except eideticker.TestException, e:
@@ -72,7 +64,7 @@ def runtest(dm, device_prefs, options, product, appname,
                                                               productname))
 
     if options.capture:
-        capture = videocapture.Capture(capture_file)
+        capture = videocapture.Capture(capture_filename)
 
         # video file
         video_relpath = os.path.join('videos', 'video-%s.webm' % time.time())
@@ -86,7 +78,7 @@ def runtest(dm, device_prefs, options, product, appname,
 
     datapoint = { 'uuid': uuid.uuid1().hex }
     metadata =  { 'video': video_relpath, 'appdate': appdate,
-                  'label': capture_name }
+                  'label': options.capture_name }
     for key in ['appdate', 'buildid', 'revision', 'geckoRevision',
                 'gaiaRevision', 'buildRevision', 'sourceRepo']:
         if appinfo.get(key):
@@ -117,8 +109,12 @@ def runtest(dm, device_prefs, options, product, appname,
     if options.enable_profiling:
         metadata['profile'] = profile_path
 
-    # add logs (if any) to test metadata
-    metadata.update(testlog.getdict())
+    # add logs (if any) to test metadata. we log http requests for webstartup
+    # tests only. likewise, we log actions only for web tests and b2g tests
+    testtype = testinfo['type']
+    metadata.update(testlog.getdict(
+            log_http_requests=(testtype == 'webstartup'),
+            log_actions=(testtype == 'web' or testtype == 'b2g')))
 
     # Write testdata
     eideticker.update_dashboard_testdata(options.dashboard_dir, options.device_id,
@@ -155,8 +151,8 @@ def main(args=sys.argv[1:]):
                       help="Path to sources XML file for getting revision "
                       "information (B2G-specific)")
     parser.add_option("--product", action="store",
-                      type="string", dest="product",
-                      default="org.mozilla.fennec",
+                      type="string", dest="product_name",
+                      default="nightly",
                       help="product name (android-specific, default: "
                       "%default)")
 
@@ -183,7 +179,7 @@ def main(args=sys.argv[1:]):
     eideticker.copy_dashboard_files(options.dashboard_dir)
 
     if options.devicetype == 'android':
-        product = eideticker.get_product(options.product)
+        product = eideticker.get_product(options.product_name)
         device_info = { 'name': device_name,
                         'version': device.getprop('ro.build.version.release')}
     elif options.devicetype == 'b2g':
@@ -203,10 +199,10 @@ def main(args=sys.argv[1:]):
                 raise Exception("Should specify either --app-version or "
                                 "--apk, not both!")
             appinfo = eideticker.get_fennec_appinfo(options.apk)
-            appname = appinfo['appname']
+            options.appname = appinfo['appname']
             print "Using application name '%s' from apk '%s'" % (
-                appname, options.apk)
-            capture_name = "%s %s" % (product['name'], appinfo['appdate'])
+                options.appname, options.apk)
+            options.capture_name = "%s %s" % (product['name'], appinfo['appdate'])
         else:
             if not options.app_version:
                 raise Exception("Should specify --app-version if not --apk!")
@@ -215,7 +211,6 @@ def main(args=sys.argv[1:]):
             appinfo = {
                 'appdate': time.strftime("%Y-%m-%d"),
                 'version': options.app_version}
-            appname = product['appname']
 
     elif options.devicetype == "b2g":
         if not options.sources_xml:
@@ -225,7 +220,7 @@ def main(args=sys.argv[1:]):
         sfh = StringIO.StringIO(appinicontents)
         appinfo = eideticker.get_appinfo(sfh)
         appinfo.update(get_revision_data(options.sources_xml))
-        appname = None
+        options.appname = None
     else:
         print "Unknown device type '%s'!" % options.devicetype
 
@@ -234,31 +229,22 @@ def main(args=sys.argv[1:]):
     for testkey in args:
         testinfo = eideticker.get_testinfo(testkey)
 
-        # we'll log http requests for webstartup tests only
-        log_http_requests = (testinfo['type'] == 'webstartup')
-
-        # likewise, log actions only for web tests and b2g tests
-        log_actions = (testinfo['type'] == 'web' or testinfo['type'] == 'b2g')
-
         eideticker.update_dashboard_test_list(options.dashboard_dir, device_id,
                                               testinfo)
 
         current_date = time.strftime("%Y-%m-%d")
-        capture_name = "%s - %s (taken on %s)" % (testkey, product['name'],
+        options.capture_name = "%s - %s (taken on %s)" % (testkey, product['name'],
                                                   current_date)
 
         if options.prepare_test:
-            eideticker.prepare_test(
-                testkey, device_prefs, options.wifi_settings_file)
+            eideticker.prepare_test(testkey, options)
 
         # Run the test the specified number of times
         for i in range(options.num_runs):
             try:
                 runtest(device, device_prefs, options,
-                        product, appname, appinfo, testinfo,
-                        capture_name + " #%s" % i,
-                        log_http_requests=log_http_requests,
-                        log_actions=log_actions)
+                        product, appinfo, testinfo,
+                        options.capture_name + " #%s" % i)
             except eideticker.TestException:
                 print "Unable to run test '%s'. Skipping and continuing." % testkey
                 failed_tests.append(testkey)

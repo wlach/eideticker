@@ -18,19 +18,16 @@ class CaptureServer(object):
     start_frame = None
     end_frame = None
     capture_controller = None
-    capture_file = None
 
-    def __init__(self, capture_file, capture_device, mode, capture=True):
-        if capture:
+    def __init__(self, capture_filename, options):
+        if options.capture:
             self.capture_controller = videocapture.CaptureController(
-                capture_device)
-            self.mode = mode
-            self.capture_file = capture_file
+                capture_filename, options)
 
     @mozhttpd.handlers.json_response
     def start_capture(self, req):
         if self.capture_controller:
-            self.capture_controller.start_capture(self.capture_file, self.mode)
+            self.capture_controller.start_capture()
             self.start_frame = self.capture_controller.capture_framenum()
         print "Start capture. Frame: %s. Time: %s" % (
             self.start_frame, time.time())
@@ -55,14 +52,12 @@ class CaptureServer(object):
 CAPTURE_DIR = os.path.join(os.path.dirname(__file__), "../captures")
 
 
-def run_capture(options, capture_file):
+def run_capture(options, capture_filename):
     device_prefs = eideticker.getDevicePrefs(options)
 
-    capture_server = CaptureServer(capture_file, options.capture_device,
-                                   options.mode,
-                                   capture=options.capture)
+    capture_server = CaptureServer(capture_filename, options)
     host = moznetwork.get_ip()
-    docroot = eideticker.runtest.TEST_DIR
+    docroot = eideticker.test.TEST_DIR
     httpd = mozhttpd.MozHttpd(port=0, host=host, docroot=docroot, urlhandlers=[
         {'method': 'GET',
          'path': '/api/captures/start/?',
@@ -75,9 +70,6 @@ def run_capture(options, capture_file):
         httpd.docroot, httpd.host, httpd.httpd.server_port)
 
     device = eideticker.getDevice(**device_prefs)
-    mode = options.mode
-    if not mode:
-        mode = device.hdmiResolution
 
     url = "http://%s:%s/getdimensions.html" % (host, httpd.httpd.server_port)
 
@@ -109,7 +101,7 @@ def main(args=sys.argv[1:]):
                       help="run through the test, but don't actually "
                       "capture anything")
     parser.add_option("--capture-file", action="store",
-                      type="string", dest="capture_file",
+                      type="string", dest="capture_filename",
                       help="Existing capture to analyze instead of running "
                       "test")
     parser.add_option("--app-name", action="store",
@@ -126,20 +118,20 @@ def main(args=sys.argv[1:]):
 
     options, args = parser.parse_args()
 
-    capture_file = options.capture_file
-    if not capture_file:
+    capture_filename = options.capture_filename
+    if not capture_filename:
         if options.capture:
-            capture_file = os.path.join(CAPTURE_DIR, "capture-test-%s.zip" %
+            capture_filename = os.path.join(CAPTURE_DIR, "capture-test-%s.zip" %
                                         time.time())
-            print "Capturing to file %s" % capture_file
-        run_capture(options, capture_file)
+            print "Capturing to file %s" % capture_filename
+        run_capture(options, capture_filename)
 
     if not options.capture:
         # we were just doing a test run through the steps here, we're done
         return
 
     print "Processing capture..."
-    capture = videocapture.Capture(capture_file)
+    capture = videocapture.Capture(capture_filename)
 
     # create a difference. threshold differences above 32 to 255, then
     # run our existing algorithm on it

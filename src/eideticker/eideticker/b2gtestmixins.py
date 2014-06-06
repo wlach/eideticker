@@ -46,8 +46,6 @@ class B2GContactsTestMixin(object):
 
 class B2GMarketplaceTestMixin(object):
 
-    requires_wifi = True
-
     def launch_app(self):
         apps = GaiaApps(self.device.marionette)
         apps.launch('Marketplace')

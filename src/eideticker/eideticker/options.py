@@ -2,11 +2,14 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 
+from device import getDevice, getDevicePrefs
+from test import SRC_DIR
 import json
 import optparse
 import os
 import videocapture
 
+GECKO_PROFILER_ADDON_DIR = os.path.join(SRC_DIR, "../src/GeckoProfilerAddon")
 
 class OptionParser(optparse.OptionParser):
     '''Custom version of the optionparser class with a few eideticker-specific
@@ -81,11 +84,18 @@ class TestOptionParser(CaptureOptionParser):
                         default="{}",
                         help="Extra profile preference for Firefox browsers. "
                         "Must be passed in as a JSON dictionary")
+        self.add_option("--get-internal-checkerboard-stats",
+                        action="store_true",
+                        dest="log_checkerboard_stats",
+                        help="get and calculate internal checkerboard stats (Android only)")
         self.add_option("--no-capture", action="store_false",
                         dest="capture", default=True,
                         help="Skip video capture (mainly for debugging)")
         self.add_option("--vpxenc", action="store_true",
                         dest="use_vpxenc", help="Use vpxenc for encoding video")
+        self.add_option("--gecko-profiler-addon-dir", action="store",
+                        dest="gecko_profiler_addon_dir", default=GECKO_PROFILER_ADDON_DIR,
+                        help="Path to gecko profiler addon (default: %default)")
 
     def parse_args(self):
         (options, args) = CaptureOptionParser.parse_args(self)
@@ -109,5 +119,13 @@ class TestOptionParser(CaptureOptionParser):
                 not options.wifi_settings_file:
             raise self.error('You must specify a WiFi settings file when '
                              'using B2G and sync time.')
+
+        # if we're using a decklink card and have not specified the
+        # resolution, try to get it by looking at the device model and
+        # our default for it
+        if not options.mode and options.capture_device == 'decklink':
+            device_prefs = getDevicePrefs(options)
+            device = getDevice(**device_prefs)
+            options.mode = device.hdmiResolution
 
         return (options, args)

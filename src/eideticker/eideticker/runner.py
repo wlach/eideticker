@@ -11,6 +11,7 @@ import tempfile
 import time
 import zipfile
 import log
+from test import EIDETICKER_TEMP_DIR
 
 
 class AndroidBrowserRunner(log.LoggingMixin):
@@ -18,7 +19,7 @@ class AndroidBrowserRunner(log.LoggingMixin):
     remote_profile_dir = None
     intent = "android.intent.action.VIEW"
 
-    def __init__(self, dm, appname, url, tmpdir,
+    def __init__(self, dm, appname, url,
                  preinitialize_user_profile=False,
                  open_url_after_launch=False, enable_profiling=False,
                  gecko_profiler_addon_dir=None, extra_prefs={},
@@ -26,7 +27,6 @@ class AndroidBrowserRunner(log.LoggingMixin):
         self.dm = dm
         self.appname = appname
         self.url = url
-        self.tmpdir = tmpdir
         self.preinitialize_user_profile = preinitialize_user_profile
         self.open_url_after_launch = open_url_after_launch
         self.enable_profiling = enable_profiling
@@ -59,7 +59,7 @@ class AndroidBrowserRunner(log.LoggingMixin):
 
         # create a temporary directory to place the profile and shared
         # libraries
-        profiledir = tempfile.mkdtemp(dir=self.tmpdir)
+        profiledir = tempfile.mkdtemp(dir=EIDETICKER_TEMP_DIR)
 
         # remove previous profiles if there is one
         sps_profile_path = os.path.join(profiledir, "fennec_profile.txt")

@@ -24,6 +24,8 @@ def runtest(device_prefs, testname, options, apk=None, appname=None,
     else:
         appinfo = None
 
+    options.appname = appname
+
     testinfo = eideticker.get_testinfo(testname)
     stableframecapture = (testinfo['type'] in ('startup', 'webstartup') or
                           testinfo['defaultMeasure'] == 'timetostableframe')
@@ -31,8 +33,7 @@ def runtest(device_prefs, testname, options, apk=None, appname=None,
     capture_results = []
 
     if options.prepare_test:
-        eideticker.prepare_test(
-            testname, device_prefs, options.wifi_settings_file)
+        eideticker.prepare_test(testname, options)
 
     for i in range(options.num_runs):
         # Now run the test
@@ -43,29 +44,18 @@ def runtest(device_prefs, testname, options, apk=None, appname=None,
         if options.enable_profiling and options.outputdir:
             profile_relpath = os.path.join(
                 'profiles', 'sps-profile-%s.zip' % time.time())
-            profile_file = os.path.join(options.outputdir, profile_relpath)
+            profile_filename = os.path.join(options.outputdir, profile_relpath)
         else:
-            profile_file = None
+            profile_filename = None
 
         current_date = time.strftime("%Y-%m-%d")
         capture_name = "%s - %s (taken on %s)" % (
             testname, appname, current_date)
 
-        testlog = eideticker.run_test(
-            testname, options.capture_device,
-            appname, capture_name, device_prefs,
-            extra_prefs=options.extra_prefs,
-            extra_env_vars=options.extra_env_vars,
-            log_checkerboard_stats=options.get_internal_checkerboard_stats,
-            profile_file=profile_file,
-            capture_area=options.capture_area,
-            camera_settings_file=options.camera_settings_file,
-            capture=options.capture,
-            fps=options.fps,
-            capture_file=capture_file,
-            wifi_settings_file=options.wifi_settings_file,
-            sync_time=options.sync_time,
-            use_vpxenc=options.use_vpxenc)
+        testlog = eideticker.run_test(testname, options,
+                                      capture_filename=capture_file,
+                                      profile_filename=profile_filename,
+                                      capture_name=capture_name)
 
         capture_uuid = uuid.uuid1().hex
         datapoint = { 'uuid': capture_uuid }
@@ -97,7 +87,7 @@ def runtest(device_prefs, testname, options, apk=None, appname=None,
                 open(video_path, 'w').write(capture.get_video().read())
                 metadata['video'] = video_relpath
 
-        if options.get_internal_checkerboard_stats:
+        if options.log_checkerboard_stats:
             metrics['internalcheckerboard'] = \
                 testlog.checkerboard_percent_totals
 
@@ -105,7 +95,7 @@ def runtest(device_prefs, testname, options, apk=None, appname=None,
         datapoint.update(metrics)
 
         if options.enable_profiling:
-            metadata['profile'] = profile_file
+            metadata['profile'] = profile_filename
 
         # dump metadata
         if options.outputdir:
@@ -156,7 +146,7 @@ def runtest(device_prefs, testname, options, apk=None, appname=None,
         print "  Capture files: %s" % map(lambda c: c['captureFile'], capture_results)
         print
 
-    if options.get_internal_checkerboard_stats:
+    if options.log_checkerboard_stats:
         print "  Internal Checkerboard Stats (sum of percents, not "
         "percentage):"
         print "  %s" % map(
@@ -191,10 +181,6 @@ def main(args=sys.argv[1:]):
                       dest="enable_profiling",
                       help="Collect performance profiles using the built in "
                       "profiler.")
-    parser.add_option("--get-internal-checkerboard-stats",
-                      action="store_true",
-                      dest="get_internal_checkerboard_stats",
-                      help="get and calculate internal checkerboard stats (Android only)")
     parser.add_option("--url-params", action="store",
                       dest="url_params", default="",
                       help="additional url parameters for test")

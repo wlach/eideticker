@@ -3,14 +3,17 @@
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import eideticker
+import imp
+import json
+import manifestparser
 import mozhttpd
 import moznetwork
-import urlparse
-import time
-import imp
 import os
 import re
-import manifestparser
+import time
+import urllib
+import urlparse
+
 from gaiatest.gaia_test import GaiaApps
 from log import LoggingMixin
 
@@ -19,7 +22,7 @@ from marionette.by import By
 
 SRC_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
 TEST_DIR = os.path.abspath(os.path.join(SRC_DIR, "tests"))
-
+EIDETICKER_TEMP_DIR = "/tmp/eideticker"
 
 class TestException(Exception):
 
@@ -35,11 +38,11 @@ class TestLog(object):
     http_request_log = None
     checkerboard_percent_totals = None
 
-    def getdict(self):
+    def getdict(self, log_http_requests=True, log_actions=True):
         logdict = {}
-        if self.http_request_log:
+        if log_http_requests and self.http_request_log:
             logdict['httpLog'] = self.http_request_log
-        if self.actions:
+        if log_actions and self.actions:
             logdict['actionLog'] = self.actions
         if self.checkerboard_percent_totals:
             logdict['checkerboardPercentTotals'] = self.checkerboard_percent_totals
@@ -101,52 +104,56 @@ def get_testinfo(testkey):
     return [test for test in manifest.active_tests() if test['key'] == testkey][0]
 
 
-def get_test(testinfo, devicetype="android", testtype=None, **kwargs):
+def get_test(testinfo, options, device, capture_controller=None, profile_filename=None):
     testpath = testinfo['path']
-    if not testtype:
-        testtype = testinfo['type']
+    testtype = testinfo['type']
 
-    if devicetype == 'b2g':
+    if options.devicetype == 'b2g':
         if testtype == 'web':
-            return B2GWebTest(testinfo, **kwargs)
+            return B2GWebTest(testinfo, options, device, capture_controller)
         else:
             (basepath, testfile) = os.path.split(testpath)
             (file, pathname, description) = imp.find_module(testfile[0:-3],
                                                             [basepath])
             module = imp.load_module('test', file, pathname, description)
-            test = module.Test(testinfo, **kwargs)
+            test = module.Test(testinfo, options, device, capture_controller)
             return test
     else:
         if testtype == 'webstartup':
-            return AndroidWebStartupTest(testinfo, **kwargs)
+            return AndroidWebStartupTest(testinfo, options, device,
+                                         capture_controller, profile_filename=profile_filename)
         elif testtype == 'appstartup':
-            return AndroidAppStartupTest(testinfo, **kwargs)
+            return AndroidAppStartupTest(testinfo, options, device,
+                                         capture_controller)
         elif testtype == "web":
-            return AndroidWebTest(testinfo, **kwargs)
+            return AndroidWebTest(testinfo, options, device,
+                                  capture_controller, profile_filename=profile_filename)
 
 
 class Test(LoggingMixin):
 
     finished_capture = False
-    requires_wifi = False
     start_frame = None
     end_frame = None
     testlog = TestLog()
 
-    def __init__(self, testinfo, testpath_rel=None, device=None,
-                 capture_file=None,
-                 capture_controller=None,
-                 capture_metadata={}, tempdir=None,
+    def __init__(self, testinfo, options, device, capture_controller,
                  track_start_frame=False,
-                 track_end_frame=False,
-                 **kwargs):
-        self.testpath_rel = testpath_rel
+                 track_end_frame=False):
+
+        # note: url params for startup tests currently not supported
+        if testinfo.get('urlOverride'):
+            self.testpath_rel = testinfo['urlOverride']
+        else:
+            self.testpath_rel = testinfo['relpath']
+        if testinfo.get('urlParams'):
+            self.testpath_rel += "?%s" % urllib.quote_plus(testinfo.get('urlParams'))
+
+        self.requires_wifi = bool(testinfo.get('requiresWifi'))
+
         self.device = device
-        self.capture_file = capture_file
         self.capture_controller = capture_controller
-        self.capture_metadata = capture_metadata
         self.capture_timeout = int(testinfo['captureTimeout'])
-        self.tempdir = tempdir
         self.track_start_frame = track_start_frame
         self.track_end_frame = track_end_frame
 
@@ -186,25 +193,20 @@ class Test(LoggingMixin):
         # callback indicating we should start capturing (if we're not doing so
         # already)
         self.log("Start capture")
-        if self.capture_file and not self.capture_controller.capturing:
-            self.log("Starting capture on device '%s' with mode: '%s'" % (
-                     self.capture_metadata['device'],
-                     self.device.hdmiResolution))
+        if self.capture_controller and not self.capture_controller.capturing:
             self.capture_start_time = time.time()
-            self.capture_controller.start_capture(self.capture_file,
-                                                  self.device.hdmiResolution,
-                                                  self.capture_metadata)
+            self.capture_controller.start_capture()
 
     def end_capture(self):
         # callback indicating we should terminate the capture
         self.log("Ending capture")
         self.finished_capture = True
-        if self.capture_file:
+        if self.capture_controller:
             self.capture_controller.terminate_capture()
 
     def test_started(self):
         # callback indicating test has started
-        if self.capture_file and self.track_start_frame:
+        if self.capture_controller and self.track_start_frame:
             self.start_frame = self.capture_controller.capture_framenum()
 
         self.test_start_time = time.time()
@@ -212,7 +214,7 @@ class Test(LoggingMixin):
 
     def test_finished(self):
         # callback indicating test has finished
-        if self.capture_file and self.track_end_frame:
+        if self.capture_controller and self.track_end_frame:
             self.end_frame = self.capture_controller.capture_framenum()
             # we don't need to find the end frame if we're slated to get the
             # start one...
@@ -242,18 +244,21 @@ class Test(LoggingMixin):
 
 class WebTest(Test):
 
-    requires_wifi = True
+    def __init__(self, testinfo, options, device, capture_controller):
+        Test.__init__(self, testinfo, options, device, capture_controller,
+                      track_start_frame=True, track_end_frame=True)
 
-    def __init__(self, testinfo, actions={}, docroot=None, **kwargs):
-        super(WebTest, self).__init__(testinfo, track_start_frame=True,
-                                      track_end_frame=True, **kwargs)
-
-        self.actions = actions
+        # get actions for web tests
+        actions_path = os.path.join(testinfo['here'], "actions.json")
+        if os.path.exists(actions_path):
+            self.actions = json.loads(open(actions_path).read())
+        else:
+            self.actions = None
 
         self.capture_server = CaptureServer(self)
         self.host = moznetwork.get_ip()
         self.http = mozhttpd.MozHttpd(
-            docroot=docroot, host=self.host, port=0, log_requests=True,
+            docroot=TEST_DIR, host=self.host, port=0, log_requests=True,
             urlhandlers=[
                 {'method': 'GET',
                  'path': '/api/captures/start/?',
@@ -289,9 +294,6 @@ class WebTest(Test):
         return "http://%s:%s/start.html?testpath=%s" % (
             self.host, self.http.httpd.server_port, self.testpath_rel)
 
-    def test_started(self):
-        super(WebTest, self).test_started()
-
     def test_finished(self):
         super(WebTest, self).test_finished()
 
@@ -325,19 +327,14 @@ class WebTest(Test):
 
 class AndroidWebTest(WebTest):
 
-    def __init__(self, testinfo, appname=None, extra_prefs={},
-                 extra_env_vars={},
-                 profile_file=None,
-                 gecko_profiler_addon_dir=None,
-                 log_checkerboard_stats=False,
-                 **kwargs):
-        super(AndroidWebTest, self).__init__(testinfo, **kwargs)
+    def __init__(self, testinfo, options, device, capture_controller, profile_filename=None):
+        WebTest.__init__(self, testinfo, options, device, capture_controller)
 
-        self.appname = appname
-        self.extra_prefs = extra_prefs
-        self.log_checkerboard_stats = log_checkerboard_stats
-        self.profile_file = profile_file
-        self.gecko_profiler_addon_dir = gecko_profiler_addon_dir
+        self.appname = options.appname
+        self.extra_prefs = options.extra_prefs
+        self.log_checkerboard_stats = options.log_checkerboard_stats
+        self.profile_filename = profile_filename
+        self.gecko_profiler_addon_dir = options.gecko_profiler_addon_dir
         self.preinitialize_user_profile = int(
             testinfo.get('preInitializeProfile', 1))
         self.open_url_after_launch = bool(testinfo.get('openURLAfterLaunch'))
@@ -351,20 +348,15 @@ class AndroidWebTest(WebTest):
                 "log.tag.GeckoLayerRendererProf")
             self.device.setprop("log.tag.GeckoLayerRendererProf", "DEBUG")
 
-        # something of a hack. if profiling is enabled, carve off an area to
-        # ignore in the capture
-        if self.profile_file:
-            self.capture_metadata['ignoreAreas'] = [[0, 0, 3 * 64, 3]]
-
         self.runner = eideticker.AndroidBrowserRunner(
             self.device, self.appname,
-            self.url, self.tempdir,
+            self.url,
             preinitialize_user_profile=self.preinitialize_user_profile,
             open_url_after_launch=self.open_url_after_launch,
-            enable_profiling=bool(self.profile_file),
-            gecko_profiler_addon_dir=gecko_profiler_addon_dir,
+            enable_profiling=bool(self.profile_filename),
+            gecko_profiler_addon_dir=options.gecko_profiler_addon_dir,
             extra_prefs=self.extra_prefs,
-            extra_env_vars=extra_env_vars)
+            extra_env_vars=options.extra_env_vars)
 
     def cleanup(self):
         # Clean up checkerboard logging preferences
@@ -402,7 +394,7 @@ class AndroidWebTest(WebTest):
                     self.testlog.checkerboard_percent_totals += (
                         total - amount)
 
-        if self.profile_file:
+        if self.profile_filename:
             self.runner.save_profile()
 
     def run(self):
@@ -410,27 +402,29 @@ class AndroidWebTest(WebTest):
 
         self.wait()
 
-        if self.profile_file:
-            self.runner.process_profile(self.profile_file)
+        if self.profile_filename:
+            self.runner.process_profile(self.profile_filename)
 
         self.runner.cleanup()
 
 
 class AndroidWebStartupTest(AndroidWebTest):
 
-    def __init__(self, testinfo, appname=None, **kwargs):
-        super(AndroidWebStartupTest, self).__init__(testinfo, appname=appname,
-                                                    **kwargs)
+    def __init__(self, testinfo, options, device, capture_controller, profile_filename=None):
+        AndroidWebTest.__init__(self, testinfo, options, device,
+                                capture_controller,
+                                profile_filename=profile_filename)
         # don't want to track start frames for startup tests
         self.track_start_frame = False
 
-        # we never have the green screen tracking frames on startup tests,
-        # but for most page load tests we have an end frame which helps
-        # us get capture dimensions (the exception being about:home)
-        self.capture_controller.find_start_signal = False
-        self.capture_controller.find_end_signal = True
-        if self.testpath_rel == "about:home":
-            self.capture_controller.find_end_signal = False
+        if self.capture_controller:
+            # we never have the green screen tracking frames on startup tests,
+            # but for most page load tests we have an end frame which helps
+            # us get capture dimensions (the exception being about:home)
+            self.capture_controller.find_start_signal = False
+            self.capture_controller.find_end_signal = True
+            if self.testpath_rel == "about:home":
+                self.capture_controller.find_end_signal = False
 
     def run(self):
         self.runner.initialize_user_profile()
@@ -454,8 +448,8 @@ class AndroidWebStartupTest(AndroidWebTest):
 
         self.wait()
 
-        if self.profile_file:
-            self.runner.process_profile(self.profile_file)
+        if self.profile_filename:
+            self.runner.process_profile(self.profile_filename)
 
         self.runner.cleanup()
 
@@ -470,9 +464,9 @@ class AndroidWebStartupTest(AndroidWebTest):
 
 class AndroidAppStartupTest(Test):
 
-    def __init__(self, testinfo, appname=None, intent=None, **kwargs):
-        super(AndroidAppStartupTest, self).__init__(testinfo, **kwargs)
-        self.appname = appname
+    def __init__(self, testinfo, options, device, capture_controller):
+        Test.__init__(self, testinfo, options, device, capture_controller)
+        self.appname = testinfo.get('appname')
         self.activity = testinfo.get('activity')
         self.intent = testinfo.get('intent')
 
@@ -497,17 +491,13 @@ class B2GWebTest(WebTest):
 
 class B2GAppTest(Test):
 
-    def __init__(self, testinfo, appname, **kwargs):
-        super(B2GAppTest, self).__init__(testinfo, track_start_frame=True,
-                                         track_end_frame=True, **kwargs)
-        self.appname = appname
+    def __init__(self, testinfo, options, device, capture_controller):
+        Test.__init__(self, testinfo, options, device, capture_controller,
+                      track_start_frame=True, track_end_frame=True)
+        self.appname = testinfo.get('appname')
 
 
 class B2GAppActionTest(B2GAppTest):
-
-    def __init__(self, testinfo, appname, **kwargs):
-        super(B2GAppActionTest, self).__init__(testinfo, appname, **kwargs)
-        # parent class must define self.cmds
 
     def launch_app(self):
         # launch app and wait for it to "settle" so that it's ready for use
@@ -530,9 +520,6 @@ class B2GAppActionTest(B2GAppTest):
 
 
 class B2GAppStartupTest(B2GAppTest):
-
-    def __init__(self, testinfo, appname, **kwargs):
-        super(B2GAppStartupTest, self).__init__(testinfo, appname, **kwargs)
 
     def wait_for_content_ready(self):
         self.log("No explicit logic for detecting content ready specified. "

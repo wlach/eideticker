@@ -4,8 +4,6 @@ from eideticker.b2gtestmixins import B2GMarketplaceTestMixin
 
 class Test(B2GMarketplaceTestMixin, B2GAppActionTest):
 
-    requires_wifi = True
-
     def __init__(self, testinfo, appname, **kwargs):
         B2GAppActionTest.__init__(self, testinfo, appname, **kwargs)
         self.cmds = []
