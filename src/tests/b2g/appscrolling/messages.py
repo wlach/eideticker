@@ -8,8 +8,8 @@ from eideticker.test import B2GAppActionTest
 
 
 class Test(B2GAppActionTest):
-    def __init__(self, testinfo, appname, **kwargs):
-        B2GAppActionTest.__init__(self, testinfo, appname, **kwargs)
+    def __init__(self, testinfo, options, device, capture_controller):
+        B2GAppActionTest.__init__(self, testinfo, options, device, capture_controller)
 
         self.cmds = []
         # there aren't as many messages to scroll through, so we'll do a

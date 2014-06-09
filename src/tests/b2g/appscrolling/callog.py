@@ -7,9 +7,9 @@ from eideticker.test import B2GAppActionTest
 
 class Test(B2GAppActionTest):
 
-    def __init__(self, testinfo, appname, **kwargs):
-        B2GAppActionTest.__init__(self, testinfo, appname, **kwargs)
-        self.scrolldown_amount = testinfo.get('scrolldown_amount')
+    def __init__(self, testinfo, options, device, capture_controller):
+        B2GAppActionTest.__init__(self, testinfo, options, device, capture_controller)
+        self.scrolldown_amount = int(testinfo.get('scrolldown_amount'))
 
     def populate_databases(self):
         self.device.b2gpopulate.populate_calls(100, restart=False)
@@ -34,6 +34,6 @@ class Test(B2GAppActionTest):
 
         self.cmds = []
 
-        for i in range(int(self.scrolldown_amount)):
+        for i in range(self.scrolldown_amount):
             self.cmds.append([
                 'drag', scroll_x1, scroll_y1, scroll_x1, scroll_y2, 100, 10])

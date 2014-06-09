@@ -11,9 +11,6 @@ from eideticker.test import B2GAppStartupTest
 
 class Test(B2GAppStartupTest):
 
-    def __init__(self, testinfo, appname, **kwargs):
-        B2GAppStartupTest.__init__(self, testinfo, appname, **kwargs)
-
     def populate_databases(self):
         self.device.b2gpopulate.populate_messages(200, restart=False)
 
