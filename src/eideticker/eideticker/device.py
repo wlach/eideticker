@@ -12,7 +12,9 @@ import posixpath
 import re
 import tempfile
 import time
-from gaiatest.gaia_test import FakeUpdateChecker, GaiaDevice, GaiaData, GaiaApps
+
+from gaia_compat import GaiaCompat
+from gaiatest.gaia_test import GaiaDevice, GaiaData, GaiaApps
 from b2gpopulate import B2GPopulate
 
 # I know specifying resolution manually like this is ugly, but as far as I
@@ -480,6 +482,7 @@ class EidetickerB2GMixin(EidetickerMixin):
         self.gaiaApps = GaiaApps(self.marionette)
         self.gaiaData = GaiaData(self.marionette)
         self.gaiaDevice = GaiaDevice(self.marionette)
+        self.gaiaCompat = GaiaCompat()
 
     def connectWIFI(self, wifiSettings):
         """
@@ -515,21 +518,10 @@ class EidetickerB2GMixin(EidetickerMixin):
         self._logger.info("Starting B2G")
         self.shellCheckOutput(['start', 'b2g'])
         self.setupMarionette()
-        self.gaiaData.set_setting('homescreen.manifestURL', 'app://homescreen.gaiamobile.org/manifest.webapp')
-
-        self.marionette.execute_async_script("""
-window.addEventListener('mozbrowserloadend', function loaded(aEvent) {
-if (aEvent.target.src.indexOf('ftu') != -1 || aEvent.target.src.indexOf('homescreen') != -1) {
-window.removeEventListener('mozbrowserloadend', loaded);
-marionetteScriptFinished();
-}
-});""", script_timeout=60000)
-
-        # TODO: Remove this sleep when Bug 924912 is addressed
-        time.sleep(5)
+        self.gaiaCompat.wait_for_b2g(self.marionette)
 
         # run the fake update checker
-        FakeUpdateChecker(self.marionette).check_updates()
+        self.gaiaCompat.supress_update_check(self.marionette)
 
         # unlock device, so it doesn't go to sleep
         self._logger.info("Unlocking screen...")
