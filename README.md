@@ -6,9 +6,9 @@ analyzes browser output via HDMI or an external camera.
 ## Requirements
 
 * Ubuntu Linux system with python and various other third-party dependencies
-  installed. You can get this by running:
-
-    `sudo apt-get install -y zip libav-tools g++ python-scipy python-opencv python2.7-dev python-virtualenv ntp`
+  installed. You can make sure that you have everything installed by running
+  `install-ubuntu-deps.sh` from the root directory of your eideticker
+  checkout (root is required).
 
   The recommended Linux distribution to use is Ubuntu 14.04 64-bit (32-bit is
   known not to work with the PointGrey cameras). Later versions
@@ -61,12 +61,6 @@ For more information on the Decklink cards, see the
 
 * [Joby GorillaPod](http://joby.com/gorillapod/original/) flexible tripod for
   the camera.
-
-* The following dependencies for the FlyCapture software will need to be
-  installed: libglademm-2.4-dev, libgtkmm-2.4-dev, libgtkglextmm-x11-1.2-dev, libusb-1.0. You can get
-  these by running:
-
-    `sudo apt-get install -y libglademm-2.4-dev libgtkmm-2.4-dev libgtkglextmm-x11-1.2-dev libusb-1.0`
 
 * FlyCapture camera software available from
   [PointGrey](http://www.ptgrey.com/support/downloads) (you will need to
