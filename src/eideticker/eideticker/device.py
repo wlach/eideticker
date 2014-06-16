@@ -558,9 +558,10 @@ marionetteScriptFinished();
     @property
     def devicePixelRatio(self):
         if not self._devicePixelRatio:
-            self._devicePixelRatio = self.marionette.execute_script(
-                'return window.wrappedJSObject.devicePixelRatio;') or 1
-        return self._devicePixelRatio
+            if self.marionette and self.marionette.session:
+                self._devicePixelRatio = self.marionette.execute_script(
+                    'return window.wrappedJSObject.devicePixelRatio;')
+        return self._devicePixelRatio or 1
 
 
 class B2GADB(EidetickerB2GMixin, mozdevice.DeviceManagerADB):
