@@ -8,6 +8,8 @@ import os
 import requests
 import sys
 
+exit_status = 0
+
 def save_file(filename, content):
     open(filename, 'wo').write(content)
 
@@ -15,13 +17,42 @@ def create_dir(dirname):
     if not os.path.exists(dirname):
         os.makedirs(dirname)
 
+def validate_response(r):
+    global exit_status
+
+    if r.status_code != requests.codes.ok:
+        print "WARNING: Problem downloading data at URL %s (HTTP " \
+            "response code: %s)!" % (r.url, r.status_code)
+        exit_status = 1
+        return False
+
+    return True
+
+def validate_json_response(r):
+    global exit_status
+
+    if not validate_response(r):
+        return False
+    try:
+        json.loads(r.text)
+    except ValueError:
+        exit_status = 1
+        print "WARNING: Response from URL %s not valid json" % r.url
+        return False
+
+    return True
+
 def download_file(url, filename):
-    print (url, filename)
     r = requests.get(url)
+    if not validate_response(r):
+        return
     open(filename, 'w').write(r.content)
 
 def download_metadata(url, baseurl, filename, options, videodir, profiledir):
     r = requests.get(url)
+    if not validate_json_response(r):
+        return
+
     metadata = r.json()
     videourl = baseurl + metadata['video']
     profileurl = None
@@ -44,6 +75,9 @@ def download_metadata(url, baseurl, filename, options, videodir, profiledir):
 def download_testdata(url, baseurl, filename, options, metadatadir,
                       videodir, profiledir):
     r = requests.get(url)
+    if not validate_json_response(r):
+        return
+
     open(filename, 'w').write(r.content)
     pool = ThreadPool()
     testdata = r.json()['testdata']
@@ -93,26 +127,34 @@ metadatadir = os.path.join(outputdir, 'metadata')
 videodir = os.path.join(outputdir, 'videos')
 profiledir = os.path.join(outputdir, 'profiles')
 
-devices = requests.get(baseurl + 'devices.json')
-save_file(os.path.join(outputdir, 'devices.json'), devices.content)
+r = requests.get(baseurl + 'devices.json')
+if not validate_json_response(r):
+    print "Can't download device list, exiting"
+    sys.exit(1)
+
+save_file(os.path.join(outputdir, 'devices.json'), r.content)
 
 if options.device_id:
-    if options.device_id in devices.json()['devices'].keys():
+    if options.device_id in r.json()['devices'].keys():
         device_names = [ options.device_id ]
     else:
         print "WARNING: Device id '%s' specified but unavailable. Skipping." % \
             options.device_id
         device_names = []
 else:
-    device_names = devices.json()['devices'].keys()
+    device_names = r.json()['devices'].keys()
 
 pool = ThreadPool()
 for device_name in device_names:
-    tests = requests.get(baseurl + '%s/tests.json' % device_name)
+    r = requests.get(baseurl + '%s/tests.json' % device_name)
+    if not validate_json_response(r):
+        print "Skipping tests for %s" % device_name
+        continue
+
     devicedir = os.path.join(outputdir, device_name)
     create_dir(devicedir)
-    save_file(os.path.join(devicedir, 'tests.json'), tests.content)
-    testnames = tests.json()['tests'].keys()
+    save_file(os.path.join(devicedir, 'tests.json'), r.content)
+    testnames = r.json()['tests'].keys()
     for testname in testnames:
         pool.apply_async(download_testdata,
                          [baseurl + '%s/%s.json' % (device_name, testname),
@@ -124,3 +166,5 @@ for device_name in device_names:
 
 pool.close()
 pool.join()
+
+sys.exit(exit_status)
