@@ -87,7 +87,7 @@ DEVICE_PROPERTIES = {
         },
         "flame": {
             "hdmiResolution": None,
-            "inputDevice": "/dev/input/event6",
+            "inputDevice": "/dev/input/event0",
             "defaultOrientation": "portrait",
             "dimensions": (480, 854),
             "swipePadding": (40, 40, 40, 40)
