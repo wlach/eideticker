@@ -534,6 +534,11 @@ class B2GAppStartupTest(B2GAppTest):
         self.device.gaiaApps.switch_to_displayed_app()  # switch to homescreen
         appicon = None
 
+        # HACK: Bug 1026527 - perform a no-op swipe before running test to
+        # workaround flame not processing input events properly
+        self.execute_actions([['swipe_right']],
+                             test_finished_after_actions=False)
+
         try:
             # look for the application icon in the dock first
             self.log('Looking for app icon in dock')
