@@ -536,8 +536,7 @@ class B2GAppStartupTest(B2GAppTest):
 
         # HACK: Bug 1026527 - perform a no-op swipe before running test to
         # workaround flame not processing input events properly
-        self.execute_actions([['swipe_right']],
-                             test_finished_after_actions=False)
+        self.device.executeCommands([['swipe_right']])
 
         try:
             # look for the application icon in the dock first
