@@ -206,8 +206,8 @@ class CaptureController(object):
             flycap_lib = max([filename for filename in os.listdir('/usr/lib') \
                               if 'libflycapture.so' in filename], key=len)
             if flycap_lib:
-                version_index = flycap_lib.find('.so') + 3
-                self.log('Using PointGrey SDK version: %s' % flycap_lib[version_index])
+                version_index = flycap_lib.find('.so') + 4
+                self.log('Using PointGrey SDK version: %s' % flycap_lib[version_index:])
             else:
                 self.log("WARNING: Unable to determine PointGrey SDK version")
 
