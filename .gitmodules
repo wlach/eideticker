@@ -9,7 +9,7 @@
 	url = git://github.com/wlach/pageloader.git
 [submodule "src/tests/ep1"]
 	path = src/tests/ep1
-	url = git://wrla.ch/ep1.git
+	url = https://git.mozilla.org/automation/ep1.git
 [submodule "src/orangutan"]
 	path = src/orangutan
 	url = git://github.com/wlach/orangutan.git
