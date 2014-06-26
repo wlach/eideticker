@@ -529,8 +529,6 @@ class B2GAppStartupTest(B2GAppTest):
         time.sleep(self.capture_timeout)
 
     def run(self):
-        from gaiatest.apps.homescreen.app import Homescreen
-        homescreen = Homescreen(self.device.marionette)
         self.device.gaiaApps.switch_to_displayed_app()  # switch to homescreen
         appicon = None
 
@@ -547,9 +545,10 @@ class B2GAppStartupTest(B2GAppTest):
         except NoSuchElementException:
             # skip the everything.me page
             self.device.marionette.execute_async_script(
-                'window.wrappedJSObject.GridManager.goToPage(1, '
-                'marionetteScriptFinished);')
-            for i in range(1, homescreen.homescreen_get_total_pages_number):
+                'return window.wrappedJSObject.GridManager.goToPage(1, marionetteScriptFinished);')
+            page_count = self.device.marionette.execute_script(
+                'return window.wrappedJSObject.GridManager.pageHelper.getTotalPagesNumber();')
+            for i in range(1, page_count):
                 current_page = self.device.marionette.find_element(
                     By.CSS_SELECTOR, '#icongrid .page:not([aria-hidden=true])')
                 try:
@@ -559,8 +558,14 @@ class B2GAppStartupTest(B2GAppTest):
                         self.appname)
                     break
                 except NoSuchElementException:
-                    if homescreen.homescreen_has_more_pages:
-                        homescreen.go_to_next_page()
+                    current_page_index = self.device.marionette.execute_script(
+                        'return window.wrappedJSObject.GridManager.pageHelper.getCurrentPageNumber();')
+                    if current_page_index < (page_count - 1):
+                        self.device.marionette.execute_script(
+                            'window.wrappedJSObject.GridManager.goToNextPage();')
+                        Wait(self.device.marionette).until(
+                            lambda m: m.find_element(By.TAG_NAME, 'body').get_attribute(
+                                'data-transitioning') != 'true')
                     else:
                         raise TestException("Cannot find icon for app with name "
                                             "'%s'" % self.appname)
