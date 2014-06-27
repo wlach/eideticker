@@ -29,13 +29,15 @@ class GaiaCompat():
 
     def wait_for_b2g(self, marionette, timeout=60):
         if self.version == '1.3':
-            marionette.execute_async_script("""
+            marionette.execute_script("""
 window.addEventListener('mozbrowserloadend', function loaded(aEvent) {
   if (/ftu|homescreen/.test(aEvent.target.src)) {
     window.removeEventListener('mozbrowserloadend', loaded);
-    marionetteScriptFinished();
+    window.wrappedJSObject.b2g_ready = true;
   }
-});""", script_timeout=timeout * 1000)
+});""", new_sandbox=False)
+            Wait(marionette, timeout).until(lambda m: m.execute_script(
+                'return window.wrappedJSObject.b2g_ready;', new_sandbox=False))
             time.sleep(5)
         else:
             from gaiatest import GaiaData
