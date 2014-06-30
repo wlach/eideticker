@@ -497,6 +497,11 @@ class B2GAppTest(Test):
                       track_start_frame=True, track_end_frame=True)
         self.appname = testinfo.get('appname')
 
+    def cleanup(self):
+        if self.device.marionette and self.device.marionette.session:
+            self.device.marionette.delete_session()
+            self.device.marionette = None
+
 
 class B2GAppActionTest(B2GAppTest):
 
