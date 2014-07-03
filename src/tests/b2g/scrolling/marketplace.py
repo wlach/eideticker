@@ -11,4 +11,3 @@ for i in range(num_swipes):
     Test.cmds.append(['scroll_down'])
 for i in range(num_swipes):
     Test.cmds.append(['scroll_up'])
-
