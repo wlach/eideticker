@@ -4,15 +4,16 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 
+import concurrent.futures
 import json
 import subprocess
 import tempfile
 import time
 import datetime
+import multiprocessing
 import os
 from square import get_biggest_square
 import re
-import multiprocessing
 import select
 import shutil
 
@@ -332,32 +333,27 @@ class CaptureController(object):
         self.log("Rewriting images in %s..." % self.outputdir)
         rewritten_imagedir = tempfile.mkdtemp(dir=self.custom_tempdir)
 
-        pool = multiprocessing.Pool()
+        with concurrent.futures.ProcessPoolExecutor() as executor:
+            # map the frame before the start frame to the zeroth frame (if
+            # possible). HACK: otherwise, create a copy of the start
+            # frame (this duplicates a frame).
+            remapped_frame = 0
+            if start_frame > 1:
+                remapped_frame = start_frame - 1
+            executor.submit(_rewrite_frame,
+                            0, rewritten_imagedir, imagefiles[remapped_frame],
+                            self.capture_area, self.capture_device)
 
-        # map the frame before the start frame to the zeroth frame (if
-        # possible). HACK: otherwise, create a copy of the start
-        # frame (this duplicates a frame).
-        remapped_frame = 0
-        if start_frame > 1:
-            remapped_frame = start_frame - 1
-        pool.apply_async(_rewrite_frame,
-                         [0, rewritten_imagedir, imagefiles[remapped_frame],
-                          self.capture_area, self.capture_device])
+            # last frame is the specified end frame or the first red frame if
+            # no last frame specified, or the very last frame in the
+            # sequence if there is no red frame and no specified last frame
+            last_frame = min(num_frames - 1, end_frame + 2)
 
-        # last frame is the specified end frame or the first red frame if
-        # no last frame specified, or the very last frame in the
-        # sequence if there is no red frame and no specified last frame
-        last_frame = min(num_frames - 1, end_frame + 2)
-
-        # copy the remaining frames into numeric order starting from 1
-        for (i, j) in enumerate(range(start_frame, last_frame)):
-            pool.apply_async(_rewrite_frame, [(i + 1),
-                             rewritten_imagedir, imagefiles[j],
-                             self.capture_area, self.capture_device])
-
-        # wait for the rewriting of the images to complete
-        pool.close()
-        pool.join()
+            # copy the remaining frames into numeric order starting from 1
+            for (i, j) in enumerate(range(start_frame, last_frame)):
+                executor.submit(_rewrite_frame, (i + 1),
+                                rewritten_imagedir, imagefiles[j],
+                                self.capture_area, self.capture_device)
 
         capturefps = self.fps
         if not capturefps:

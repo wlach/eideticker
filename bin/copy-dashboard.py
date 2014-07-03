@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from multiprocessing.pool import ThreadPool
+import concurrent.futures
 import eideticker
 import json
 import optparse
@@ -9,6 +9,7 @@ import requests
 import sys
 
 exit_status = 0
+MAX_WORKERS = 8
 
 def save_file(filename, content):
     open(filename, 'wo').write(content)
@@ -79,22 +80,20 @@ def download_testdata(url, baseurl, filename, options, metadatadir,
         return
 
     open(filename, 'w').write(r.content)
-    pool = ThreadPool()
-    testdata = r.json()['testdata']
-    for appname in testdata.keys():
-        for date in testdata[appname].keys():
-            for datapoint in testdata[appname][date]:
-                uuid = datapoint['uuid']
-                if options.download_metadata:
-                    pool.apply_async(download_metadata,
-                                     [baseurl + 'metadata/%s.json' % uuid,
-                                      baseurl,
-                                      os.path.join(metadatadir,
-                                                   '%s.json' % uuid),
-                                      options, videodir,
-                                      profiledir])
-    pool.close()
-    pool.join()
+    with concurrent.futures.ThreadPoolExecutor(MAX_WORKERS) as executor:
+        testdata = r.json()['testdata']
+        for appname in testdata.keys():
+            for date in testdata[appname].keys():
+                for datapoint in testdata[appname][date]:
+                    uuid = datapoint['uuid']
+                    if options.download_metadata:
+                        executor.submit(download_metadata,
+                                        baseurl + 'metadata/%s.json' % uuid,
+                                        baseurl,
+                                        os.path.join(metadatadir,
+                                                     '%s.json' % uuid),
+                                        options, videodir,
+                                        profiledir)
 
 usage = "usage: %prog [options] <url> <output directory>"
 parser = optparse.OptionParser(usage)
@@ -144,27 +143,24 @@ if options.device_id:
 else:
     device_names = r.json()['devices'].keys()
 
-pool = ThreadPool()
-for device_name in device_names:
-    r = requests.get(baseurl + '%s/tests.json' % device_name)
-    if not validate_json_response(r):
-        print "Skipping tests for %s" % device_name
-        continue
+with concurrent.futures.ThreadPoolExecutor(MAX_WORKERS) as executor:
+    for device_name in device_names:
+        r = requests.get(baseurl + '%s/tests.json' % device_name)
+        if not validate_json_response(r):
+            print "Skipping tests for %s" % device_name
+            continue
 
-    devicedir = os.path.join(outputdir, device_name)
-    create_dir(devicedir)
-    save_file(os.path.join(devicedir, 'tests.json'), r.content)
-    testnames = r.json()['tests'].keys()
-    for testname in testnames:
-        pool.apply_async(download_testdata,
-                         [baseurl + '%s/%s.json' % (device_name, testname),
-                          baseurl,
-                          os.path.join(outputdir, device_name,
-                                       '%s.json' % testname),
-                          options,
-                          metadatadir, videodir, profiledir])
-
-pool.close()
-pool.join()
+        devicedir = os.path.join(outputdir, device_name)
+        create_dir(devicedir)
+        save_file(os.path.join(devicedir, 'tests.json'), r.content)
+        testnames = r.json()['tests'].keys()
+        for testname in testnames:
+            executor.submit(download_testdata,
+                            baseurl + '%s/%s.json' % (device_name, testname),
+                            baseurl,
+                            os.path.join(outputdir, device_name,
+                                         '%s.json' % testname),
+                            options,
+                            metadatadir, videodir, profiledir)
 
 sys.exit(exit_status)

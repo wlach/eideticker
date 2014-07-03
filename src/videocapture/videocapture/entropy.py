@@ -3,10 +3,8 @@ from scipy import ndimage
 import cPickle as pickle
 import cv2
 import math
-import multiprocessing
+import concurrent.futures
 import numpy
-
-DEFAULT_POOL_SIZE=8
 
 def _get_frame_entropy((i, capture, edge_detection)):
     """ Function calculates and returns the entropy of a single frame.
@@ -46,13 +44,13 @@ def get_frame_entropies(capture, edge_detection=None):
     if cache.get(cachekey):
         return cache[cachekey]
 
-    pool = multiprocessing.Pool(processes=DEFAULT_POOL_SIZE)
-    results = pool.map(_get_frame_entropy, zip(range(capture.num_frames+1),
-                                               repeat(capture),
-                                               repeat(edge_detection)))
-    cache[cachekey] = results
+    with concurrent.futures.ProcessPoolExecutor() as executor:
+        entropies = list(executor.map(_get_frame_entropy,
+                                      zip(range(capture.num_frames+1),
+                                          repeat(capture),
+                                          repeat(edge_detection))))
+        cache[cachekey] = entropies
     pickle.dump(cache, open(capture.cache_filename, 'w'))
-
     return cache[cachekey]
 
 def get_overall_entropy(capture, edge_detection=None):

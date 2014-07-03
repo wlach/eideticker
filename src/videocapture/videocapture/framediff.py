@@ -5,8 +5,8 @@
 from PIL import Image
 from itertools import repeat
 import cPickle as pickle
+import concurrent.futures
 import math
-import multiprocessing
 import numpy
 
 # Note: we consider frame differences to be the number of pixels with an rgb
@@ -90,12 +90,12 @@ def get_framediff_sums(capture, filter_low_differences=True):
     except:
         # Frame differences
         diffsums = None
-        pool = multiprocessing.Pool()
-        diffsums = [0] + pool.map(_get_framediff_sum,
-                                  zip(range(1, capture.num_frames + 1),
-                                      repeat(capture), repeat(ignored_areas),
-                                      repeat(filter_threshold)))
-        cache['diffsums'] = diffsums
+        with concurrent.futures.ProcessPoolExecutor() as executor:
+            diffsums = [0] + list(executor.map(_get_framediff_sum,
+                                               zip(range(1, capture.num_frames + 1),
+                                                   repeat(capture), repeat(ignored_areas),
+                                                   repeat(filter_threshold))))
+            cache['diffsums'] = diffsums
         pickle.dump(cache, open(capture.cache_filename, 'w'))
 
     return diffsums
