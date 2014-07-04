@@ -41,7 +41,7 @@ def runtest(dm, device_prefs, options, product, appinfo, testinfo,
 
     test_completed = False
     for i in range(3):
-        print "Running test (try %s of 3)" % (i + 1)
+        print "Running test %s (try %s of 3)" % (testinfo['key'], (i + 1))
 
         try:
             testlog = eideticker.run_test(
