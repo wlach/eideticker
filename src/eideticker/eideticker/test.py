@@ -245,14 +245,18 @@ class Test(LoggingMixin):
 
 class WebTest(Test):
 
-    def __init__(self, testinfo, options, device, capture_controller):
+    def __init__(self, testinfo, options, device, capture_controller, use_actions=True):
         Test.__init__(self, testinfo, options, device, capture_controller,
                       track_start_frame=True, track_end_frame=True)
 
         # get actions for web tests
         actions_path = os.path.join(testinfo['here'], "actions.json")
-        if os.path.exists(actions_path):
-            self.actions = json.loads(open(actions_path).read())
+        if use_actions:
+            if os.path.exists(actions_path):
+                self.actions = json.loads(open(actions_path).read())
+            else:
+                raise TestException("Test needs actions but no actions file '%s'" %
+                                    actions_path)
         else:
             self.actions = None
 
@@ -328,8 +332,10 @@ class WebTest(Test):
 
 class AndroidWebTest(WebTest):
 
-    def __init__(self, testinfo, options, device, capture_controller, profile_filename=None):
-        WebTest.__init__(self, testinfo, options, device, capture_controller)
+    def __init__(self, testinfo, options, device, capture_controller,
+                 profile_filename=None, use_actions=True):
+        WebTest.__init__(self, testinfo, options, device, capture_controller,
+                         use_actions=use_actions)
 
         self.appname = options.appname
         self.extra_prefs = options.extra_prefs
@@ -411,10 +417,12 @@ class AndroidWebTest(WebTest):
 
 class AndroidWebStartupTest(AndroidWebTest):
 
-    def __init__(self, testinfo, options, device, capture_controller, profile_filename=None):
+    def __init__(self, testinfo, options, device, capture_controller,
+                 profile_filename=None, use_actions=False):
         AndroidWebTest.__init__(self, testinfo, options, device,
                                 capture_controller,
-                                profile_filename=profile_filename)
+                                profile_filename=profile_filename,
+                                use_actions=use_actions)
         # don't want to track start frames for startup tests
         self.track_start_frame = False
 
