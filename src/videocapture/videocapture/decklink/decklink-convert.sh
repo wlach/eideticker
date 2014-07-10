@@ -11,5 +11,4 @@ else
 fi
 
 # Create archive
-AVCONV="avconv -vcodec rawvideo -f rawvideo -pix_fmt uyvy422 -r 60 -s $AVCONV_MODE -i $INPUT_FILE --"
-$AVCONV $OUTPUT_DIR/%d.png
+avconv -vcodec rawvideo -f rawvideo -pix_fmt uyvy422 -r 60 -s $AVCONV_MODE -i $INPUT_FILE $OUTPUT_DIR/%d.png
