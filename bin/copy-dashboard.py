@@ -66,7 +66,7 @@ def download_metadata(url, baseurl, filename, options, videodir, profiledir):
             download_file(profileurl,
                           os.path.join(profiledir,
                                        os.path.basename(metadata['profile'])))
-    else:
+    elif options.rewrite_metadata:
         # make it relative
         metadata['video'] = videourl
         if profileurl:
@@ -106,6 +106,10 @@ parser.add_option("--skip-metadata", action="store_false",
 parser.add_option("--device-id", action="store",
                   dest="device_id",
                   help="Only download information for device id")
+parser.add_option("--rewrite-metadata", action="store_true",
+                  dest="rewrite_metadata", default=False,
+                  help="Rewrite metadata to use absolute URLs to original "
+                  "source (never done if using --full-mirror)")
 options, args = parser.parse_args()
 
 if len(args) != 2:
