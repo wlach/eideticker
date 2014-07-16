@@ -117,8 +117,10 @@ def runtest(dm, device_prefs, options, product, appinfo, testinfo,
             log_actions=(testtype == 'web' or testtype == 'b2g')))
 
     # Write testdata
-    eideticker.update_dashboard_testdata(options.dashboard_dir, options.device_id,
-                                         testinfo, productname, appdate,
+    eideticker.update_dashboard_testdata(options.dashboard_dir,
+                                         options.device_id,
+                                         options.branch_id, testinfo,
+                                         productname, appdate,
                                          datapoint, metadata)
 
 def main(args=sys.argv[1:]):
@@ -132,6 +134,9 @@ def main(args=sys.argv[1:]):
     parser.add_option("--device-id", action="store", dest="device_id",
                       help="id of device (used in output json)",
                       default=os.environ.get('DEVICE_ID'))
+    parser.add_option("--branch", action="store", dest="branch_id",
+                      help="branch under test (used in output json)",
+                      default=os.environ.get('BRANCH'))
     parser.add_option("--device-name", action="store", dest="device_name",
                       help="name of device to display in dashboard (if not "
                       "specified, display model name)",
@@ -155,17 +160,19 @@ def main(args=sys.argv[1:]):
                       default="nightly",
                       help="product name (android-specific, default: "
                       "%default)")
-
     options, args = parser.parse_args()
 
     if not args: # need to specify at least one test to run!
         parser.print_usage()
         sys.exit(1)
 
-    device_id = options.device_id
-    if not device_id:
-        print "ERROR: Must specify device id (either with --device-id or with "
-        "DEVICE_ID environment variable)"
+    if not options.device_id:
+        print "ERROR: Must specify device id (either with --device-id or with " \
+            "DEVICE_ID environment variable)"
+        sys.exit(1)
+    if not options.branch_id:
+        print "ERROR: Must specify branch (either with --branch or with " \
+            "BRANCH environment variable)"
         sys.exit(1)
 
     # get device info
@@ -189,8 +196,8 @@ def main(args=sys.argv[1:]):
         print "ERROR: Unknown device type '%s'" % options.devicetype
 
     # update device index
-    eideticker.update_dashboard_device_list(options.dashboard_dir, device_id,
-                                            device_info)
+    eideticker.update_dashboard_device_list(options.dashboard_dir, options.device_id,
+                                            options.branch_id, device_info)
 
     # get application/build info
     if options.devicetype == "android":
@@ -229,7 +236,8 @@ def main(args=sys.argv[1:]):
     for testkey in args:
         testinfo = eideticker.get_testinfo(testkey)
 
-        eideticker.update_dashboard_test_list(options.dashboard_dir, device_id,
+        eideticker.update_dashboard_test_list(options.dashboard_dir, options.device_id,
+                                              options.branch_id,
                                               testinfo)
 
         current_date = time.strftime("%Y-%m-%d")

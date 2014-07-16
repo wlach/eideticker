@@ -134,37 +134,40 @@ r = requests.get(baseurl + 'devices.json')
 if not validate_json_response(r):
     print "Can't download device list, exiting"
     sys.exit(1)
+devicedict = r.json()
 
 save_file(os.path.join(outputdir, 'devices.json'), r.content)
 
 if options.device_id:
     if options.device_id in r.json()['devices'].keys():
-        device_names = [ options.device_id ]
+        deviceids = [ options.device_id ]
     else:
         print "WARNING: Device id '%s' specified but unavailable. Skipping." % \
             options.device_id
-        device_names = []
+        deviceids = []
 else:
-    device_names = r.json()['devices'].keys()
+    deviceids = devicedict['devices'].keys()
 
 with concurrent.futures.ThreadPoolExecutor(MAX_WORKERS) as executor:
-    for device_name in device_names:
-        r = requests.get(baseurl + '%s/tests.json' % device_name)
-        if not validate_json_response(r):
-            print "Skipping tests for %s" % device_name
-            continue
+    for deviceid in deviceids:
+        for branchid in devicedict['devices'][deviceid]['branches']:
+            r = requests.get(baseurl + '%s/%s/tests.json' % (deviceid, branchid))
+            if not validate_json_response(r):
+                print "Skipping tests for device: %s, branch: %s" % (
+                    deviceid, branchid)
+                continue
 
-        devicedir = os.path.join(outputdir, device_name)
-        create_dir(devicedir)
-        save_file(os.path.join(devicedir, 'tests.json'), r.content)
-        testnames = r.json()['tests'].keys()
-        for testname in testnames:
-            executor.submit(download_testdata,
-                            baseurl + '%s/%s.json' % (device_name, testname),
-                            baseurl,
-                            os.path.join(outputdir, device_name,
-                                         '%s.json' % testname),
-                            options,
-                            metadatadir, videodir, profiledir)
+            testdir = os.path.join(outputdir, deviceid, branchid)
+            create_dir(testdir)
+            save_file(os.path.join(testdir, 'tests.json'), r.content)
+            testnames = r.json()['tests'].keys()
+            for testname in testnames:
+                executor.submit(download_testdata,
+                                baseurl + '%s/%s/%s.json' % (deviceid, branchid, testname),
+                                baseurl,
+                                os.path.join(outputdir, deviceid, branchid,
+                                             '%s.json' % testname),
+                                options,
+                                metadatadir, videodir, profiledir)
 
 sys.exit(exit_status)

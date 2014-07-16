@@ -66,19 +66,27 @@ def copy_dashboard_files(dashboard_dir, indexfile='index.html'):
             os.remove(dest)
         shutil.copyfile(source, dest)
 
-def update_dashboard_device_list(dashboard_dir, device_id, device_info):
+def update_dashboard_device_list(dashboard_dir, device_id, branch_id, device_info):
     devices = {}
     device_filename = os.path.join(dashboard_dir, 'devices.json')
     if os.path.isfile(device_filename):
         devices = json.loads(open(device_filename).read())['devices']
+
+    branches = []
+    if devices.get(device_id):
+        branches = devices[device_id].get('branches', [])
+    if branch_id not in branches:
+        branches.append(branch_id)
+
     devices[device_id] = device_info
+    devices[device_id]['branches'] = branches
     with open(device_filename, 'w') as f:
         f.write(json.dumps({'devices': devices}))
 
-def update_dashboard_test_list(dashboard_dir, device_id, testinfo):
-    testsdirname = os.path.join(dashboard_dir, device_id)
+def update_dashboard_test_list(dashboard_dir, device_id, branch_id, testinfo):
+    testsdirname = os.path.join(dashboard_dir, device_id, branch_id)
     if not os.path.exists(testsdirname):
-        os.mkdir(testsdirname)
+        os.makedirs(testsdirname)
 
     tests = {}
     testsfilename = os.path.join(testsdirname, 'tests.json')
@@ -91,10 +99,11 @@ def update_dashboard_test_list(dashboard_dir, device_id, testinfo):
     with open(testsfilename, 'w') as f:
         f.write(json.dumps({'tests': tests}))
 
-def update_dashboard_testdata(dashboard_dir, device_id, testinfo, productname,
-                              productdate, datapoint, metadata):
+def update_dashboard_testdata(dashboard_dir, device_id, branch_id, testinfo,
+                              productname, productdate, datapoint, metadata):
     # get existing data
-    fname = os.path.join(dashboard_dir, device_id, '%s.json' % testinfo['key'])
+    fname = os.path.join(dashboard_dir, device_id, branch_id,
+                         '%s.json' % testinfo['key'])
     testdata = NestedDict()
     if os.path.isfile(fname):
         testdata.update(json.loads(open(fname).read()))
