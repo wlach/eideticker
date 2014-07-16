@@ -117,6 +117,12 @@ user to access the device:
     adb kill-server
     sudo adb start-server
 
+If you are using a FirefoxOS device, then you also might need to set
+the property of the following environment variable as it presently is
+set to default to 'android'
+
+    export DEVICE_TYPE=b2g
+
 On FirefoxOS, you will also need to set up a WIFI settings file for the
 device, so it knows which network to connect to when running tests (this
 should be the same one that the host computer is connected to). You can
