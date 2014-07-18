@@ -208,6 +208,11 @@ you are just working on a test and/or don't have a capture rig), pass the
 
     ./bin/runtest.py --app-name org.mozilla.fennec --no-capture taskjs
 
+#### Tests that need Marionette
+
+If you need to run a test that needs Marionette you will need to forward port 2828
+    adb forward tcp:2828 tcp:2828
+
 ### Console profiling
 
 Console mode allows you to get one-off results of running Eideticker for a
