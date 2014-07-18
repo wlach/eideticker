@@ -8,7 +8,8 @@ DASHBOARD_DIR = os.path.join(os.path.dirname(__file__), "../../dashboard/")
 def add_dashboard_options(option_parser):
     # A set of dashboard-specific options you can add to your option parser
     option_parser.add_option("--dashboard-user", action="store",
-                             dest="dashboard_user", default="eideticker",
+                             dest="dashboard_user", default=os.getenv("DASHBOARD_USER",
+                                                                      "eideticker"),
                              help="username to login to dashboard if "
                              "using rsync (default: %default)")
     option_parser.add_option("--dashboard-server", action="store",
