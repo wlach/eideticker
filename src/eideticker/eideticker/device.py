@@ -176,7 +176,7 @@ class EidetickerMixin(object):
     def synchronizeTime(self):
         self._logger.info("Synchronizing time...")
         ntpdate_wait_time = 5
-        ntpdate_retries = 5
+        ntpdate_retries = 10
         num_retries = 0
         synced_time = False
         while not synced_time:
