@@ -7,6 +7,8 @@ from marionette import expected
 from marionette import Wait
 from marionette.by import By
 
+from b2gpopulate import WORKLOADS
+
 
 class B2GContactsTestMixin(object):
 
@@ -17,7 +19,8 @@ class B2GContactsTestMixin(object):
 
     def populate_databases(self):
         self.device.b2gpopulate.populate_contacts(
-            200, include_pictures=False, restart=False)
+            WORKLOADS['light']['contact'],
+            include_pictures=False, restart=False)
 
     def prepare_app(self):
         self.launch_app()
@@ -61,7 +64,9 @@ class B2GMessagesTestMixin(object):
         self.launch_app()
 
     def populate_databases(self):
-        self.device.b2gpopulate.populate_messages(200, restart=False)
+        self.device.b2gpopulate.populate_messages(
+            WORKLOADS['light']['message'],
+            restart=False)
 
     def wait_for_content_ready(self):
         # the 200 message workload contains 37 threads (36 on v1.3)

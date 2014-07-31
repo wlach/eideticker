@@ -4,6 +4,8 @@ from gaiatest.apps.phone.app import Phone
 
 from eideticker.test import B2GAppActionTest
 
+from b2gpopulate import WORKLOADS
+
 
 class Test(B2GAppActionTest):
 
@@ -12,7 +14,8 @@ class Test(B2GAppActionTest):
         self.scrolldown_amount = int(testinfo.get('scrolldown_amount'))
 
     def populate_databases(self):
-        self.device.b2gpopulate.populate_calls(100, restart=False)
+        self.device.b2gpopulate.populate_calls(
+            WORKLOADS['medium']['call'], restart=False)
 
     def launch_app(self):
         phone = Phone(self.device.marionette)

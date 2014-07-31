@@ -7,9 +7,11 @@ from marionette import expected
 
 from eideticker.test import B2GAppStartupTest
 
+from b2gpopulate import WORKLOADS
+
 
 class Test(B2GAppStartupTest):
-    picture_count = 100
+    picture_count = WORKLOADS['heavy']['picture']
 
     def prepare_app(self):
         self.device.b2gpopulate.populate_pictures(self.picture_count)

@@ -7,11 +7,13 @@ from marionette import expected
 
 from eideticker.test import B2GAppStartupTest
 
+from b2gpopulate import WORKLOADS
+
 
 class Test(B2GAppStartupTest):
 
     def prepare_app(self):
-        music_count = 100
+        music_count = WORKLOADS['heavy']['music']
         tracks_per_album = 10
         self.device.b2gpopulate.populate_music(
             music_count, tracks_per_album=tracks_per_album)
