@@ -148,22 +148,15 @@
       <dl>
         <dt>Build Date</dt>
         <dd>{{date}}</dd>
-        {{#revision}}
-        <dt>Revision</dt>
-        <dd><a href="{{sourceRepo}}/rev/{{revision}}" target="_blank">{{revision}}</a></dd>
-        {{/revision}}
-        {{#prevRevision}}
-        <dt>Pushlog</dt>
-        <dd><a href="{{sourceRepo}}/pushloghtml?fromchange={{prevRevision}}&tochange={{revision}}" target="_blank">{{prevRevision}} -> {{revision}}</a></dd>
-        {{/prevRevision}}
-        {{#gaiaRevision}}
-        <dt>Gaia Revision</dt>
-        <dd><a href="https://github.com/mozilla-b2g/gaia/commit/{{gaiaRevision}}" target="_blank">{{gaiaRevision}}</a></dd>
-        {{/gaiaRevision}}
-        {{#buildRevision}}
-        <dt>Build Revision</dt>
-        <dd><a href="https://github.com/mozilla-b2g/platform_build/commit/{{buildRevision}}" target="_blank">{{buildRevision}}</a></dd>
-        {{/buildRevision}}
+
+        {{#revisionInfoList}}
+        <dt>{{title}}</dt>
+        <a href="{{revisionHref}}" target="_blank">{{revision}}</a>
+        {{#pushlogHref}}
+        (<a href="{{pushlogHref}}" target="_blank">pushlog</a>)
+        {{/pushlogHref}}
+        {{/revisionInfoList}}
+
         {{#buildId}}
         <dt>Build Id</dt>
         <dd>{{buildId}}</dd>

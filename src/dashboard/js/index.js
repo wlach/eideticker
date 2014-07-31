@@ -136,15 +136,55 @@ function updateGraph(title, rawdata, measureId) {
 
   function updateDataPointDisplay(uuid, date, measureName, series) {
     $.getJSON(getResourceURL('metadata/' + uuid + '.json'), function(metadata) {
-      function sliceIfExist(str) {
-        if (str) {
+      function revisionSlice(str) {
           return str.slice(0, 12);
-        }
-        return null;
       }
 
-      function updateDataPoint(prevRevision) {
+      function updateDataPoint(prevMetadata) {
         var defaultDetailParameter = getDefaultDetailParameter(measureName, metadata);
+        var revisionInfoList = [];
+        [
+          { 'title': 'Gecko Revision',
+            'revisionProperty': 'revision',
+            'repotype': 'hg',
+            'repoURL': metadata.sourceRepo },
+          { 'title': 'Gaia Revision',
+            'revisionProperty': 'gaiaRevision',
+            'repotype': 'github',
+            'repoURL': 'https://github.com/mozilla-b2g/gaia/' },
+          { 'title': 'Build Revision',
+            'revisionProperty': 'buildRevision',
+            'repotype': 'github',
+            'repoURL': 'https://github.com/mozilla-b2g/platform_build/' }
+        ].forEach(function(revisionType) {
+          if (metadata[revisionType.revisionProperty]) {
+            var revisionProperty = revisionType.revisionProperty;
+            var revisionInfo = {
+              'title': revisionType.title,
+              'revision': revisionSlice(metadata[revisionProperty]) };
+            if (revisionType.repotype === 'hg') {
+              revisionInfo.revisionHref = revisionType.repoURL +
+                "/rev/" + metadata[revisionProperty];
+              if (prevMetadata && prevMetadata[revisionProperty] &&
+                  prevMetadata[revisionProperty] !== metadata[revisionProperty]) {
+                revisionInfo.pushlogHref = revisionType.repoURL +
+                  "/pushloghtml?fromchange=" +
+                  prevMetadata[revisionProperty] + "&tochange=" +
+                  metadata[revisionProperty];
+              }
+            } else {
+              revisionInfo.revisionHref = revisionType.repoURL +
+                " /commit/" + metadata[revisionProperty];
+              if (prevMetadata && prevMetadata[revisionProperty] &&
+                  prevMetadata[revisionProperty] !== metadata[revisionProperty]) {
+                revisionInfo.pushlogHref = revisionType.repoURL +
+                  "compare/" + prevMetadata[revisionProperty] + "..." +
+                  metadata[revisionProperty];
+              }
+            }
+            revisionInfoList.push(revisionInfo);
+          }
+        });
         $('#datapoint-info').html(ich.graphDatapoint({ 'uuid': uuid,
                                                        'videoURL': metadata.video,
                                                        'profileURL': metadata.profile,
@@ -152,11 +192,8 @@ function updateGraph(title, rawdata, measureId) {
                                                        'httpLog': metadata.httpLog ? true : false,
                                                        'measureName': measureName,
                                                        'date': getDateStr(metadata.appdate * 1000),
-                                                       'buildRevision': sliceIfExist(metadata.buildRevision),
-                                                       'gaiaRevision': sliceIfExist(metadata.gaiaRevision),
-                                                       'prevRevision': prevRevision,
-                                                       'revision': metadata.revision,
-                                                       'sourceRepo': metadata.sourceRepo,
+                                                       'metadata': metadata,
+                                                       'revisionInfoList': revisionInfoList,
                                                        'buildId': metadata.buildId,
                                                        'measureValue': Math.round(100.0*metadata['metrics'][measureName])/100.0
                                                      }));
@@ -178,7 +215,7 @@ function updateGraph(title, rawdata, measureId) {
       if (prevTimestamp) {
         var prevDayData = rawdata[series.label][prevTimestamp];
         $.getJSON(getResourceURL('metadata/' + prevDayData[0].uuid + '.json'), function(prevMetadata) {
-          updateDataPoint(prevMetadata.revision)
+          updateDataPoint(prevMetadata);
         });
       } else {
         updateDataPoint(null);
