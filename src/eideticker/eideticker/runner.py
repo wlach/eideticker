@@ -3,6 +3,7 @@
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import mozdevice
+import mozlog
 import mozprofile
 import os
 import shutil
@@ -14,10 +15,11 @@ import log
 from test import EIDETICKER_TEMP_DIR
 
 
-class AndroidBrowserRunner(log.LoggingMixin):
+class AndroidBrowserRunner(object):
 
     remote_profile_dir = None
     intent = "android.intent.action.VIEW"
+    logger = mozlog.getLogger('AndroidBrowserRunner')
 
     def __init__(self, dm, appname, url,
                  preinitialize_user_profile=False,
@@ -66,19 +68,19 @@ class AndroidBrowserRunner(log.LoggingMixin):
         if os.path.exists(sps_profile_path):
             os.remove(sps_profile_path)
 
-        self.log("Fetching fennec_profile.txt")
+        self.logger.info("Fetching fennec_profile.txt")
         self.dm.getFile(self.remote_sps_profile_location, sps_profile_path)
         files_to_package.append(sps_profile_path)
 
         # FIXME: We still get a useful profile without the symbols from the apk
         # make doing this optional so we don't require a rooted device
-        self.log("Fetching app symbols")
+        self.logger.info("Fetching app symbols")
         local_apk_path = os.path.join(profiledir, "symbol.apk")
         self.dm.getAPK(self.appname, local_apk_path)
         files_to_package.append(local_apk_path)
 
         # get all the symbols library for symbolication
-        self.log("Fetching system libraries")
+        self.logger.info("Fetching system libraries")
         libpaths = ["/system/lib",
                     "/system/lib/egl",
                     "/system/lib/hw",
@@ -88,7 +90,7 @@ class AndroidBrowserRunner(log.LoggingMixin):
                     "/system/b2g"]
 
         for libpath in libpaths:
-            self.log("Fetching from: %s" % libpath)
+            self.logger.info("Fetching from: %s" % libpath)
             dirlist = self.dm.listFiles(libpath)
             for filename in dirlist:
                 filename = filename.strip()
@@ -138,7 +140,7 @@ class AndroidBrowserRunner(log.LoggingMixin):
                                             os.path.basename(profile.profile)])
         self.dm.pushDir(profile.profile, self.remote_profile_dir)
         if self.preinitialize_user_profile:
-            self.log("Preinitializing user profile")
+            self.logger.info("Preinitializing user profile")
             # initialize user profile by launching to about:home then
             # waiting for 10 seconds
             self.launch_fennec(None, "about:home")
@@ -146,7 +148,7 @@ class AndroidBrowserRunner(log.LoggingMixin):
             self.dm.stopApplication(self.appname)
 
     def start(self):
-        self.log("Starting %s... " % self.appname)
+        self.logger.info("Starting %s... " % self.appname)
 
         url = self.url
         if self.open_url_after_launch:
@@ -178,7 +180,7 @@ class AndroidBrowserRunner(log.LoggingMixin):
     def launch_fennec(self, mozEnv, url):
         # sometimes fennec fails to start, so we'll try three times...
         for i in range(3):
-            self.log("Launching %s (try %s of 3)" % (self.appname, i + 1))
+            self.logger.info("Launching %s (try %s of 3)" % (self.appname, i + 1))
             try:
                 self.dm.launchFennec(self.appname, url=url, mozEnv=mozEnv,
                                      extraArgs=["-profile",
@@ -191,14 +193,14 @@ class AndroidBrowserRunner(log.LoggingMixin):
     def save_profile(self):
         # Dump the profile (don't process it yet because we need to cleanup
         # the capture first)
-        self.log("Saving sps performance profile")
+        self.logger.info("Saving sps performance profile")
         appPID = self.dm.getPIDs(self.appname)[0]
         self.dm.sendSaveProfileSignal(self.appname)
         self.remote_sps_profile_location = \
             "/mnt/sdcard/profile_0_%s.txt" % appPID
         # Saving goes through the main event loop so give it time to flush
         time.sleep(10)
-        self.log("SPS profile should be saved")
+        self.logger.info("SPS profile should be saved")
 
     def process_profile(self, profile_file):
         xrebindir = os.path.join(
@@ -241,7 +243,7 @@ class AndroidBrowserRunner(log.LoggingMixin):
                 # assume JSON format
                 symbolicated_profile = line
             else:
-                self.log('Symbolicate: ' + line)
+                self.logger.info('Symbolicate: ' + line)
             line = symbolicator.stdout.readline()
 
         if symbolicator.wait() == 0:
@@ -266,5 +268,5 @@ class AndroidBrowserRunner(log.LoggingMixin):
         # the sampling profile)
         if self.remote_profile_dir:
             self.dm.removeDir(self.remote_profile_dir)
-            self.log("WARNING: Failed to remove profile (%s) from device" %
-                     self.remote_profile_dir)
+            self.logger.warn("Failed to remove profile (%s) from device" %
+                             self.remote_profile_dir)

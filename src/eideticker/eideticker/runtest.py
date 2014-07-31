@@ -2,12 +2,14 @@ from device import getDevice, getDevicePrefs
 from test import get_test, get_testinfo, TestException, EIDETICKER_TEMP_DIR, SRC_DIR
 import datetime
 import json
+import mozlog
 import os
 import videocapture
-from log import logger
 from marionette.errors import MarionetteException
 
 CAPTURE_DIR = os.path.abspath(os.path.join(SRC_DIR, "../captures"))
+
+logger = mozlog.getLogger('Eideticker')
 
 def _connect_wifi(device, options):
     # we catch when the user requests synchronized time but doesn't

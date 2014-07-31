@@ -7,6 +7,7 @@ import imp
 import json
 import manifestparser
 import mozhttpd
+import mozlog
 import moznetwork
 import os
 import re
@@ -15,7 +16,6 @@ import urllib
 import urlparse
 
 from gaiatest.gaia_test import GaiaApps
-from log import LoggingMixin
 
 from marionette.errors import NoSuchElementException
 from marionette.by import By
@@ -50,18 +50,19 @@ class TestLog(object):
 
         return logdict
 
-class CaptureServer(LoggingMixin):
+class CaptureServer(object):
 
     start_capture_called = False
     end_capture_called = False
     input_called = False
+    logger = mozlog.getLogger('CaptureServer')
 
     def __init__(self, test):
         self.test = test
 
     @mozhttpd.handlers.json_response
     def start_capture(self, request):
-        self.log("Received start capture callback from test")
+        self.logger.info("Received start capture callback from test")
         assert not self.start_capture_called
         self.start_capture_called = True
         self.test.start_capture()
@@ -70,7 +71,7 @@ class CaptureServer(LoggingMixin):
 
     @mozhttpd.handlers.json_response
     def end_capture(self, request):
-        self.log("Received end capture callback from test")
+        self.logger.info("Received end capture callback from test")
         assert not self.end_capture_called
         self.end_capture_called = True
         self.test.end_capture()
@@ -80,7 +81,7 @@ class CaptureServer(LoggingMixin):
     @mozhttpd.handlers.json_response
     def input(self, request):
         commandset = urlparse.parse_qs(request.body)['commands'][0]
-        self.log("Received input callback from test")
+        self.logger.info("Received input callback from test")
         assert not self.input_called
         self.input_called = True
         self.test.input_actions(commandset)
@@ -131,12 +132,13 @@ def get_test(testinfo, options, device, capture_controller=None, profile_filenam
                                   capture_controller, profile_filename=profile_filename)
 
 
-class Test(LoggingMixin):
+class Test(object):
 
     finished_capture = False
     start_frame = None
     end_frame = None
     testlog = TestLog()
+    logger = mozlog.getLogger('Test')
 
     def __init__(self, testinfo, options, device, capture_controller,
                  track_start_frame=False,
@@ -185,7 +187,7 @@ class Test(LoggingMixin):
         elif not self.finished_capture:
             # Something weird happened -- we probably didn't get a capture
             # callback. However, we can still retry the test.
-            self.log("Did not finish test / capture. Error!")
+            self.logger.info("Did not finish test / capture. Error!")
             self.end_capture()
             raise TestException("Did not finish test / capture",
                                 can_retry=True)
@@ -193,14 +195,14 @@ class Test(LoggingMixin):
     def start_capture(self):
         # callback indicating we should start capturing (if we're not doing so
         # already)
-        self.log("Start capture")
+        self.logger.info("Start capture")
         if self.capture_controller and not self.capture_controller.capturing:
             self.capture_start_time = time.time()
             self.capture_controller.start_capture()
 
     def end_capture(self):
         # callback indicating we should terminate the capture
-        self.log("Ending capture")
+        self.logger.info("Ending capture")
         self.finished_capture = True
         if self.capture_controller:
             self.capture_controller.terminate_capture()
@@ -211,7 +213,8 @@ class Test(LoggingMixin):
             self.start_frame = self.capture_controller.capture_framenum()
 
         self.test_start_time = time.time()
-        self.log("Test started callback (framenum: %s)" % self.start_frame)
+        self.logger.info("Test started callback (framenum: %s)" %
+                         self.start_frame)
 
     def test_finished(self):
         # callback indicating test has finished
@@ -222,11 +225,11 @@ class Test(LoggingMixin):
             if self.capture_controller.find_start_signal:
                 self.capture_controller.find_end_signal = False
 
-        self.log("Test finished callback (framenum: %s)" % (
-                 self.end_frame))
+        self.logger.info("Test finished callback (framenum: %s)" %
+                         self.end_frame)
 
     def execute_actions(self, actions, test_finished_after_actions=True):
-        self.log("Executing actions")
+        self.logger.info("Executing actions")
 
         def executeCallback():
             self.test_started()
@@ -286,10 +289,10 @@ class WebTest(Test):
                 s.connect((self.host, self.http.httpd.server_port))
                 connected = True
             except Exception:
-                self.log("Can't connect to %s:%s, retrying..." % (
-                         self.host, self.http.httpd.server_port))
+                self.logger.info("Can't connect to %s:%s, retrying..." %
+                                 (self.host, self.http.httpd.server_port))
 
-        self.log("Test URL is: %s" % self.url)
+        self.logger.info("Test URL is: %s" % self.url)
 
         if not connected:
             raise "Could not open webserver. Error!"
@@ -310,8 +313,10 @@ class WebTest(Test):
 
     def input_actions(self, commandset):
         if self.actions:  # startup test indicated by no actions
-            self.log("Executing commands '%s' for device '%s' (framenum: %s)" % (
-                     commandset, self.device.model, self.start_frame))
+            self.logger.info("Executing commands '%s' for device '%s' "
+                             "(framenum: %s)" % (commandset,
+                                                 self.device.model,
+                                                 self.start_frame))
             if not self.actions.get(commandset):
                 raise TestException("Could not get actions for commandset "
                                     "'%s'" % commandset)
@@ -492,7 +497,7 @@ class B2GWebTest(WebTest):
 
     def run(self):
         # start the tests by navigating to the url
-        self.log("Navigating to %s" % self.url)
+        self.logger.info("Navigating to %s" % self.url)
         self.device.marionette.execute_script(
             "window.location.href='%s';" % self.url)
         self.wait()
@@ -536,9 +541,9 @@ class B2GAppActionTest(B2GAppTest):
 class B2GAppStartupTest(B2GAppTest):
 
     def wait_for_content_ready(self):
-        self.log("No explicit logic for detecting content ready specified. "
-                 "Waiting %s seconds for app to finish starting (or settle)" %
-                 self.capture_timeout)
+        self.logger.info("No explicit logic for detecting content ready "
+                         "specified. Waiting %s seconds for app to finish "
+                         "starting (or settle)" % self.capture_timeout)
         time.sleep(self.capture_timeout)
 
     def run(self):
@@ -551,7 +556,7 @@ class B2GAppStartupTest(B2GAppTest):
 
         try:
             # look for the application icon in the dock first
-            self.log('Looking for app icon in dock')
+            self.logger.info('Looking for app icon in dock')
             appicon = self.device.marionette.find_element(
                 By.CSS_SELECTOR,
                 '#footer .icon[aria-label="%s"]' % self.appname)
@@ -565,7 +570,7 @@ class B2GAppStartupTest(B2GAppTest):
                 current_page = self.device.marionette.find_element(
                     By.CSS_SELECTOR, '#icongrid .page:not([aria-hidden=true])')
                 try:
-                    self.log('Looking for app icon on page %s' % (i + 1))
+                    self.logger.info('Looking for app icon on page %s' % (i + 1))
                     appicon = current_page.find_element(
                         By.CSS_SELECTOR, '.icon[aria-label="%s"]' %
                         self.appname)
@@ -598,8 +603,8 @@ class B2GAppStartupTest(B2GAppTest):
 
         self.wait_for_content_ready()
 
-        self.log("Content ready. Waiting an additional second to make sure "
-                 "it has settled")
+        self.logger.info("Content ready. Waiting an additional second to make "
+                         "sure it has settled")
         time.sleep(1)
 
         self.test_finished()
