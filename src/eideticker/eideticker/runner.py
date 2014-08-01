@@ -11,7 +11,6 @@ import subprocess
 import tempfile
 import time
 import zipfile
-import log
 from test import EIDETICKER_TEMP_DIR
 
 
