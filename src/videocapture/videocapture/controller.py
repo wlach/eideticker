@@ -419,3 +419,7 @@ class CaptureController(object):
 
         shutil.rmtree(self.outputdir)
         shutil.rmtree(rewritten_imagedir)
+        if self.output_raw_file:
+            # closing the file should delete it
+            self.output_raw_file.close()
+            self.output_raw_file = None
