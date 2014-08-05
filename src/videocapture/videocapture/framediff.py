@@ -36,8 +36,6 @@ def get_framediff_imgarray(capture, framenum1, framenum2,
             for ignored_area in ignored_areas:
                 if y >= ignored_area[1] and y < ignored_area[3] and \
                         x >= ignored_area[0] and x < ignored_area[2]:
-                    print ignored_area
-                    print "Skipped: %s %s" % (x, y)
                     skip = True
                     break
 
