@@ -6,6 +6,7 @@
 
 import concurrent.futures
 import json
+import mozlog
 import subprocess
 import tempfile
 import time
@@ -48,6 +49,8 @@ camera_configs = {
 
 
 class CaptureProcess(multiprocessing.Process):
+
+    logger = mozlog.getLogger('Capture Process')
 
     def __init__(self, capture_device, video_format, frame_counter,
                  finished_semaphore, output_raw_filename=None,
@@ -123,18 +126,18 @@ class CaptureProcess(multiprocessing.Process):
             except KeyboardInterrupt:
                 break
 
-        print "Terminating capture proc..."
+        self.logger.debug("Terminating capture proc...")
         self.capture_proc.terminate()
         waitstart = time.time()
         while (time.time() - waitstart) < timeout:
             rc = self.capture_proc.poll()
             time.sleep(0.5)
             if rc is not None:
-                print "Capture proc terminated"
+                self.logger.debug("Capture proc terminated")
                 self.capture_proc.wait()  # necessary?
                 return
 
-        print "WARNING: Capture still running!"
+        self.logger.warn("Capture still running!")
         # terminate failed; try forcibly killing it
         try:
             self.capture_proc.kill()
@@ -154,6 +157,8 @@ def _rewrite_frame(framenum, dirname, imagefilename, capture_area,
     im.save(os.path.join(dirname, '%s.png' % framenum))
 
 class CaptureController(object):
+
+    logger = mozlog.getLogger('Capture Controller')
 
     def __init__(self, output_filename, options,
                  capture_metadata={},
@@ -180,19 +185,14 @@ class CaptureController(object):
         self.null_write = file('/dev/null', 'w')
         self.output_raw_file = None
 
-
-    def log(self, msg):
-        print "%s Capture Controller | %s" % (
-            datetime.datetime.now().strftime("%b %d %H:%M:%S %Z"), msg)
-
     def start_capture(self):
         # should not call this more than once
         assert not self.capture_process
 
         output_raw_filename = None
 
-        self.log("Starting capture on device '%s' with mode: '%s'" % (
-                self.capture_device, self.mode))
+        self.logger.info("Starting capture on device '%s' with mode: '%s'" % (
+            self.capture_device, self.mode))
 
         if self.capture_device == 'decklink':
             if self.mode not in supported_formats.keys():
@@ -208,9 +208,10 @@ class CaptureController(object):
                               if 'libflycapture.so' in filename], key=len)
             if flycap_lib:
                 version_index = flycap_lib.find('.so') + 4
-                self.log('Using PointGrey SDK version: %s' % flycap_lib[version_index:])
+                self.logger.info('Using PointGrey SDK version: %s' %
+                                 flycap_lib[version_index:])
             else:
-                self.log("WARNING: Unable to determine PointGrey SDK version")
+                self.logger.warn("Unable to determine PointGrey SDK version")
 
         self.outputdir = tempfile.mkdtemp(dir=self.custom_tempdir)
         self.frame_counter = multiprocessing.RawValue('i', 0)
@@ -223,11 +224,11 @@ class CaptureController(object):
             outputdir=self.outputdir,
             fps=self.fps,
             camera_settings_file=self.camera_settings_file)
-        self.log("Starting capture...")
+        self.logger.info("Starting capture...")
         self.capture_process.start()
 
         # wait for capture to actually start...
-        self.log("Waiting for first frame...")
+        self.logger.info("Waiting for first frame...")
         max_wait_for_frame = 5
         elapsed = 0
         interval = 0.1
@@ -235,8 +236,8 @@ class CaptureController(object):
             time.sleep(interval)
             elapsed += interval
             if elapsed > max_wait_for_frame:
-                self.log("Timed out waiting for first frame! Capture prog "
-                         "hung?")
+                self.logger.error("Timed out waiting for first frame! Capture "
+                                  "program hung?")
                 self.terminate_capture()
                 raise Exception("Timed out waiting for first frame")
 
@@ -251,7 +252,7 @@ class CaptureController(object):
     def terminate_capture(self):
         # should not call this when no capture is ongoing
         if not self.capturing:
-            self.log("Terminated capture, but no capture ongoing")
+            self.logger.warn("Terminated capture, but no capture ongoing")
             return
 
         self.capture_process.stop()
@@ -259,10 +260,10 @@ class CaptureController(object):
         self.capture_process = None
 
     def convert_capture(self, start_frame, end_frame, create_webm=True):
-        self.log("Converting capture...")
+        self.logger.info("Converting capture...")
         # wait for capture to finish if it has not already
         if self.capturing:
-            self.log("Capture not finished... waiting")
+            self.logger.info("Capture not finished... waiting")
             while self.capturing:
                 time.sleep(0.5)
 
@@ -272,8 +273,8 @@ class CaptureController(object):
                 self.output_raw_file.name, self.outputdir, self.mode),
                 close_fds=True).wait()
 
-        self.log("Gathering capture dimensions and cropping to start/end of "
-                 "capture...")
+        self.logger.info("Gathering capture dimensions and cropping to "
+                         "start/end of capture...")
         imagefiles = [os.path.join(self.outputdir, path) for path in
                       sorted(os.listdir(self.outputdir), key=_natural_key)]
         num_frames = len(imagefiles)
@@ -290,7 +291,7 @@ class CaptureController(object):
         if self.capture_device == "decklink":
             # start frame
             if self.find_start_signal:
-                self.log("Searching for start of capture signal ...")
+                self.logger.info("Searching for start of capture signal ...")
                 squares = []
                 for (i, imagefile) in enumerate(imagefiles):
                     imgarray = numpy.array(Image.open(imagefile),
@@ -300,13 +301,14 @@ class CaptureController(object):
                         if not start_frame:
                             start_frame = i
                         self.capture_area = squares[-2]
-                        self.log("Found start capture signal at frame %s. "
-                                 "Area: %s" % (i, self.capture_area))
+                        self.logger.info("Found start capture signal at frame "
+                                         "%s. Area: %s" %
+                                         (i, self.capture_area))
                         break
 
             # end frame
             if self.find_end_signal:
-                self.log("Searching for end of capture signal ...")
+                self.logger.info("Searching for end of capture signal ...")
                 squares = []
                 for i in range(num_frames - 1, 0, -1):
                     imgarray = numpy.array(Image.open(imagefiles[i]),
@@ -318,8 +320,9 @@ class CaptureController(object):
                             end_frame = (i - 1)
                         if not self.capture_area:
                             self.capture_area = squares[-2]
-                        self.log("Found end capture signal at frame %s. Area: "
-                                 "%s" % (i - 1, self.capture_area))
+                        self.logger.info("Found end capture signal at frame "
+                                         "%s. Area: %s" % (i - 1,
+                                                           self.capture_area))
                         break
 
         # If we don't have a start frame, set it to 1
@@ -330,7 +333,7 @@ class CaptureController(object):
         if not end_frame:
             end_frame = num_frames
 
-        self.log("Rewriting images in %s..." % self.outputdir)
+        self.logger.info("Rewriting images in %s..." % self.outputdir)
         rewritten_imagedir = tempfile.mkdtemp(dir=self.custom_tempdir)
 
         with concurrent.futures.ProcessPoolExecutor() as executor:
@@ -363,7 +366,7 @@ class CaptureController(object):
             generated_video_fps = MAX_VIDEO_FPS
 
         if create_webm:
-            self.log("Creating movie ...")
+            self.logger.info("Creating movie ...")
 
             moviefile = tempfile.NamedTemporaryFile(dir=self.custom_tempdir,
                                                     suffix=".webm")
@@ -392,7 +395,8 @@ class CaptureController(object):
                                   moviefile.name), close_fds=True).wait()
 
 
-        self.log("Writing final capture '%s'..." % self.output_filename)
+        self.logger.info("Writing final capture '%s'..." %
+                         self.output_filename)
         zipfile = ZipFile(self.output_filename, 'a')
 
         zipfile.writestr('metadata.json',
