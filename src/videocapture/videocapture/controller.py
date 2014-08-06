@@ -416,6 +416,7 @@ class CaptureController(object):
                                                imagefilename)).read())
 
         zipfile.close()
+        self.logger.info("Wrote out final capture.")
 
         shutil.rmtree(self.outputdir)
         shutil.rmtree(rewritten_imagedir)
