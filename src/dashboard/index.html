@@ -119,8 +119,25 @@
     <script src="js/common.js"></script>
     <script src="js/index.js"></script>
 
-  <script id="graph" type="text/html">
+  <script id="contentHeader" class="partial" type="text/html">
     <h1>{{title}}</h1>
+    {{#showTimeRanges}}
+    <select id="time-range" type="text">
+      {{#timeRanges}}
+      <option id="time-range-{{range}}" value="{{range}}">{{label}}</option>
+      {{/timeRanges}}
+    </select>
+    {{/showTimeRanges}}
+    <hr/>
+  </script>
+
+  <script id="noGraph" type="text/html">
+    {{>contentHeader}}
+    <p class="lead">{{errorReason}}</p>
+  </script>
+
+  <script id="graph" type="text/html">
+    {{>contentHeader}}
     <div id="graph-main">
       <div id="graph-container"></div>
       <div id="measure-form">

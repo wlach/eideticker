@@ -8,42 +8,97 @@ function getResourceURL(path) {
   return serverPrefix + path;
 }
 
-function updateContent(testInfo, deviceId, branchId, testId, measureId) {
+function updateContent(testInfo, deviceId, branchId, testId, measureId, timeRange) {
   $.getJSON(getResourceURL([deviceId, branchId, testId].join('/') + '.json'), function(dict) {
     if (!dict || !dict['testdata']) {
-      $('#data-view').html("<p><b>No data for that device/test combination. :(</b></p>");
+      $('#data-view').html(ich.noGraph({
+        "title": testInfo.shortDesc,
+        "errorReason": "No data for that device/test combination. :("
+      }));
       return;
     }
 
     var testData = dict['testdata'];
+    var timeRanges = [ { 'range': 7, 'label': '7 days' },
+                       { 'range': 30, 'label': '30 days' },
+                       { 'range': 60, 'label': '60 days' },
+                       { 'range': 90, 'label': '90 days' },
+                       { 'range': 0, 'label': 'All time' } ]
 
-    // figure out which measures could apply to this graph
-    var availableMeasureIds = [];
-    Object.keys(testData).forEach(function(product) {
-      Object.keys(testData[product]).forEach(function(timestamp) {
-        testData[product][timestamp].forEach(function(sample) {
-          var measureIds = getMeasureIdsInSample(sample, overallMeasures);
-          measureIds.forEach(function(measureId) {
-            if (jQuery.inArray(measureId, availableMeasureIds) === -1) {
-              availableMeasureIds.push(measureId);
-            }
+    // filter the data according to time range (if we're using a time range)
+    timeRange = parseInt(timeRange);
+    if (timeRange !== 0) {
+      var minDate = (Date.now() / 1000.0) - (timeRange * 24 * 60 * 60);
+      var entriesToRemove = [];
+      var allProducts = Object.keys(testData);
+      allProducts.forEach(function(product) {
+        Object.keys(testData[product]).forEach(function(timestamp) {
+          if (parseInt(timestamp) < minDate) {
+            entriesToRemove.push({ 'product': product, 'timestamp': timestamp });
+          }
+        });
+      });
+      entriesToRemove.forEach(function(entry) {
+        delete testData[entry.product][entry.timestamp];
+      });
+      allProducts.map(function(product) {
+        if (Object.keys(testData[product]).length == 0) {
+          delete testData[product];
+        }
+      });
+    }
+
+    if (Object.keys(testData).length === 0) {
+      // not enough data for this time range
+
+      $('#data-view').html(ich.noGraph({
+        'title': testInfo.shortDesc,
+        'errorReason': "No data in the last " + timeRange +
+          " days, try choosing a larger interval above to get old data.",
+        'timeRanges': timeRanges,
+        'showTimeRanges': true
+      }));
+    } else {
+
+      // figure out which measures could apply to this graph
+      var availableMeasureIds = [];
+      Object.keys(testData).forEach(function(product) {
+        Object.keys(testData[product]).forEach(function(timestamp) {
+          testData[product][timestamp].forEach(function(sample) {
+            var measureIds = getMeasureIdsInSample(sample, overallMeasures);
+            measureIds.forEach(function(measureId) {
+              if (jQuery.inArray(measureId, availableMeasureIds) === -1) {
+                availableMeasureIds.push(measureId);
+              }
+            });
           });
         });
       });
-    });
 
-    $('#data-view').html(ich.graph({'title': testInfo.shortDesc,
-                                    'measureDescription': overallMeasures[measureId].longDesc,
-                                    'measures': measureDisplayList(availableMeasureIds, overallMeasures)
-                                 }));
+      $('#data-view').html(ich.graph({'title': testInfo.shortDesc,
+                                      'measureDescription': overallMeasures[measureId].longDesc,
+                                      'measures': measureDisplayList(availableMeasureIds, overallMeasures),
+                                      'timeRanges': timeRanges,
+                                      'showTimeRanges': true
+                                     }));
 
-    // update graph
-    updateGraph(testInfo.shortDesc, testData, measureId);
+      // update graph
+      updateGraph(testInfo.shortDesc, testData, measureId);
 
-    $('#measure-'+measureId).attr("selected", "true");
-    $('#measure').change(function() {
-      var newMeasureId = $(this).val();
-      window.location.hash = '/' + [ deviceId, branchId, testId, newMeasureId ].join('/');
+      $('#measure-'+measureId).attr("selected", "true");
+      $('#measure').change(function() {
+        var newMeasureId = $(this).val();
+        window.location.hash = '/' + [ deviceId, branchId, testId,
+                                       newMeasureId, timeRange ].join('/');
+      });
+    }
+
+    // update time range selector
+    $('#time-range-' + timeRange).attr("selected", "true");
+    $('#time-range').change(function() {
+      var newTimeRange = $(this).val();
+      window.location.hash = '/' + [ deviceId, branchId, testId,
+                                     measureId, newTimeRange ].join('/');
     });
 
   });
@@ -359,7 +414,7 @@ $(function() {
         }
       }
 
-      function updateDeviceChooser(preferredBranchId, preferredTest) {
+      function updateDeviceChooser(timeRange, preferredBranchId, preferredTest) {
         $('#device-chooser').empty();
 
         deviceIds.forEach(function(deviceId) {
@@ -375,13 +430,13 @@ $(function() {
           var testId = getTestIdForDeviceAndBranch(deviceId, branchId, preferredTest);
           var defaultMeasureId = device[branchId].tests[testId].defaultMeasureId;
 
-          var deviceURL = "#/" + [ deviceId, branchId, testId, defaultMeasureId ].join('/');
+          var deviceURL = "#/" + [ deviceId, branchId, testId, defaultMeasureId, timeRange ].join('/');
           $('<a href="' + deviceURL + '" id="device-' + deviceId + '" deviceid= ' + deviceId + ' class="list-group-item">' + devices[deviceId].name+'</a></li>').appendTo(
             $('#device-chooser'));
         });
       }
 
-      function updateBranchChooser(deviceId, preferredTest) {
+      function updateBranchChooser(timeRange, deviceId, preferredTest) {
         $('#branch-chooser').empty();
 
         var device = devices[deviceId];
@@ -389,7 +444,7 @@ $(function() {
           var testId = getTestIdForDeviceAndBranch(deviceId, branchId, preferredTest);
           var defaultMeasureId = device[branchId].tests[testId].defaultMeasureId;
 
-          var url = "#/" + [ deviceId, branchId, testId, defaultMeasureId ].join('/');
+          var url = "#/" + [ deviceId, branchId, testId, defaultMeasureId, timeRange ].join('/');
           $('<a href="' + url + '" id="branch-' + branchId + '" class="list-group-item">' + branchId +'</a></li>').appendTo(
             $('#branch-chooser'));
         });
@@ -400,15 +455,15 @@ $(function() {
       var currentTestId = null;
 
       var routes = {
-        '/:deviceId/:branchId/:testId/:measureId': {
-          on: function(deviceId, branchId, testId, measureId) {
+        '/:deviceId/:branchId/:testId/:measureId/:timeRange': {
+          on: function(deviceId, branchId, testId, measureId, timeRange) {
             if (!devices[deviceId] || !devices[deviceId][branchId] || !devices[deviceId][branchId]['tests'][testId]) {
-              $('#data-view').html("<p><b>That device/branch/test/measure combination does not seem to exist. Maybe you're using an expired link? <a href=''>Reload page</a>?</b></p>");
+              $('#data-view').html("<p class='lead'>That device/branch/test/measure combination does not seem to exist. Maybe you're using an expired link? <a href=''>Reload page</a>?</p>");
               return;
             }
 
-            updateDeviceChooser(branchId, testId);
-            updateBranchChooser(deviceId, testId);
+            updateDeviceChooser(timeRange, branchId, testId);
+            updateBranchChooser(timeRange, deviceId, testId);
 
             // update list of tests to be consistent with those of this
             // particular device (in case it changed)
@@ -427,7 +482,7 @@ $(function() {
                 var defaultMeasureId = tests[testIdAttr].defaultMeasureId;
                 $(this).attr('href', '#/' +
                              [ deviceId, branchId, testIdAttr,
-                               defaultMeasureId ].join('/'));
+                               defaultMeasureId, timeRange ].join('/'));
               }
             });
 
@@ -438,7 +493,7 @@ $(function() {
 
             var testInfo = tests[testId];
             updateFooter();
-            updateContent(testInfo, deviceId, branchId, testId, measureId);
+            updateContent(testInfo, deviceId, branchId, testId, measureId, timeRange);
           }
         }
       };
@@ -447,11 +502,25 @@ $(function() {
       var defaultBranchId = devices[defaultDeviceId].branches[0];
       var defaultTestId = Object.keys(devices[defaultDeviceId][defaultBranchId].tests)[0];
       var defaultMeasureId = devices[defaultDeviceId][defaultBranchId].tests[defaultTestId].defaultMeasureId;
+      var defaultTimeRange = 7;
 
-      var router = Router(routes).init('/' + [ defaultDeviceId,
-                                               defaultBranchId,
-                                               defaultTestId,
-                                               defaultMeasureId ].join('/'));
+      var defaultRouteHash = '/' + [ defaultDeviceId,
+                                     defaultBranchId,
+                                     defaultTestId,
+                                     defaultMeasureId,
+                                     defaultTimeRange ].join('/');
+
+      var router = Router(routes).configure({
+        'notfound': function() {
+          $('#data-view').html(ich.noGraph({
+            "title": "Invalid URL",
+            "errorReason": "Invalid or expired route (probably due to a " +
+              "change in Eideticker). Try selecting a valid combination " +
+              "from the menu on the left."
+          }));
+        }
+      });
+      router.init(defaultRouteHash);
     });
   });
 });
