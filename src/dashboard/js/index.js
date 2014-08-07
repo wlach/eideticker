@@ -500,7 +500,7 @@ $(function() {
 
       var defaultDeviceId = deviceIds[0];
       var defaultBranchId = devices[defaultDeviceId].branches[0];
-      var defaultTestId = Object.keys(devices[defaultDeviceId][defaultBranchId].tests)[0];
+      var defaultTestId = Object.keys(devices[defaultDeviceId][defaultBranchId].tests).sort()[0];
       var defaultMeasureId = devices[defaultDeviceId][defaultBranchId].tests[defaultTestId].defaultMeasureId;
       var defaultTimeRange = 7;
 
