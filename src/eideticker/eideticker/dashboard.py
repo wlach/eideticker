@@ -93,12 +93,16 @@ def update_dashboard_test_list(dashboard_dir, device_id, branch_id, testinfo):
     testsfilename = os.path.join(testsdirname, 'tests.json')
     if os.path.isfile(testsfilename):
         tests = json.loads(open(testsfilename).read())['tests']
+    update_timestamp = time.time()
     tests[testinfo['key']] = {'shortDesc': testinfo['shortDesc'],
-                              'defaultMeasureId': testinfo['defaultMeasure']}
+                              'defaultMeasureId': testinfo['defaultMeasure'],
+                              'lastUpdated': update_timestamp}
 
     # update the test list for the dashboard
     with open(testsfilename, 'w') as f:
-        f.write(json.dumps({'tests': tests}))
+        f.write(json.dumps({
+            'lastUpdated': update_timestamp,
+            'tests': tests}))
 
 def update_dashboard_testdata(dashboard_dir, device_id, branch_id, testinfo,
                               productname, productdate, datapoint, metadata):
