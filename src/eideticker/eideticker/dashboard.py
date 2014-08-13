@@ -68,9 +68,33 @@ def copy_dashboard_files(dashboard_dir, indexfile='index.html'):
             os.remove(dest)
         shutil.copyfile(source, dest)
 
-def update_dashboard_device_list(dashboard_dir, device_id, branch_id, device_info):
+def update_dashboard_list(dashboard_dir, dashboard_id, dashboard_name):
+    dashboards = []
+    dashboard_filename = os.path.join(dashboard_dir, 'dashboard.json')
+    if os.path.isfile(dashboard_filename):
+        dashboards = json.loads(open(dashboard_filename).read())['dashboards']
+
+    found_dashboard = False
+    for dashboard in dashboards:
+        if dashboard['id'] == dashboard_id:
+            dashboard['name'] = dashboard_name
+            found_dashboard = True
+
+    if not found_dashboard:
+        dashboards.append({'id': dashboard_id, 'name': dashboard_name})
+
+    with open(dashboard_filename, 'w') as f:
+        f.write(json.dumps({'dashboards': dashboards}))
+
+def update_dashboard_device_list(dashboard_dir, dashboard_id, device_id, branch_id,
+                                 device_info):
     devices = {}
-    device_filename = os.path.join(dashboard_dir, 'devices.json')
+
+    device_dirname = os.path.join(dashboard_dir, dashboard_id)
+    if not os.path.exists(device_dirname):
+        os.makedirs(device_dirname)
+
+    device_filename = os.path.join(device_dirname, 'devices.json')
     if os.path.isfile(device_filename):
         devices = json.loads(open(device_filename).read())['devices']
 
@@ -85,8 +109,8 @@ def update_dashboard_device_list(dashboard_dir, device_id, branch_id, device_inf
     with open(device_filename, 'w') as f:
         f.write(json.dumps({'devices': devices}))
 
-def update_dashboard_test_list(dashboard_dir, device_id, branch_id, testinfo):
-    testsdirname = os.path.join(dashboard_dir, device_id, branch_id)
+def update_dashboard_test_list(dashboard_dir, dashboard_id, device_id, branch_id, testinfo):
+    testsdirname = os.path.join(dashboard_dir, dashboard_id, device_id, branch_id)
     if not os.path.exists(testsdirname):
         os.makedirs(testsdirname)
 
@@ -105,10 +129,11 @@ def update_dashboard_test_list(dashboard_dir, device_id, branch_id, testinfo):
             'lastUpdated': update_timestamp,
             'tests': tests}))
 
-def update_dashboard_testdata(dashboard_dir, device_id, branch_id, testinfo,
-                              productname, productdate, datapoint, metadata):
+def update_dashboard_testdata(dashboard_dir, dashboard_id, device_id,
+                              branch_id, testinfo, productname, productdate,
+                              datapoint, metadata):
     # get existing data
-    fname = os.path.join(dashboard_dir, device_id, branch_id,
+    fname = os.path.join(dashboard_dir, dashboard_id, device_id, branch_id,
                          '%s.json' % testinfo['key'])
     testdata = NestedDict()
     if os.path.isfile(fname):

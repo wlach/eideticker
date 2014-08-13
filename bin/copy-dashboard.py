@@ -7,6 +7,7 @@ import optparse
 import os
 import requests
 import sys
+import urlparse
 
 exit_status = 0
 MAX_WORKERS = 8
@@ -43,6 +44,11 @@ def validate_json_response(r):
 
     return True
 
+def urljoin(*args):
+    baseurl = args[0]
+    path = "/".join(args[1:])
+    return urlparse.urljoin(baseurl, path)
+
 def download_file(url, filename):
     r = requests.get(url)
     if not validate_response(r):
@@ -77,21 +83,25 @@ def download_testdata(url, baseurl, filename, options, metadatadir,
                       videodir, profiledir):
     r = requests.get(url)
     if not validate_json_response(r):
+        print "WARNING: %s json data invalid" % url
         return
 
     open(filename, 'w').write(r.content)
+
+    testdata = r.json()['testdata']
     with concurrent.futures.ThreadPoolExecutor(MAX_WORKERS) as executor:
-        testdata = r.json()['testdata']
         for appname in testdata.keys():
             for date in testdata[appname].keys():
                 for datapoint in testdata[appname][date]:
                     uuid = datapoint['uuid']
                     if options.download_metadata:
+                        metadata_filename = "%s.json" % uuid
                         executor.submit(download_metadata,
-                                        baseurl + 'metadata/%s.json' % uuid,
+                                        urljoin(baseurl, 'metadata',
+                                                metadata_filename),
                                         baseurl,
                                         os.path.join(metadatadir,
-                                                     '%s.json' % uuid),
+                                                     metadata_filename),
                                         options, videodir,
                                         profiledir)
 
@@ -103,9 +113,13 @@ parser.add_option("--full-mirror", action="store_true",
 parser.add_option("--skip-metadata", action="store_false",
                   dest="download_metadata", default=True,
                   help="Skip downloading metadata JSON files")
+parser.add_option("--dashboard-id", action="store",
+                  dest="dashboard_id",
+                  help="Only download information for dashboard id")
 parser.add_option("--device-id", action="store",
                   dest="device_id",
-                  help="Only download information for device id")
+                  help="Only download information for device id (must be used "
+                  "in conjunction with --dashboard-id)")
 parser.add_option("--rewrite-metadata", action="store_true",
                   dest="rewrite_metadata", default=False,
                   help="Rewrite metadata to use absolute URLs to original "
@@ -117,7 +131,11 @@ if len(args) != 2:
     sys.exit(1)
 
 if options.full_mirror and not options.download_metadata:
-    parser.error("ERROR: Need to download metadata for full mirror")
+    parser.error("Need to download metadata for full mirror")
+    sys.exit(1)
+
+if options.device_id and not options.dashboard_id:
+    parser.error("--device-id must be used in conjunction with --dashboard-id")
     sys.exit(1)
 
 (baseurl, outputdir) = args
@@ -130,44 +148,69 @@ metadatadir = os.path.join(outputdir, 'metadata')
 videodir = os.path.join(outputdir, 'videos')
 profiledir = os.path.join(outputdir, 'profiles')
 
-r = requests.get(baseurl + 'devices.json')
+r = requests.get(urljoin(baseurl, 'dashboard.json'))
 if not validate_json_response(r):
-    print "Can't download device list, exiting"
+    print "Can't download dashboard list, exiting"
     sys.exit(1)
-devicedict = r.json()
+save_file(os.path.join(outputdir, 'dashboard.json'), r.content)
 
-save_file(os.path.join(outputdir, 'devices.json'), r.content)
-
-if options.device_id:
-    if options.device_id in r.json()['devices'].keys():
-        deviceids = [ options.device_id ]
+dashboard_ids = map(lambda d: d['id'], r.json()['dashboards'])
+if options.dashboard_id:
+    if options.dashboard_id in dashboard_ids:
+        dashboard_ids = [ options.dashboard_id ]
     else:
-        print "WARNING: Device id '%s' specified but unavailable. Skipping." % \
-            options.device_id
-        deviceids = []
-else:
-    deviceids = devicedict['devices'].keys()
+        print "ERROR: dashboard id '%s' specified but unavailable." % \
+            options.dashboard_id
 
 with concurrent.futures.ThreadPoolExecutor(MAX_WORKERS) as executor:
-    for deviceid in deviceids:
-        for branchid in devicedict['devices'][deviceid]['branches']:
-            r = requests.get(baseurl + '%s/%s/tests.json' % (deviceid, branchid))
-            if not validate_json_response(r):
-                print "Skipping tests for device: %s, branch: %s" % (
-                    deviceid, branchid)
-                continue
+    for dashboard_id in dashboard_ids:
+        dashboard_dir  = os.path.join(outputdir, dashboard_id)
+        create_dir(dashboard_dir)
 
-            testdir = os.path.join(outputdir, deviceid, branchid)
-            create_dir(testdir)
-            save_file(os.path.join(testdir, 'tests.json'), r.content)
-            testnames = r.json()['tests'].keys()
-            for testname in testnames:
-                executor.submit(download_testdata,
-                                baseurl + '%s/%s/%s.json' % (deviceid, branchid, testname),
-                                baseurl,
-                                os.path.join(outputdir, deviceid, branchid,
-                                             '%s.json' % testname),
-                                options,
-                                metadatadir, videodir, profiledir)
+        r = requests.get(urljoin(baseurl, dashboard_id, 'devices.json'))
+        if not validate_json_response(r):
+            print "ERROR: Can't download device list for dashboard '%s', " \
+                "exiting" % dashboard_id
+            sys.exit(1)
+
+        save_file(os.path.join(dashboard_dir, 'devices.json'), r.content)
+        devices = r.json()['devices']
+
+        if options.device_id:
+            if options.device_id in devices.keys():
+                deviceids = [ options.device_id ]
+            else:
+                print "WARNING: Device id '%s' specified but unavailable. " \
+                    "Skipping." % options.device_id
+                deviceids = []
+        else:
+            deviceids = devices.keys()
+
+        for deviceid in deviceids:
+            for branchid in devices[deviceid]['branches']:
+                r = requests.get(urljoin(baseurl, dashboard_id, deviceid,
+                                         branchid, 'tests.json'))
+                if not validate_json_response(r):
+                    print "WARNING: Skipping tests for dashboard %s, " \
+                        "device: %s, branch: %s" % (dashboard_id, deviceid,
+                                                    branchid)
+                    continue
+
+                testdir = os.path.join(dashboard_dir, deviceid, branchid)
+                create_dir(testdir)
+                save_file(os.path.join(testdir, 'tests.json'), r.content)
+
+                tests = r.json()['tests']
+                for testname in tests.keys():
+                    testfilename = '%s.json' % testname
+                    executor.submit(download_testdata,
+                                    urljoin(baseurl, dashboard_id, deviceid,
+                                            branchid, testfilename),
+                                    baseurl,
+                                    os.path.join(outputdir, dashboard_id,
+                                                 deviceid, branchid,
+                                                 testfilename),
+                                    options,
+                                    metadatadir, videodir, profiledir)
 
 sys.exit(exit_status)

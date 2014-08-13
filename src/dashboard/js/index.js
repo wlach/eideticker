@@ -8,8 +8,9 @@ function getResourceURL(path) {
   return serverPrefix + path;
 }
 
-function updateContent(testInfo, deviceId, branchId, testId, measureId, timeRange) {
-  $.getJSON(getResourceURL([deviceId, branchId, testId].join('/') + '.json'), function(dict) {
+function updateContent(testInfo, dashboardId, deviceId, branchId, testId, measureId, timeRange) {
+  $.getJSON(getResourceURL([dashboardId, deviceId, branchId,
+                            testId].join('/') + '.json'), function(dict) {
     if (!dict || !dict['testdata']) {
       $('#data-view').html(ich.noGraph({
         "title": testInfo.shortDesc,
@@ -88,7 +89,7 @@ function updateContent(testInfo, deviceId, branchId, testId, measureId, timeRang
       $('#measure-'+measureId).attr("selected", "true");
       $('#measure').change(function() {
         var newMeasureId = $(this).val();
-        window.location.hash = '/' + [ deviceId, branchId, testId,
+        window.location.hash = '/' + [ dashboardId, deviceId, branchId, testId,
                                        newMeasureId, timeRange ].join('/');
       });
     }
@@ -97,10 +98,9 @@ function updateContent(testInfo, deviceId, branchId, testId, measureId, timeRang
     $('#time-range-' + timeRange).attr("selected", "true");
     $('#time-range').change(function() {
       var newTimeRange = $(this).val();
-      window.location.hash = '/' + [ deviceId, branchId, testId,
+      window.location.hash = '/' + [ dashboardId, deviceId, branchId, testId,
                                      measureId, newTimeRange ].join('/');
     });
-
   });
 }
 
@@ -372,91 +372,138 @@ function updateGraph(title, rawdata, measureId) {
 }
 
 $(function() {
-  var graphData = {};
+  var dashboards;
+  var devices;
+  var deviceIds;
+  var currentDashboardId;
 
-  $.getJSON(getResourceURL('devices.json'), function(deviceData) {
-    var devices = deviceData['devices'];
-    var deviceIds = Object.keys(devices).sort();
+  function getTestIdForDeviceAndBranch(deviceId, branchId, preferredTest) {
+    var device = devices[deviceId];
+    var tests = device[branchId].tests;
+    var testIds = Object.keys(tests).sort();
+    var testId;
+    if (preferredTest && testIds.indexOf(preferredTest) >= 0) {
+      // this deviceid/branch combo has our preferred test, return it
+      return preferredTest;
+    } else {
+      // this deviceid/branch combo *doesn't* have our preferred test,
+      // fall back to the first one
+      return testIds[0];
+    }
+  }
 
-    var deviceBranchPairs = [];
-    deviceIds.forEach(function(deviceId) {
-      devices[deviceId].branches.forEach(function(branchId) {
-        deviceBranchPairs.push([deviceId, branchId]);
-      });
+  function updateDashboardChooser() {
+    $('#dashboard-chooser').empty();
+    dashboards.forEach(function(dashboard) {
+      $('<li id="dashboard-' + dashboard.id + '"><a href="' + '#/' +
+        dashboard.id + '">' + dashboard.name +
+        "</a></li>").appendTo($('#dashboard-chooser'));
     });
-    $.when.apply($, deviceBranchPairs.map(function(pair) {
-      var deviceId = pair[0];
-      var branchId = pair[1];
+    $("#dashboard-" + currentDashboardId).addClass("active");
+  }
 
-      return $.getJSON(getResourceURL([deviceId, branchId, 'tests.json'].join('/')),
-                       function(testData) {
-                         var tests = testData['tests'];
-                         if (!devices[deviceId][branchId]) {
-                           devices[deviceId][branchId] = {};
-                         }
-                         devices[deviceId][branchId]['tests'] = tests;
-                       });
-    })).done(function() {
-      var defaultDeviceId = deviceIds[0];
+  function updateDeviceChooser(timeRange, preferredBranchId, preferredTest) {
+    $('#device-chooser').empty();
 
-      function getTestIdForDeviceAndBranch(deviceId, branchId, preferredTest) {
-        var device = devices[deviceId];
-        var tests = device[branchId].tests;
-        var testIds = Object.keys(tests).sort();
-        var testId;
-        if (preferredTest && testIds.indexOf(preferredTest) >= 0) {
-          // this deviceid/branch combo has our preferred test, return it
-          return preferredTest;
-        } else {
-          // this deviceid/branch combo *doesn't* have our preferred test,
-          // fall back to the first one
-          return testIds[0];
+    deviceIds.forEach(function(deviceId) {
+      var device = devices[deviceId];
+
+      var branchId;
+      if (preferredBranchId && device.branches.indexOf(preferredBranchId) >= 0) {
+        branchId = preferredBranchId;
+      } else {
+        branchId = device.branches.sort()[0];
+      }
+
+      var testId = getTestIdForDeviceAndBranch(deviceId, branchId, preferredTest);
+      var defaultMeasureId = device[branchId].tests[testId].defaultMeasureId;
+
+      var deviceURL = "#/" + [ currentDashboardId, deviceId, branchId, testId, defaultMeasureId, timeRange ].join('/');
+      $('<a href="' + deviceURL + '" id="device-' + deviceId + '" deviceid= ' + deviceId + ' class="list-group-item">' + devices[deviceId].name+'</a></li>').appendTo(
+        $('#device-chooser'));
+    });
+  }
+
+  function updateBranchChooser(timeRange, deviceId, preferredTest) {
+    $('#branch-chooser').empty();
+
+    var device = devices[deviceId];
+    device.branches.forEach(function(branchId) {
+      var testId = getTestIdForDeviceAndBranch(deviceId, branchId, preferredTest);
+      var defaultMeasureId = device[branchId].tests[testId].defaultMeasureId;
+
+      var url = "#/" + [ currentDashboardId, deviceId, branchId, testId, defaultMeasureId, timeRange ].join('/');
+      $('<a href="' + url + '" id="branch-' + branchId + '" class="list-group-item">' + branchId +'</a></li>').appendTo(
+        $('#branch-chooser'));
+    });
+  }
+
+  function updateDashboard(dashboardId, cb) {
+    if (currentDashboardId === dashboardId) {
+      cb();
+      return;
+    }
+
+    currentDashboardId = dashboardId;
+
+    $.getJSON(getResourceURL([dashboardId, 'devices.json'].join('/')), function(deviceData) {
+      devices = deviceData['devices'];
+
+      deviceIds = Object.keys(devices).sort();
+
+      var deviceBranchPairs = [];
+      deviceIds.forEach(function(deviceId) {
+        devices[deviceId].branches.forEach(function(branchId) {
+          deviceBranchPairs.push([deviceId, branchId]);
+        });
+      });
+      $.when.apply($, deviceBranchPairs.map(function(pair) {
+        var deviceId = pair[0];
+        var branchId = pair[1];
+
+        return $.getJSON(getResourceURL([dashboardId, deviceId, branchId,
+                                         'tests.json'].join('/')),
+                         function(testData) {
+                           var tests = testData['tests'];
+                           if (!devices[deviceId][branchId]) {
+                             devices[deviceId][branchId] = {};
+                           }
+                           devices[deviceId][branchId]['tests'] = tests;
+                         });
+      })).done(cb);
+    });
+  }
+
+  $.getJSON(getResourceURL('dashboard.json'), function(dashboardData) {
+    dashboards = dashboardData.dashboards.sort(function(x, y) {
+      return y.id < x.id;
+    });
+
+    var routes = {
+      '/:dashboardId': {
+        on: function(dashboardId) {
+          updateDashboard(dashboardId, function() {
+            updateDashboardChooser();
+
+            var defaultDeviceId = deviceIds[0];
+            var defaultBranchId = devices[defaultDeviceId].branches[0];
+            var defaultTestId = Object.keys(devices[defaultDeviceId][defaultBranchId].tests).sort()[0];
+            var defaultMeasureId = devices[defaultDeviceId][defaultBranchId].tests[defaultTestId].defaultMeasureId;
+            var defaultTimeRange = 7;
+
+            window.location.hash = '/' + [ currentDashboardId, defaultDeviceId,
+                                           defaultBranchId,
+                                           defaultTestId,
+                                           defaultMeasureId,
+                                           defaultTimeRange ].join('/');
+          });
         }
-      }
+      },
+      '/:dashboardId/:deviceId/:branchId/:testId/:measureId/:timeRange': {
+        on: function(dashboardId, deviceId, branchId, testId, measureId, timeRange) {
+          updateDashboard(dashboardId, function() {
+            updateDashboardChooser();
 
-      function updateDeviceChooser(timeRange, preferredBranchId, preferredTest) {
-        $('#device-chooser').empty();
-
-        deviceIds.forEach(function(deviceId) {
-          var device = devices[deviceId];
-
-          var branchId;
-          if (preferredBranchId && device.branches.indexOf(preferredBranchId) >= 0) {
-            branchId = preferredBranchId;
-          } else {
-            branchId = device.branches.sort()[0];
-          }
-
-          var testId = getTestIdForDeviceAndBranch(deviceId, branchId, preferredTest);
-          var defaultMeasureId = device[branchId].tests[testId].defaultMeasureId;
-
-          var deviceURL = "#/" + [ deviceId, branchId, testId, defaultMeasureId, timeRange ].join('/');
-          $('<a href="' + deviceURL + '" id="device-' + deviceId + '" deviceid= ' + deviceId + ' class="list-group-item">' + devices[deviceId].name+'</a></li>').appendTo(
-            $('#device-chooser'));
-        });
-      }
-
-      function updateBranchChooser(timeRange, deviceId, preferredTest) {
-        $('#branch-chooser').empty();
-
-        var device = devices[deviceId];
-        device.branches.forEach(function(branchId) {
-          var testId = getTestIdForDeviceAndBranch(deviceId, branchId, preferredTest);
-          var defaultMeasureId = device[branchId].tests[testId].defaultMeasureId;
-
-          var url = "#/" + [ deviceId, branchId, testId, defaultMeasureId, timeRange ].join('/');
-          $('<a href="' + url + '" id="branch-' + branchId + '" class="list-group-item">' + branchId +'</a></li>').appendTo(
-            $('#branch-chooser'));
-        });
-      }
-
-      var currentBranchId = null;
-      var currentDeviceId = null;
-      var currentTestId = null;
-
-      var routes = {
-        '/:deviceId/:branchId/:testId/:measureId/:timeRange': {
-          on: function(deviceId, branchId, testId, measureId, timeRange) {
             if (!devices[deviceId] || !devices[deviceId][branchId] || !devices[deviceId][branchId]['tests'][testId]) {
               $('#data-view').html("<p class='lead'>That device/branch/test/measure combination does not seem to exist. Maybe you're using an expired link? <a href=''>Reload page</a>?</p>");
               return;
@@ -481,8 +528,9 @@ $(function() {
               if (testIdAttr) {
                 var defaultMeasureId = tests[testIdAttr].defaultMeasureId;
                 $(this).attr('href', '#/' +
-                             [ deviceId, branchId, testIdAttr,
-                               defaultMeasureId, timeRange ].join('/'));
+                             [ currentDashboardId, deviceId, branchId,
+                               testIdAttr, defaultMeasureId,
+                               timeRange ].join('/'));
               }
             });
 
@@ -493,34 +541,24 @@ $(function() {
 
             var testInfo = tests[testId];
             updateFooter();
-            updateContent(testInfo, deviceId, branchId, testId, measureId, timeRange);
-          }
+            updateContent(testInfo, dashboardId, deviceId, branchId, testId,
+                          measureId, timeRange);
+          });
         }
-      };
+      }
+    }
 
-      var defaultDeviceId = deviceIds[0];
-      var defaultBranchId = devices[defaultDeviceId].branches[0];
-      var defaultTestId = Object.keys(devices[defaultDeviceId][defaultBranchId].tests).sort()[0];
-      var defaultMeasureId = devices[defaultDeviceId][defaultBranchId].tests[defaultTestId].defaultMeasureId;
-      var defaultTimeRange = 7;
-
-      var defaultRouteHash = '/' + [ defaultDeviceId,
-                                     defaultBranchId,
-                                     defaultTestId,
-                                     defaultMeasureId,
-                                     defaultTimeRange ].join('/');
-
-      var router = Router(routes).configure({
-        'notfound': function() {
-          $('#data-view').html(ich.noGraph({
-            "title": "Invalid URL",
-            "errorReason": "Invalid or expired route (probably due to a " +
-              "change in Eideticker). Try selecting a valid combination " +
-              "from the menu on the left."
-          }));
-        }
-      });
-      router.init(defaultRouteHash);
+    var router = Router(routes).configure({
+      'notfound': function() {
+        $('#data-view').html(ich.noGraph({
+          "title": "Invalid URL",
+          "errorReason": "Invalid or expired route (probably due to a " +
+            "change in Eideticker). Try selecting a valid combination " +
+            "from the menu on the left."
+        }));
+      }
     });
+
+    router.init('/'+ dashboards[0].id);
   });
 });

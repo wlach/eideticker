@@ -118,6 +118,7 @@ def runtest(dm, device_prefs, options, product, appinfo, testinfo,
 
     # Write testdata
     eideticker.update_dashboard_testdata(options.dashboard_dir,
+                                         options.dashboard_id,
                                          options.device_id,
                                          options.branch_id, testinfo,
                                          productname, appdate,
@@ -131,6 +132,12 @@ def main(args=sys.argv[1:]):
     parser.add_option("--enable-profiling",
                       action="store_true", dest="enable_profiling",
                       help="Create SPS profile to go along with capture")
+    parser.add_option("--dashboard-id", action="store", dest="dashboard_id",
+                      help="id of dashboard (used in output json)",
+                      default=os.environ.get('DASHBOARD_ID'))
+    parser.add_option("--dashboard-name", action="store", dest="dashboard_name",
+                      help="name of dashboard to display",
+                      default=os.environ.get('DASHBOARD_NAME'))
     parser.add_option("--device-id", action="store", dest="device_id",
                       help="id of device (used in output json)",
                       default=os.environ.get('DEVICE_ID'))
@@ -166,14 +173,19 @@ def main(args=sys.argv[1:]):
         parser.print_usage()
         sys.exit(1)
 
+    if not options.dashboard_id:
+        parser.error("Must specify dashboard id (either with --dashboard-id "
+                     "or with DASHBOARD_ID environment variable)")
+    if not options.dashboard_name:
+        parser.error("Must specify dashboard name (either with "
+                     "--dashboard-name or with DASHBOARD_NAME environment "
+                     "varaiable)")
     if not options.device_id:
-        print "ERROR: Must specify device id (either with --device-id or with " \
-            "DEVICE_ID environment variable)"
-        sys.exit(1)
+        parser.error("Must specify device id (either with --device-id or with "
+                     "DEVICE_ID environment variable)")
     if not options.branch_id:
-        print "ERROR: Must specify branch (either with --branch or with " \
-            "BRANCH environment variable)"
-        sys.exit(1)
+        parser.error("Must specify branch (either with --branch or with "
+                     "BRANCH environment variable)")
 
     # get device info
     device_prefs = eideticker.getDevicePrefs(options)
@@ -195,9 +207,11 @@ def main(args=sys.argv[1:]):
     else:
         print "ERROR: Unknown device type '%s'" % options.devicetype
 
-    # update device index
-    eideticker.update_dashboard_device_list(options.dashboard_dir, options.device_id,
-                                            options.branch_id, device_info)
+    # update dashboard / device index
+    eideticker.update_dashboard_list(options.dashboard_dir, options.dashboard_id,
+                                     options.dashboard_name)
+    eideticker.update_dashboard_device_list(options.dashboard_dir, options.dashboard_id,
+                                            options.device_id, options.branch_id, device_info)
 
     # get application/build info
     if options.devicetype == "android":
@@ -236,8 +250,8 @@ def main(args=sys.argv[1:]):
     for testkey in args:
         testinfo = eideticker.get_testinfo(testkey)
 
-        eideticker.update_dashboard_test_list(options.dashboard_dir, options.device_id,
-                                              options.branch_id,
+        eideticker.update_dashboard_test_list(options.dashboard_dir, options.dashboard_id,
+                                              options.device_id, options.branch_id,
                                               testinfo)
 
         current_date = time.strftime("%Y-%m-%d")
