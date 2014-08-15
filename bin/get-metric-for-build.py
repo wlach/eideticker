@@ -137,7 +137,7 @@ def runtest(device_prefs, testname, options, apk=None, appname=None,
                      ('timetoresponse',
                       'Time to first input response (seconds)') ]
         for measure in measures:
-            if capture_results[0].get(measure[0]):
+            if measure[0] in capture_results[0]:
                 print "  %s:" % measure[1]
                 print "  %s" % map(lambda c: c[measure[0]], capture_results)
                 print
