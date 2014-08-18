@@ -5,86 +5,7 @@
     <title>Eideticker Dashboard</title>
 
     <link href="css/bootstrap.min.css" rel="stylesheet">
-    <style type="text/css">
-      .container {
-          max-width: none !important;
-          width: 970px;
-      }
-      .list-group { font-size: 13px; padding: 2px; padding-top: 16px; margin-bottom: 10px;
-      }
-      .list-group-item { padding: 4px 8px; }
-      .list-group::before {
-        position: relative;
-        top:  -8px;
-        left: 4px;
-        font-weight: bold;
-        color: #bbb;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-      }
-      #device-chooser::before {
-        content: "Device";
-      }
-      #branch-chooser::before {
-        content: "Branch";
-      }
-      #test-chooser::before {
-        content: "Test";
-      }
-      #graph-container {
-        padding-top: 18px;
-        min-height: 400px;
-      }
-      #graph-container .button {
-        position: absolute;
-        cursor: pointer;
-      }
-      #graph-container div.button {
-        font-size: smaller;
-        color: #999;
-        background-color: #eee;
-        padding: 2px;
-      }
-      #legend {
-        padding-top: 18px;
-      }
-      #datapoint-info {
-        font-size: 13px;
-      }
-      #video {
-        max-height: 80px;
-      }
-      #content {
-        padding-left: 20px;
-        padding-right: 20px;
-        margin-left: auto;
-        margin-right: auto;
-        min-width: 1200px;
-      }
-      #chooser {
-        position: absolute;
-        padding: 20px;
-        left: 0px;
-        top: 40px;
-        width: 180px;
-      }
-      #graph-main {
-        position: absolute;
-      }
-      #data-view {
-        position: absolute;
-        height: auto;
-        min-width: 800px;
-        left: 188px;
-      }
-      #datapoint-info {
-        position: absolute;
-        width: 200px;
-      }
-      footer {
-        padding: 40px;
-      }
-    </style>
+    <link href="css/dashboard.css" rel="stylesheet">
   </head>
 
   <body>
@@ -96,13 +17,15 @@
       </ul>
     </div>
 
-    <div id="chooser">
-      <div class="list-group" id="device-chooser"></div>
-      <div class="list-group" id="branch-chooser"></div>
-      <div class="list-group" id="test-chooser"></div>
-    </div>
+    <div id="main">
+      <div id="chooser">
+        <div class="list-group" id="device-chooser"></div>
+        <div class="list-group" id="branch-chooser"></div>
+        <div class="list-group" id="test-chooser"></div>
+      </div>
 
-    <div id="data-view">
+      <div id="data-view">
+      </div>
     </div>
 
     <footer id="footer">
@@ -122,15 +45,17 @@
     <script src="js/index.js"></script>
 
   <script id="contentHeader" class="partial" type="text/html">
-    <h1>{{title}}</h1>
-    {{#showTimeRanges}}
-    <select id="time-range" type="text">
-      {{#timeRanges}}
-      <option id="time-range-{{range}}" value="{{range}}">{{label}}</option>
-      {{/timeRanges}}
-    </select>
-    {{/showTimeRanges}}
-    <hr/>
+    <div id="data-header">
+      <h1>{{title}}</h1>
+      {{#showTimeRanges}}
+      <select id="time-range" type="text">
+        {{#timeRanges}}
+        <option id="time-range-{{range}}" value="{{range}}">{{label}}</option>
+        {{/timeRanges}}
+      </select>
+      {{/showTimeRanges}}
+      <hr/>
+    </div>
   </script>
 
   <script id="noGraph" type="text/html">
@@ -140,25 +65,28 @@
 
   <script id="graph" type="text/html">
     {{>contentHeader}}
-    <div id="graph-main">
-      <div id="graph-container"></div>
-      <div id="measure-form">
-        <form>
-          <select id="measure" type="text">
-            {{#measures}}
-            <option id="measure-{{id}}" value="{{id}}">{{desc}}</option>
-            {{/measures}}
-          </select>
-          <p>
-            <span class="help-inline">
-              {{measureDescription}}
-            </span>
-          </p>
-        </form>
-        <p class="help-block">You can double click to zoom in, single click to drag (like Google Maps). Click on a datapoint to see a video of the associated testrun.</p>
+    <div id="data-body">
+      <div id="graph-main">
+        <div id="graph-container"></div>
+        <div id="measure-form">
+          <form>
+            <select id="measure" type="text">
+              {{#measures}}
+              <option id="measure-{{id}}" value="{{id}}">{{desc}}</option>
+              {{/measures}}
+            </select>
+            <p>
+              <span class="help-inline">
+                {{measureDescription}}
+              </span>
+            </p>
+          </form>
+          <p class="help-block">You can double click to zoom in, single click to drag (like Google Maps). Click on a datapoint to see a video of the associated testrun.</p>
+        </div>
+      </div>
+      <div id="graph-annotation">
       </div>
     </div>
-    <div id="datapoint-info"></div>
   </script>
 
   <script id="graphDatapoint" type="text/html">

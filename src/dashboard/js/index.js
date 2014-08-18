@@ -104,12 +104,6 @@ function updateContent(testInfo, dashboardId, deviceId, branchId, testId, measur
   });
 }
 
-function updateFooter() {
-  $("#footer").css('margin-top', Math.max($("#chooser").height(),
-                                          ($("#data-view").height() +
-                                           $("#graph-main").height())));
-}
-
 function updateGraph(title, rawdata, measureId) {
   // show individual data points
   var graphdata = [];
@@ -240,8 +234,8 @@ function updateGraph(title, rawdata, measureId) {
             revisionInfoList.push(revisionInfo);
           }
         });
-        $('#datapoint-info').html(ich.graphDatapoint({ 'uuid': uuid,
-                                                       'videoURL': metadata.video,
+        $('#graph-annotation').html(ich.graphDatapoint({ 'uuid': uuid,
+                                                       'videoURL': getResourceURL(metadata.video),
                                                        'profileURL': metadata.profile,
                                                        'defaultDetailParameter': defaultDetailParameter,
                                                        'httpLog': metadata.httpLog ? true : false,
@@ -253,9 +247,7 @@ function updateGraph(title, rawdata, measureId) {
                                                        'measureValue': Math.round(100.0*metadata['metrics'][measureName])/100.0
                                                      }));
 
-        $('#datapoint-info').css('left', $('#graph-main').width() + 20);
         $('#video').css('width', $('#video').parent().width());
-        $('#video').css('max-height', $('#graph-container').height());
       }
 
       // try to find the previous revision
@@ -298,8 +290,6 @@ function updateGraph(title, rawdata, measureId) {
       zoom: { interactive: true },
       pan: { interactive: true }
     });
-
-    updateFooter();
 
     // add zoom out button
     $('<div class="button" style="left:50px;top:20px">zoom out</div>').appendTo($("#graph-container")).click(function (e) {
@@ -353,7 +343,7 @@ function updateGraph(title, rawdata, measureId) {
         updateDataPointDisplay(uuid, item.datapoint[0], measureId, item.series);
         plot.highlight(item.series, item.datapoint);
       } else {
-        $('#datapoint-info').html(null);
+        $('#graph-annotation').html(null);
       }
     });
   }
@@ -540,7 +530,6 @@ $(function() {
             $('#test-chooser').children('#'+testId).addClass("active");
 
             var testInfo = tests[testId];
-            updateFooter();
             updateContent(testInfo, dashboardId, deviceId, branchId, testId,
                           measureId, timeRange);
           });
