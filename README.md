@@ -258,7 +258,7 @@ specialized hardware. Second, it's much faster (since there's no
 video encoding/decoding/analysis step). For this you want to pass in
 "--no-capture" and "--get-internal-checkerboard-stats", like so:
 
-    ./bin/get-metric-for-build.py --use-apks --no-capture --get-internal-checkerboard-stats src/tests/ep1/taskjs.org/index.html nightly.apk
+    ./bin/get-metric-for-build.py --use-apks --no-capture --get-internal-checkerboard-stats taskjs nightly.apk
 
 #### get-metric-for-build on FirefoxOS
 
