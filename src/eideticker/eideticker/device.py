@@ -26,6 +26,7 @@ DEVICE_PROPERTIES = {
         "galaxy nexus": {
             "hdmiResolution": "720p",
             "inputDevice": "/dev/input/event1",
+            "defaultOrientation": "landscape",
             "dimensions": (1180, 720),
             "swipePadding": (240, 40, 100, 40)},
         "panda": {
@@ -409,8 +410,9 @@ class DroidADB(EidetickerMixin, EidetickerDroidMixin, mozdevice.DroidADB):
 
     @property
     def rotation(self):
-        return 0  # No way to find real rotation, assume 0
-
+        if self.deviceProperties.get('defaultOrientation') == 'landscape':
+            return 90
+        return 0
 
 class DroidSUT(EidetickerMixin, EidetickerDroidMixin, mozdevice.DroidSUT):
 
